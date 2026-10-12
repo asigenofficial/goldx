@@ -1,0 +1,1274 @@
+/* ===================================================================
+   ثيم الذهب والأبيض الملكي الفاخر (Gold & White Theme Only)
+   =================================================================== */
+html, html[data-theme], html[data-theme], html[data-theme="dark"] {
+  color-scheme: light;
+
+  --brand: #b8860b; --brand-dark: #8c6d1f; --brand-light: rgba(254, 249, 231, 0.85);
+  --primary: #b8860b; --accent: #d4af37; --brand-glow: 0 4px 18px rgba(184, 134, 11, 0.22);
+  --gold-main: #b8860b; --gold-light: #d4af37; --gold-dark: #8c6d1f;
+  --gold-gradient: linear-gradient(135deg, #d4af37 0%, #b8860b 100%);
+  --gold-gradient-soft: linear-gradient(135deg, rgba(255, 253, 245, 0.9) 0%, rgba(254, 248, 231, 0.9) 100%);
+
+  --bg: #faf7f2;
+  --canvas: radial-gradient(circle at 12% 10%, rgba(212, 175, 55, 0.05) 0%, transparent 40%), radial-gradient(circle at 88% 90%, rgba(212, 175, 55, 0.04) 0%, transparent 40%);
+  --card: rgba(255, 255, 255, 0.82);
+  --card-solid: #ffffff;
+  --card-hover: rgba(255, 253, 247, 0.95);
+  --sidebar: rgba(255, 255, 255, 0.85);
+  --sidebar-hover: rgba(254, 249, 231, 0.85);
+  --topbar: rgba(255, 255, 255, 0.85);
+  --field-bg: rgba(255, 255, 255, 0.82);
+  --field-focus-bg: #ffffff;
+  --bg-alt: rgba(254, 251, 243, 0.75);
+  --card-bg: rgba(255, 255, 255, 0.82);
+  --card-sub: rgba(251, 248, 240, 0.8);
+  --border-color: rgba(212, 175, 55, 0.25);
+
+  --text: #1c1917; --text-heading: #78350f; --muted: #64748b; --dim: #94a3b8;
+
+  --line: rgba(212, 175, 55, 0.25); --line-strong: #d4af37; --line-hover: #b8860b;
+
+  --success: #15803d; --success-light: #f0fdf4; --success-border: #bbf7d0;
+  --warn:    #b45309; --warn-light:    #fffbeb; --warn-border:    #fde68a;
+  --danger:  #dc2626; --danger-light:  #fef2f2; --danger-border:  #fecaca;
+  --info:    #0284c7; --info-light:    #f0f9ff; --info-border:    #bae6fd;
+
+  --shadow: 0 8px 30px rgba(184, 134, 11, 0.06);
+  --shadow-lg: 0 16px 48px rgba(184, 134, 11, 0.1);
+  --radius: 14px; --radius-sm: 10px; --radius-lg: 20px;
+  --glass-blur: blur(24px) saturate(190%);
+}
+
+/* ---------- تصحيحات ألوان النصوص والعناصر في وضع الضوء ---------- */
+html[data-theme] .sidebar-title,
+html[data-theme] .nav-item:hover,
+html[data-theme] .user-meta b,
+html[data-theme] .stat .stat-val,
+html[data-theme] .burger,
+html[data-theme] .modal-head h3,
+html[data-theme] .login-card h1,
+html[data-theme] .totals-box .grand,
+html[data-theme] .kv dd,
+html[data-theme] .tpl-section-title,
+html[data-theme] .tpl-card-title,
+html[data-theme] .doc-tpl-card-title,
+html[data-theme] .tab:hover,
+html[data-theme] .tpl-filter-btn:hover,
+html[data-theme] .tpl-phase-btn:hover { color: var(--text-heading); }
+
+html[data-theme] input,
+html[data-theme] select,
+html[data-theme] textarea,
+html[data-theme] select option { color: var(--text); background: var(--field-bg); }
+
+html[data-theme] input[type],
+html[data-theme] .issuer-pick select { color: var(--text); }
+
+html[data-theme] .field > label,
+html[data-theme] .check { color: var(--text); }
+
+html[data-theme] .btn:not(.btn-primary):not(.btn-danger):not(.tb-tool-btn):not(.tb-tab-btn) {
+  color: var(--text); background: #fff;
+}
+html[data-theme] .btn:not(.btn-primary):not(.btn-danger):not(.tb-tool-btn):not(.tb-tab-btn):hover {
+  color: var(--brand-dark); background: var(--brand-light); border-color: var(--brand);
+}
+
+html[data-theme] .nav-item.active .ico { color: var(--brand); }
+
+html[data-theme] table.tbl thead th,
+html[data-theme] table.tbl tfoot td { color: var(--text); background: #f6f8fa; }
+
+html[data-theme] table.tbl td.num,
+html[data-theme] table.tbl th.num { display: table-cell; }
+html[data-theme] input[type=checkbox],
+html[data-theme] input[type=radio] { min-height: auto; accent-color: var(--brand); }
+
+html[data-theme] .nav-item { color: var(--muted); }
+html[data-theme] .nav-item.active {
+  background: var(--brand-light); color: var(--brand-dark); box-shadow: none;
+}
+html[data-theme] .nav-item:hover { background: var(--sidebar-hover); }
+html[data-theme] .nav-group-label { color: var(--muted); }
+html .sidebar,
+html .topbar,
+html .card,
+html .stat,
+html .modal,
+html .login-card,
+html .inv-form-box,
+html .filter-box {
+  backdrop-filter: blur(24px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  border: 1px solid rgba(212, 175, 55, 0.22) !important;
+  box-shadow: 0 8px 30px rgba(184, 134, 11, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+html .btn-primary,
+html .avatar {
+  background: linear-gradient(135deg, #d4af37 0%, #b8860b 100%) !important;
+  color: white !important;
+  box-shadow: 0 4px 14px rgba(184, 134, 11, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html .btn-primary:hover { background: linear-gradient(135deg, #e5be42 0%, #a27508 100%) !important; transform: translateY(-1px); }
+  html .btn:hover { transform: translateY(-1px); }
+  html .btn-ghost:hover { color: var(--brand); background: var(--brand-light); }
+}
+
+html .btn:active { transform: scale(0.97) !important; }
+html .page-head .titles p { max-width: 70ch; }
+
+html .tbl thead th {
+  background: rgba(254, 249, 231, 0.75) !important;
+  color: #78350f !important;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.25) !important;
+}
+html .tbl tbody tr:hover { background: rgba(254, 249, 231, 0.35) !important; }
+html[data-theme] .card,
+html[data-theme] .stat { border: 1px solid var(--line); }
+html[data-theme] .stat .stat-ico { box-shadow: none; }
+
+html[data-theme] .badge,
+html[data-theme] .doc-tpl-chip { color: var(--text); border-color: var(--line); background: #f1f5f9; }
+html[data-theme] .chip {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1e293b;
+  font-weight: 600;
+}
+html[data-theme] .chip:hover {
+  background: #e2e8f0;
+  border-color: #059669;
+  color: #0f172a;
+}
+html[data-theme] .chip.on {
+  background: var(--brand, #059669);
+  border-color: var(--brand, #059669);
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.35);
+}
+html[data-theme] .badge.gray {
+  color: #475569;
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+}
+html[data-theme] .badge.green,
+html[data-theme] .doc-tpl-chip.green { color: var(--success); background: var(--success-light); }
+html[data-theme] .badge.blue,
+html[data-theme] .doc-tpl-chip.primary { color: var(--brand-dark); background: var(--brand-light); }
+html[data-theme] .badge.red { color: var(--danger); background: var(--danger-light); }
+html[data-theme] .badge.amber { color: var(--warn); background: var(--warn-light); }
+
+html[data-theme] .advanced-options { margin-top: 1rem; border-top: 1px solid var(--line); padding-top: .8rem; }
+html[data-theme] .advanced-options summary { cursor: pointer; color: var(--brand-dark); font-weight: 600; }
+html[data-theme] .advanced-options > .row { margin-top: 1rem; }
+
+html[data-theme] :focus-visible { outline: 3px solid #0f766e55; outline-offset: 3px; }
+html[data-theme] .toast { background: #172b3a; color: white; border: 1px solid #334155; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); }
+html[data-theme] .toast.ok,
+html[data-theme] .toast.err { border-color: #334155 !important; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important; }
+
+/* إصلاح لون نص الصف في الجداول */
+html[data-theme] table.tbl tbody td { color: var(--text); }
+
+/* إصلاح ألوان الحقول */
+html[data-theme] input[type=text],
+html[data-theme] input[type=number],
+html[data-theme] input[type=date],
+html[data-theme] input[type=time],
+html[data-theme] input[type=password],
+html[data-theme] input[type=email],
+html[data-theme] input[type=search],
+html[data-theme] select,
+html[data-theme] textarea {
+  color: var(--text);
+}
+
+html[data-theme] select option { background: #fff; color: var(--text); }
+
+/* إصلاح شريط الجانب */
+html[data-theme] .sidebar-title { color: var(--text-heading); }
+html[data-theme] .sidebar-sub { color: var(--muted); }
+
+/* إصلاح شريط علوي */
+html[data-theme] .issuer-pick select { color: var(--text); }
+html[data-theme] .issuer-pick label { color: var(--muted); }
+
+/* إصلاح زر المستخدم */
+html[data-theme] .user-chip {
+  background: #fff; border-color: var(--line); color: var(--text);
+}
+html[data-theme] .user-chip:hover {
+  background: #f4f6f8; border-color: var(--line-strong);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+html[data-theme] .user-meta b { color: var(--text-heading); }
+html[data-theme] .user-meta span { color: var(--muted); }
+
+/* إصلاح البرجر */
+html[data-theme] .burger {
+  background: #f4f6f8; border-color: var(--line); color: var(--text);
+}
+html[data-theme] .burger:hover { background: #e0e7eb; }
+
+/* إصلاح ألوان البيانات الفارغة */
+html[data-theme] .empty { color: var(--muted); }
+
+/* إصلاح خلفية login */
+html[data-theme] .login-wrap { background: #f0f4f8; }
+html[data-theme] .login-card {
+  background: #fff; border-color: var(--line); box-shadow: 0 8px 32px rgba(23,43,58,0.12);
+}
+html[data-theme] .login-card h1 { color: var(--text-heading); }
+
+/* إصلاح النوافذ المنبثقة */
+html[data-theme] .modal {
+  background: #fff; border-color: var(--line);
+  box-shadow: 0 12px 48px rgba(23,43,58,0.18);
+}
+html[data-theme] .modal-head { border-color: var(--line); }
+html[data-theme] .modal-footer { background: #f8fafb; border-color: var(--line); }
+html[data-theme] .modal-backdrop { background: rgba(23,43,58,0.35); }
+
+/* إصلاح التنبيهات */
+html[data-theme] .alert-info { color: #1d4ed8; }
+html[data-theme] .alert-warn { color: #92400e; }
+html[data-theme] .alert-danger { color: #b91c1c; }
+html[data-theme] .alert-success { color: #166534; }
+
+/* إصلاح عناصر الإحصاء */
+html[data-theme] .stat .stat-val { color: var(--text-heading); }
+html[data-theme] .stat .stat-lab { color: var(--muted); }
+html[data-theme] .stat .stat-ico {
+  border: 1px solid var(--brand-light);
+  box-shadow: none;
+}
+
+/* إصلاح الـ skeleton */
+html[data-theme] .skeleton-title { background: rgba(23,43,58,0.06); }
+html[data-theme] .skeleton-sub { background: rgba(23,43,58,0.04); }
+html[data-theme] .skeleton-card,
+html[data-theme] .skeleton-table { background: #fff; border-color: var(--line); }
+html[data-theme] .skeleton-card::after,
+html[data-theme] .skeleton-table::after,
+html[data-theme] .skeleton-title::after,
+html[data-theme] .skeleton-sub::after {
+  background: linear-gradient(90deg, transparent, rgba(23,43,58,0.05), transparent);
+}
+
+/* nav scrollbar */
+html[data-theme] .nav { scrollbar-color: rgba(23,43,58,0.15) transparent; }
+html[data-theme] .nav::-webkit-scrollbar-thumb { background: rgba(23,43,58,0.15); }
+html[data-theme] .table-wrap { scrollbar-color: #94a3b8 #f1f5f9; }
+html[data-theme] .table-wrap::-webkit-scrollbar-track { background: #f1f5f9; }
+html[data-theme] .table-wrap::-webkit-scrollbar-thumb { background: #94a3b8; }
+html[data-theme] .table-wrap::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+html[data-theme] .table-top-scroll { background: #f8fafc; scrollbar-color: #94a3b8 #f1f5f9; }
+html[data-theme] .table-top-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+html[data-theme] .table-top-scroll::-webkit-scrollbar-thumb { background: #94a3b8; }
+html[data-theme] .table-top-scroll::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+html[data-theme] .doc-tpl-grid { scrollbar-color: #94a3b8 #f1f5f9; }
+html[data-theme] .doc-tpl-grid::-webkit-scrollbar-track { background: #f1f5f9; }
+html[data-theme] .doc-tpl-grid::-webkit-scrollbar-thumb { background: #94a3b8; }
+html[data-theme] .doc-tpl-grid::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+html[data-theme] .bulk-drafts-grid { scrollbar-color: #94a3b8 #f1f5f9; }
+html[data-theme] .bulk-drafts-grid::-webkit-scrollbar-track { background: #f1f5f9; }
+html[data-theme] .bulk-drafts-grid::-webkit-scrollbar-thumb { background: #94a3b8; }
+html[data-theme] .bulk-drafts-grid::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+html[data-theme] .invoices-list { scrollbar-color: #94a3b8 #f1f5f9; }
+html[data-theme] .invoices-list::-webkit-scrollbar-track { background: #f1f5f9; }
+html[data-theme] .invoices-list::-webkit-scrollbar-thumb { background: #94a3b8; }
+html[data-theme] .invoices-list::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+html[data-theme] table.tbl thead th { background: #f8fafc !important; color: #334155 !important; box-shadow: 0 1px 0 var(--line); }
+
+/* مسرح معاينة المستندات والسندات الورقية في وضع الضوء */
+html[data-theme] .modal-paper-stage {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+html[data-theme] .modal-paper-sheet {
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.14);
+}
+
+/* kv list */
+html[data-theme] .kv dt { color: var(--muted); }
+html[data-theme] .kv dd { color: var(--text-heading); }
+
+/* route progress bar */
+html[data-theme] .route-progress::before {
+  background: linear-gradient(90deg, #0f766e, #0d9488, #14b8a6);
+}
+
+/* totals */
+html[data-theme] .totals-box .line { color: var(--muted); }
+html[data-theme] .totals-box .line.grand { color: var(--brand); }
+
+/* pager */
+html[data-theme] .pager { border-color: var(--line); }
+
+/* قوالب المستندات في وضع الضوء */
+html[data-theme] .doc-tpl-card {
+  background: #ffffff;
+  border-color: var(--line);
+  box-shadow: 0 2px 8px rgba(23, 43, 58, 0.06);
+}
+html[data-theme] .doc-tpl-card:hover {
+  border-color: var(--brand);
+  box-shadow: 0 8px 24px rgba(23, 43, 58, 0.1);
+}
+html[data-theme] .doc-tpl-card {
+  --tpl-text: var(--tpl-text-light, #047857);
+}
+html[data-theme] .doc-tpl-card.is-active {
+  border-color: var(--brand);
+  background: linear-gradient(145deg, #f0fdf9, #ffffff);
+  box-shadow: 0 0 0 1px var(--brand), 0 4px 16px rgba(5, 150, 105, 0.12);
+}
+html[data-theme] .doc-tpl-card-title {
+  color: var(--text-heading);
+}
+html[data-theme] .doc-tpl-card-desc {
+  color: #475569;
+}
+html[data-theme] .doc-tpl-headers-label {
+  color: #475569;
+}
+html[data-theme] .doc-tpl-chip {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+html[data-theme] .doc-tpl-chip-more {
+  color: #64748b;
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+html[data-theme] .doc-tpl-badge {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: var(--tpl-text);
+}
+html[data-theme] .doc-tpl-active-badge {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #047857;
+  box-shadow: none;
+}
+html[data-theme] .btn-tpl-active-state {
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #047857 !important;
+}
+html[data-theme] .doc-tpl-card-foot {
+  border-top-color: #f1f5f9;
+}
+
+/* لوحة معاينة القالب والورقة في وضع الضوء */
+html[data-theme] .tpl-paper-wrapper {
+  background: #cbd5e1;
+  background-image: radial-gradient(rgba(15, 23, 42, 0.12) 1px, transparent 1px);
+  background-size: 16px 16px;
+  border-color: #94a3b8;
+}
+html[data-theme] .tpl-paper-frame {
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.18);
+}
+html[data-theme] .tpl-zoom-controls {
+  background: #ffffff;
+  border-color: var(--line-strong);
+}
+html[data-theme] .tpl-zoom-btn {
+  color: var(--text);
+}
+html[data-theme] .tpl-zoom-btn:hover {
+  background: #f1f5f9;
+}
+html[data-theme] .tab-pill-group {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0;
+}
+
+/* تثبيت أحجام وتنسيق الأيقونات بدقة متطابقة تماماً بين الثيمين لمنع أي انزياح */
+.ico,
+svg.ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.theme-toggle {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.user-chip .avatar {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  box-sizing: border-box;
+}
+
+.nav-item .ico {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  flex: none;
+  box-sizing: border-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* ── محرر ومصمم القوالب في وضع الضوء (Template Builder Light Theme) ── */
+html[data-theme] .visual-doc-editor {
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+}
+
+html[data-theme] .visual-doc-editor > header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme] .visual-doc-editor > header span {
+  color: #0f172a !important;
+}
+
+html[data-theme] .builder-core-controls select,
+html[data-theme] .builder-core-controls input {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html[data-theme] .builder-core-controls select option {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html[data-theme] .builder-actions-row .btn-clear-sheet,
+html[data-theme] .builder-actions-row .btn-print-sheet {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+html[data-theme] .visual-doc-editor > nav {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+html[data-theme] .visual-doc-editor > nav > div:last-child {
+  color: #64748b !important;
+}
+
+html[data-theme] .tab-btn {
+  color: #64748b !important;
+}
+
+html[data-theme] .tab-btn:hover {
+  color: #0f172a !important;
+  background: #e2e8f0 !important;
+}
+
+html[data-theme] .tab-btn.active {
+  color: #0284c7 !important;
+  border-bottom-color: #0284c7 !important;
+  background: rgba(2, 132, 199, 0.08) !important;
+}
+
+html[data-theme] .tab-panel {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+html[data-theme] .btn-insert-blk {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+html[data-theme] .btn-insert-blk:hover {
+  background: var(--brand, #059669) !important;
+  border-color: var(--brand, #059669) !important;
+  color: #ffffff !important;
+}
+
+html[data-theme] .btn-tag-chip {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+html[data-theme] .btn-tag-chip:hover {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+html[data-theme] .btn-fmt {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+html[data-theme] .btn-fmt:hover {
+  background: #e2e8f0 !important;
+}
+
+html[data-theme] .tab-panel select,
+html[data-theme] .tab-panel input:not([type=color]):not([type=range]) {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme] .tab-panel label,
+html[data-theme] .tab-panel span {
+  color: #334155 !important;
+}
+
+html[data-theme] .builder-workspace {
+  background: #e2e8f0 !important;
+}
+
+html[data-theme] .editor-a4-sheet {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12) !important;
+}
+
+html[data-theme] .builder-bottom-bar {
+  background: #ffffff !important;
+  border-top: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+html[data-theme] .builder-bottom-actions select {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme] #modal-table-gen > div,
+html[data-theme] #modal-paste-html > div {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.15) !important;
+}
+
+html[data-theme] #modal-paste-html > div > div:first-child,
+html[data-theme] #modal-table-gen > div > div:first-child {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+html[data-theme] #modal-paste-html > div > div:last-child,
+html[data-theme] #modal-table-gen > div > div:last-child {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+html[data-theme] #modal-paste-html input,
+html[data-theme] #modal-paste-html textarea,
+html[data-theme] #modal-table-gen input,
+html[data-theme] #modal-table-gen select {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme] .builder-palette-controls span {
+  color: #64748b !important;
+}
+
+html[data-theme] .tab-panel span[style*="color:#38bdf8"],
+html[data-theme] .tab-panel span[style*="color:#94a3b8"] {
+  color: #0284c7 !important;
+}
+
+html[data-theme] .tab-panel div[style*="background:#334155"] {
+  background: #cbd5e1 !important;
+}
+
+html[data-theme] .preset-section > .preset-section-controls,
+html[data-theme] .preset-tbl-controls {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+html[data-theme] .preset-section > .preset-section-controls button,
+html[data-theme] .preset-tbl-controls button {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+/* ── زرا برومبت الذكاء الاصطناعي ولصق الكود في وضع الضوء ── */
+html[data-theme] .btn-open-ai-prompt {
+  background: #f5f3ff !important;
+  color: #6d28d9 !important;
+  border: 1px solid #ddd6fe !important;
+  box-shadow: 0 1px 4px rgba(109, 40, 217, 0.12) !important;
+}
+
+html[data-theme] .btn-open-ai-prompt:hover {
+  background: #ede9fe !important;
+  color: #5b21b6 !important;
+  border-color: #c4b5fd !important;
+}
+
+html[data-theme] #btn-open-paste-modal {
+  background: #f0f9ff !important;
+  color: #0284c7 !important;
+  border: 1px solid #bae6fd !important;
+  box-shadow: 0 1px 4px rgba(2, 132, 199, 0.12) !important;
+}
+
+html[data-theme] #btn-open-paste-modal:hover {
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+  border-color: #7dd3fc !important;
+}
+
+/* ── نافذة برومبت الذكاء الاصطناعي في وضع الضوء ── */
+html[data-theme] #modal-ai-prompt-studio > div {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15) !important;
+}
+
+html[data-theme] #modal-ai-prompt-studio > div > div:first-child {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+html[data-theme] #modal-ai-prompt-studio h3 {
+  color: #0f172a !important;
+}
+
+html[data-theme] #modal-ai-prompt-studio #btn-close-ai-modal {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #64748b !important;
+}
+
+html[data-theme] #modal-ai-prompt-studio #btn-close-ai-modal:hover {
+  background: #fee2e2 !important;
+  color: #ef4444 !important;
+  border-color: #fca5a5 !important;
+}
+
+html[data-theme] #modal-ai-prompt-studio > div > div:nth-child(2) {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+html[data-theme] .ai-tab-btn:not([style*="background: rgb(79, 70, 229)"]):not([style*="background: #4f46e5"]):not([style*="background: rgb(2, 132, 199)"]):not([style*="background: #0284c7"]) {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+html[data-theme] #txt-ai-prompt {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+html[data-theme] #modal-ai-prompt-studio div[style*="border: 1px dashed"] {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+html[data-theme] #ai-tags-view table {
+  color: #1e293b !important;
+}
+
+html[data-theme] #ai-tags-view thead tr {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+}
+
+html[data-theme] #ai-tags-view tbody tr {
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+html[data-theme] #ai-tags-view tbody td {
+  color: #334155 !important;
+}
+
+html[data-theme] #ai-tags-view code {
+  color: #0369a1 !important;
+  background: #f0f9ff !important;
+  border: 1px solid #bae6fd !important;
+}
+
+/* ── نافذة لصق كود HTML في وضع الضوء ── */
+html[data-theme] #modal-paste-html div[style*="line-height: 1.6"] {
+  background: #f0f9ff !important;
+  border-color: #bae6fd !important;
+  color: #0369a1 !important;
+}
+
+html[data-theme] #modal-paste-html label {
+  color: #334155 !important;
+}
+
+html[data-theme] #btn-cancel-paste-modal {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+/* ── دعم عناصر هندسة التصميم في وضع الضوء ── */
+html[data-theme] .segmented-control {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+html[data-theme] .segmented-option {
+  color: #64748b;
+}
+
+html[data-theme] .segmented-option:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+html[data-theme] .segmented-option.is-active,
+html[data-theme] .segmented-option:has(input:checked) {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #7dd3fc;
+}
+
+html[data-theme] .bulk-options-bar {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+html[data-theme] .check-pill:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+html[data-theme] .check-pill-content b {
+  color: #0f172a;
+}
+
+html[data-theme] .bulk-items-bar {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+html[data-theme] .distribution-cards {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+html[data-theme] .distribution-card {
+  background: #fff;
+  border-color: #e2e8f0;
+}
+
+html[data-theme] .distribution-card:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+html[data-theme] .distribution-card:has(input:checked) {
+  background: #e0f2fe;
+  border-color: var(--brand);
+}
+
+html[data-theme] #w-mode-bar {
+  background: #eef2f6;
+  border-color: #cbd5e1;
+}
+
+html[data-theme] #w-mode-bar .btn:not(.active) {
+  background: transparent !important;
+  color: #475569 !important;
+  border-color: transparent !important;
+}
+
+html[data-theme] #w-mode-bar .btn:hover:not(.active) {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #0f172a !important;
+}
+
+html[data-theme] #w-mode-bar .btn.active {
+  background: var(--brand) !important;
+  color: #ffffff !important;
+  border-color: var(--brand) !important;
+}
+
+/* ==========================================================================
+   تنسيقات الشعار الذهبي والأيقونات الملكية الفاخرة (Gold & White Theme Polish)
+   ========================================================================== */
+
+.boot-logo,
+.login-logo,
+.sidebar-logo {
+  border-radius: 20px;
+  background: #ffffff;
+  padding: 2px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  box-shadow: 0 4px 18px rgba(184, 134, 11, 0.16), 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease;
+  object-fit: cover;
+}
+
+.sidebar-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
+.sidebar-logo:hover,
+.login-logo:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 24px rgba(184, 134, 11, 0.26);
+}
+
+.nav-item .ico {
+  color: #b8860b;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease, filter 0.2s ease;
+}
+
+.nav-item:hover .ico {
+  color: #d4af37;
+  transform: scale(1.12);
+  filter: drop-shadow(0 2px 6px rgba(212, 175, 55, 0.3));
+}
+
+.nav-item.active .ico {
+  color: #b8860b;
+  filter: drop-shadow(0 2px 8px rgba(184, 134, 11, 0.35));
+}
+
+.btn .ico,
+.stat-ico .ico {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn:hover .ico {
+  transform: scale(1.08);
+}
+
+/* ==========================================================================
+   حقول وإدخالات آبل فائقة الأناقة (Apple-style Translucent White & Gold Inputs)
+   ========================================================================== */
+
+input[type=text],
+input[type=number],
+input[type=date],
+input[type=time],
+input[type=password],
+input[type=email],
+input[type=search],
+select,
+textarea {
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(212, 175, 55, 0.3) !important;
+  border-radius: 12px !important;
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.95), 0 1px 3px rgba(184, 134, 11, 0.04) !important;
+  color: #1c1917 !important;
+  font-family: var(--font) !important;
+  font-size: 0.92rem !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+input[type=text]:focus,
+input[type=number]:focus,
+input[type=date]:focus,
+input[type=time]:focus,
+input[type=password]:focus,
+input[type=email]:focus,
+input[type=search]:focus,
+select:focus,
+textarea:focus {
+  background: #ffffff !important;
+  border-color: #d4af37 !important;
+  box-shadow: 0 0 0 3.5px rgba(212, 175, 55, 0.22), inset 0 1px 1px rgba(255, 255, 255, 0.95) !important;
+  outline: none !important;
+}
+
+/* بطاقات حقول الفواتير ونماذج الإدخال بأسلوب آبل */
+.inv-form-box,
+.filter-box,
+.card {
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.84) !important;
+  backdrop-filter: blur(24px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+  border: 1px solid rgba(212, 175, 55, 0.24) !important;
+  box-shadow: 0 8px 32px rgba(184, 134, 11, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+/* تبويبات وأزرار فلاتر آبل الدائرية */
+.tab,
+.tpl-filter-btn {
+  border-radius: 20px !important;
+  border: 1px solid rgba(212, 175, 55, 0.25) !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(12px) !important;
+  color: #78350f !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.tab.active,
+.tpl-filter-btn.active {
+  background: linear-gradient(135deg, #d4af37 0%, #b8860b 100%) !important;
+  color: #ffffff !important;
+  border-color: #b8860b !important;
+  box-shadow: 0 4px 12px rgba(184, 134, 11, 0.25) !important;
+}
+
+/* نوافذ آبل المنبثقة الشفافة البيضاء والذهبية (Apple Liquid-Glass Modals) */
+.modal {
+  border-radius: 22px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(32px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(200%) !important;
+  border: 1px solid rgba(212, 175, 55, 0.32) !important;
+  box-shadow: 0 24px 64px rgba(184, 134, 11, 0.14), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.modal-head {
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2) !important;
+  padding: 1.1rem 1.4rem !important;
+}
+
+.modal-head h3 {
+  font-weight: 800 !important;
+  color: #78350f !important;
+}
+
+.modal-footer {
+  background: rgba(254, 249, 231, 0.6) !important;
+  border-top: 1px solid rgba(212, 175, 55, 0.2) !important;
+  border-bottom-left-radius: 22px !important;
+  border-bottom-right-radius: 22px !important;
+  padding: 0.9rem 1.4rem !important;
+}
+
+/* شارات آبل المستديرة الفاخرة للذهب */
+.badge {
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  letter-spacing: 0.2px !important;
+}
+
+.badge.green {
+  background: rgba(34, 197, 94, 0.12) !important;
+  color: #15803d !important;
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+}
+
+.badge.amber,
+.badge.gold {
+  background: rgba(212, 175, 55, 0.16) !important;
+  color: #8c6d1f !important;
+  border: 1px solid rgba(212, 175, 55, 0.38) !important;
+}
+
+.badge.blue,
+.badge.teal {
+  background: rgba(212, 175, 55, 0.12) !important;
+  color: #78350f !important;
+  border: 1px solid rgba(212, 175, 55, 0.28) !important;
+}
+
+.badge.gray {
+  background: rgba(255, 255, 255, 0.75) !important;
+  color: #64748b !important;
+  border: 1px solid rgba(212, 175, 55, 0.22) !important;
+}
+
+/* الجداول بأسلوب آبل الزجاجي المصقول */
+.table-wrap {
+  border-radius: 14px !important;
+}
+
+table.tbl thead th {
+  background: rgba(254, 249, 231, 0.88) !important;
+  color: #78350f !important;
+  border-bottom: 1.5px solid rgba(212, 175, 55, 0.3) !important;
+  font-weight: 700 !important;
+}
+
+table.tbl tbody tr {
+  transition: background 0.15s ease !important;
+}
+
+table.tbl tbody tr:hover {
+  background: rgba(212, 175, 55, 0.08) !important;
+}
+
+/* الأزرار بأسلوب آبل مع إحساس الضغط والارتداد السلس */
+.btn {
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  transition: transform 0.14s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, background 0.15s ease !important;
+}
+
+.btn:active {
+  transform: scale(0.96) !important;
+}
+
+/* ===================================================================
+   نظام الحقول والنماذج الملكي الفاخر (Royal Luxury Form Fields & Inputs)
+   تصميم حديث كلياً يختلف جذرياً عن الأنظمة التقليدية: زوايا انسيابية،
+   أيقونات ذهبية داخل الحقول، تدرجات عاجية، وأسهم قوائم مخصصة.
+   =================================================================== */
+
+/* حقول الإدخال والقوائم المنسدلة */
+html[data-theme] input[type="text"],
+html[data-theme] input[type="number"],
+html[data-theme] input[type="date"],
+html[data-theme] input[type="time"],
+html[data-theme] input[type="password"],
+html[data-theme] input[type="email"],
+html[data-theme] input[type="search"],
+html[data-theme] select,
+html[data-theme] textarea {
+  height: 44px !important;
+  border-radius: 13px !important;
+  background: #ffffff !important;
+  border: 1.5px solid #dfcfad !important;
+  color: #1c1917 !important;
+  font-size: 0.92rem !important;
+  font-weight: 600 !important;
+  padding: 0.6rem 0.95rem !important;
+  box-shadow: 0 2px 6px rgba(184, 134, 11, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+html[data-theme] textarea {
+  height: auto !important;
+  min-height: 90px !important;
+}
+
+/* حالة التمرير والتركيز للحقول */
+html[data-theme] input:hover,
+html[data-theme] select:hover,
+html[data-theme] textarea:hover {
+  border-color: #c99b27 !important;
+  background: #fffdf9 !important;
+  box-shadow: 0 3px 10px rgba(184, 134, 11, 0.08) !important;
+}
+
+html[data-theme] input:focus,
+html[data-theme] select:focus,
+html[data-theme] textarea:focus {
+  outline: none !important;
+  border-color: #b8860b !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.22), 0 4px 14px rgba(184, 134, 11, 0.08) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* تخصيص القوائم المنسدلة بسهم ذهبي فيكتور أنيق */
+html[data-theme] select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23b8860b' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: left 14px center !important;
+  padding-left: 38px !important;
+  cursor: pointer !important;
+}
+
+/* تخصيص حقل البحث السريع بعدسة ذهبية فخمة */
+html[data-theme] input[type="search"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23d4af37' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='10.5' cy='10.5' r='7.5' fill='%23d4af37' fill-opacity='0.15'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='15.8' y2='15.8' stroke-width='2.6'%3E%3C/line%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  padding-right: 44px !important;
+}
+
+/* عناوين الحقول مع مؤشر الجوهرة الذهبية */
+html[data-theme] .field > label {
+  font-size: 0.84rem !important;
+  font-weight: 700 !important;
+  color: #5c3d0e !important;
+  letter-spacing: -0.01em !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-bottom: 0.45rem !important;
+}
+
+html[data-theme] .field > label::before {
+  content: '' !important;
+  display: inline-block !important;
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: #d4af37 !important;
+  box-shadow: 0 0 6px rgba(212, 175, 55, 0.7) !important;
+  margin-inline-end: 6px !important;
+  flex-shrink: 0 !important;
+}
+
+/* بطاقة الفلاتر والبحث (منصة التحكم الملكية) */
+html[data-theme] .filter-box {
+  background: linear-gradient(180deg, #ffffff 0%, #fdfbf7 100%) !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.35) !important;
+  border-radius: 20px !important;
+  border-top: 4px solid #d4af37 !important;
+  box-shadow: 0 12px 36px rgba(184, 134, 11, 0.08), 0 2px 6px rgba(0, 0, 0, 0.02) !important;
+  padding: 1.35rem 1.45rem !important;
+  margin-bottom: 1.25rem !important;
+  position: relative !important;
+}
+
+/* أزرار الفلاتر السريعة الكبسولية */
+html[data-theme] .filter-btn-group {
+  background: #f6efe2 !important;
+  border: 1.5px solid #ebdcb9 !important;
+  padding: 4px !important;
+  border-radius: 999px !important;
+  gap: 4px !important;
+}
+
+html[data-theme] .filter-btn-group .btn {
+  border-radius: 999px !important;
+  font-weight: 700 !important;
+  padding: 0.38rem 0.95rem !important;
+  color: #78350f !important;
+  font-size: 0.82rem !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+html[data-theme] .filter-btn-group .btn:hover {
+  background: #ffffff !important;
+  color: #b8860b !important;
+  box-shadow: 0 2px 8px rgba(184, 134, 11, 0.16) !important;
+  transform: none !important;
+}
+
+html[data-theme] .filter-btn-group .btn[data-quick="clear"] {
+  color: #b91c1c !important;
+}
+
+html[data-theme] .filter-btn-group .btn[data-quick="clear"]:hover {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+/* مربع خيار المتبقي فقط الكبسولي */
+html[data-theme] .filter-check {
+  border-radius: 999px !important;
+  background: #ffffff !important;
+  border: 1.5px solid #ebdcb9 !important;
+  color: #78350f !important;
+  font-weight: 700 !important;
+  padding: 0.42rem 1.05rem !important;
+  font-size: 0.84rem !important;
+  box-shadow: 0 2px 6px rgba(184, 134, 11, 0.05) !important;
+}
+
+html[data-theme] .filter-check:hover {
+  border-color: #b8860b !important;
+  background: #fef9e7 !important;
+  color: #451a03 !important;
+}
+
+/* أزرار الإجراءات العلوية ببريق المجوهرات الفاخرة */
+html[data-theme] .page-actions {
+  gap: 0.65rem !important;
+  flex-wrap: wrap !important;
+}
+
+html[data-theme] .btn {
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  padding: 0.55rem 1.15rem !important;
+  box-shadow: 0 2px 8px rgba(184, 134, 11, 0.06) !important;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+html[data-theme] .btn:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 18px rgba(184, 134, 11, 0.14) !important;
+}
+
+html[data-theme] .btn-primary {
+  background: linear-gradient(135deg, #d4af37 0%, #b8860b 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid #d4af37 !important;
+  box-shadow: 0 4px 16px rgba(184, 134, 11, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+html[data-theme] .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dfbc45 0%, #a47608 100%) !important;
+  box-shadow: 0 8px 24px rgba(184, 134, 11, 0.38) !important;
+}
+
+/* بطاقات الإحصائيات الفاخرة مع حزام الذهب العلوي */
+html[data-theme] .stat {
+  border-radius: 18px !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fffdfa 100%) !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.28) !important;
+  border-top: 4px solid #d4af37 !important;
+  box-shadow: 0 8px 24px rgba(184, 134, 11, 0.06) !important;
+  padding: 1.15rem 1.25rem !important;
+  transition: all 0.2s ease !important;
+}
+
+html[data-theme] .stat:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 12px 32px rgba(184, 134, 11, 0.12) !important;
+  border-color: #d4af37 !important;
+}
+
+html[data-theme] .stat .stat-val {
+  font-size: 1.55rem !important;
+  font-weight: 900 !important;
+  color: #78350f !important;
+  letter-spacing: -0.02em !important;
+}
+
+html[data-theme] .stat .stat-lab {
+  font-size: 0.85rem !important;
+  color: #8c6d1f !important;
+  font-weight: 700 !important;
+  margin-top: 4px !important;
+}
+

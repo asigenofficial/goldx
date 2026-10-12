@@ -1,0 +1,828 @@
+// ==========================================================================
+//  قائمة الفواتير: بحث وتصفية شاملة، إجماليات، طباعة، تصدير.
+// ==========================================================================
+import { api, qs } from '../core/api.js';
+import { store, loadClients, can, getFilterState, setFilterState, clearFilterState } from '../core/store.js';
+
+const syncNotify = (entity, action, payload) => (typeof store.syncNotify === 'function' ? store.syncNotify(entity, action, payload) : null);
+const onSync = (cb) => (typeof store.onSync === 'function' ? store.onSync(cb) : () => { });
+import {
+  html, raw, esc, money, num, dateAr, statusBadge, monthStart, today, toastOk,
+  $, delegate, debounce, exportCsv, exportExcel, parseSpreadsheetText, printDoc, modal, toastErr, formValues,
+  confirmDialog, icon, downloadPdfFromHtml, downloadPdfFromUrl, amount, sarSvg, shareDocument, renderStoredVoucher,
+  loadStoredTemplate, fillStoredTemplate,
+} from '../core/util.js';
+
+const PAGE = 50;
+
+export async function render(view, ctx) {
+  await loadClients();
+
+  let availableTemplates = [];
+  try {
+    const tplRes = await api.get('/api/invoices/templates?type=invoices');
+    availableTemplates = Array.isArray(tplRes) ? tplRes : (tplRes?.data || []);
+  } catch { }
+
+  const renderTemplateOptions = (selectedId) => {
+    const customOpts = availableTemplates.map((t) => `<option value="${esc(t.id)}" ${t.id === selectedId ? 'selected' : ''}>${esc(t.name_ar || t.name || t.id)}</option>`).join('');
+    return customOpts;
+  };
+
+  const q0 = (ctx && ctx.query) || {};
+  const defaults = {
+    issuer_id: store.activeIssuerId,
+    client_id: '',
+    status: '',
+    invoice_type: '',
+    gold_invoice_type: '',
+    has_remaining: false,
+    from: '',
+    to: '',
+    q: '',
+    batch_id: '',
+    min_total: '',
+    max_total: '',
+    payment_method: '',
+    offset: 0,
+  };
+  const cached = getFilterState('invoices', defaults);
+  const state = {
+    ...cached,
+    ...q0,
+    has_remaining: q0.has_remaining !== undefined ? Boolean(q0.has_remaining === 'true' || q0.has_remaining === '1') : Boolean(cached.has_remaining),
+    offset: q0.offset !== undefined ? Number(q0.offset) : (cached.offset || 0),
+    data: { items: [], totals: {}, total_count: 0 },
+  };
+  if (q0.issuer_id !== undefined) state.issuer_id = q0.issuer_id;
+  if (q0.gold_invoice_type !== undefined) state.gold_invoice_type = q0.gold_invoice_type;
+
+  const saveState = () => {
+    setFilterState('invoices', {
+      issuer_id: state.issuer_id,
+      client_id: state.client_id,
+      status: state.status,
+      invoice_type: state.invoice_type,
+      gold_invoice_type: state.gold_invoice_type,
+      has_remaining: state.has_remaining,
+      from: state.from,
+      to: state.to,
+      q: state.q,
+      batch_id: state.batch_id,
+      min_total: state.min_total,
+      max_total: state.max_total,
+      payment_method: state.payment_method,
+      offset: state.offset,
+    });
+  };
+
+  const load = async () => {
+    saveState();
+    const res = await api.get(qs('/api/invoices', {
+      issuer_id: state.issuer_id,
+      client_id: state.client_id,
+      status: state.status,
+      invoice_type: state.invoice_type,
+      gold_invoice_type: state.gold_invoice_type,
+      has_remaining: state.has_remaining ? '1' : '',
+      from: state.from,
+      to: state.to,
+      q: state.q,
+      batch_id: state.batch_id,
+      min_total: state.min_total,
+      max_total: state.max_total,
+      payment_method: state.payment_method,
+      limit: PAGE,
+      offset: state.offset,
+    }));
+    state.data = res || { items: [], totals: {}, total_count: 0 };
+    if (!Array.isArray(state.data.items)) state.data.items = [];
+  };
+
+  const reload = async () => {
+    await load();
+    draw();
+  };
+
+  const printOne = async (id, kind) => {
+    const invoice = await api.get(`/api/invoices/${id}`);
+    const lines = Array.isArray(invoice.lines) ? invoice.lines : (Array.isArray(invoice.items) ? invoice.items : []);
+    invoice.lines = lines;
+    invoice.items = lines;
+    const [issuer, client] = await Promise.all([
+      api.get(`/api/issuers/${invoice.issuer_id}`),
+      api.get(`/api/clients/${invoice.client_id}`),
+    ]);
+    if (kind === 'thermal') {
+      const res = await fetch(`/api/invoices/${encodeURIComponent(id)}/render-html?style=thermal`);
+      if (!res.ok) throw new Error('قالب الفاتورة الحرارية غير متوفر');
+      printDoc(await res.text());
+      return;
+    }
+    const { getInvoiceDocHtml } = await import('./invoice-view.js');
+    const docHtml = await getInvoiceDocHtml({ invoice, issuer, client });
+    printDoc(docHtml);
+  };
+
+  const rowsHtml = () => {
+    const items = Array.isArray(state.data?.items) ? state.data.items : [];
+    if (!items.length) {
+      return '<tr><td colspan="11" class="text-center muted" style="padding:2rem">لا توجد فواتير مطابقة للتصفية</td></tr>';
+    }
+    return items.map((i) => `<tr>
+      <td class="nowrap" style="white-space:nowrap">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap">
+          <a class="mono invoice-no-link" href="#/invoice-view/${esc(i.id)}" style="font-weight:700;white-space:nowrap" title="عرض تفاصيل الفاتورة"><b>${esc(i.invoice_number)}</b></a>
+          ${i.batch_id ? `<a class="badge blue tiny" href="#/invoices?batch_id=${encodeURIComponent(i.batch_id)}" style="white-space:nowrap" title="عرض فواتير الدفعة وخيارات حذفها">دفعة</a>` : ''}
+          <span class="badge ${i.zatca_phase === 'PHASE2' ? 'teal' : 'gray'} tiny" style="white-space:nowrap" title="${i.zatca_phase === 'PHASE2' ? 'المرحلة 2' : 'المرحلة 1'}">${i.zatca_phase === 'PHASE2' ? 'م2' : 'م1'}</span>
+        </div>
+      </td>
+      <td class="nowrap tiny" style="white-space:nowrap">
+        <div>${esc(dateAr(i.issue_date))}</div>
+        <div class="muted mono tiny">${esc(i.issue_time)}</div>
+      </td>
+      <td class="cell-client">
+        <div class="client-name" title="${esc(i.client_name)}">${esc(i.client_name)}</div>
+        ${i.client_code ? `<div class="tiny muted mono">${esc(i.client_code)}</div>` : ''}
+      </td>
+      <td class="cell-gold-type nowrap" style="white-space:nowrap;text-align:center">
+        <span class="badge ${i.gold_invoice_type === 'PRICE_ONLY' ? 'blue' : (i.gold_invoice_type === 'WAGE_ONLY' ? 'amber' : 'green')}" style="font-size:11px;padding:3px 7px;font-weight:700">
+          ${i.gold_invoice_type === 'PRICE_ONLY' ? 'سعر فقط' : (i.gold_invoice_type === 'WAGE_ONLY' ? 'أجور فقط' : 'سعر وأجور')}
+        </span>
+      </td>
+      <td class="tiny nowrap" style="white-space:nowrap">${esc(i.payment_label)}</td>
+      <td class="text-end num nowrap" style="white-space:nowrap">${amount(i.taxable_amount)}</td>
+      <td class="text-end num nowrap" style="white-space:nowrap">${amount(i.tax_amount)}</td>
+      <td class="text-end num nowrap" style="white-space:nowrap"><b>${amount(i.grand_total)}</b></td>
+      <td class="text-end num nowrap" style="white-space:nowrap;color:${i.remaining_amount > 0 ? 'var(--danger)' : 'var(--success)'}">${amount(i.remaining_amount)}</td>
+      <td class="text-center nowrap" style="white-space:nowrap">
+        ${statusBadge(i.status, i.status_label)}
+      </td>
+      <td class="actions">
+        <div class="row-actions-group">
+          <a class="btn btn-sm btn-ghost" href="#/invoice-view/${esc(i.id)}" title="عرض تفاصيل الفاتورة" style="padding:.28rem .55rem">
+            ${icon.eye({ size: 14, style: 'vertical-align:middle' })}<span>عرض</span>
+          </a>
+          <button class="btn btn-sm btn-icon btn-primary" data-act="download" data-id="${esc(i.id)}" type="button" title="تحميل ملف PDF">
+            ${icon.pdf({ size: 14, style: 'vertical-align:middle' })}
+          </button>
+          <button class="btn btn-sm btn-icon" data-act="share" data-id="${esc(i.id)}" type="button" style="background:#10b981;border-color:#10b981;color:#fff" title="مشاركة الفاتورة">
+            ${icon.share({ size: 13, style: 'vertical-align:middle' })}
+          </button>
+          ${i.status !== 'CANCELLED' && can('invoices.edit') ? `
+          <a class="btn btn-sm btn-icon" href="#/invoice?edit=${esc(i.id)}" title="تعديل الفاتورة يدوياً">
+            ${icon.edit({ size: 13, style: 'vertical-align:middle' })}
+          </a>` : ''}
+          ${i.status !== 'CANCELLED' && i.remaining_amount > 0 && can('vouchers.create') ? `
+          <button class="btn btn-sm btn-icon" data-act="pay" data-id="${esc(i.id)}" type="button" title="إصدار سند قبض" style="color:var(--brand);border-color:var(--brand)">
+            ${icon.receipt({ size: 13, style: 'vertical-align:middle' })}
+          </button>` : ''}
+          ${can('invoices.delete') ? `<button class="btn btn-sm btn-icon btn-danger" data-act="del" data-id="${esc(i.id)}" data-no="${esc(i.invoice_number)}" type="button" title="حذف الفاتورة">
+            ${icon.trash({ size: 13, style: 'vertical-align:middle' })}
+          </button>` : ''}
+        </div>
+      </td>
+    </tr>`).join('');
+  };
+
+  const draw = () => {
+    const t = state.data.totals;
+    const pageFrom = state.data.total_count ? state.offset + 1 : 0;
+    const pageTo = Math.min(state.offset + PAGE, state.data.total_count);
+
+    view.innerHTML = html`
+      <div class="page-head">
+        <div class="titles">
+          <h1>فواتير الذهب</h1>
+          <p>إجمالي النتائج: <b class="num">${num(state.data.total_count)}</b> فاتورة ذهب</p>
+        </div>
+        <div class="page-actions">
+          ${raw(can('invoices.create') ? `<a class="btn btn-primary" href="#/invoice">${icon.invoicePlus({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' })}فاتورة ذهب جديدة</a>` : '')}
+          <button class="btn btn-primary" id="btn-pdf-list" type="button">${raw(icon.pdf({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' }))}تحميل قائمة PDF</button>
+          <button class="btn" id="print-list" type="button">${raw(icon.printer({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' }))}طباعة القائمة</button>
+          ${raw(can('invoices.create') ? `<button class="btn" id="import-excel-btn" type="button">${icon.upload({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' })}استيراد Excel</button>` : '')}
+          <a class="btn" href="/api/invoices/template?purpose=import&format=xlsx" target="_blank" download="invoices_template.xlsx">${raw(icon.download({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' }))}نموذج Excel (.xlsx)</a>
+          <button class="btn" id="exp-xls" type="button">${raw(icon.fileSpreadsheet({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' }))}تصدير Excel</button>
+          <button class="btn" id="exp-csv" type="button">${raw(icon.fileText({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' }))}CSV</button>
+        </div>
+      </div>
+
+      <div class="card filter-box">
+        <div class="filter-row">
+          <div class="field"><label for="issuer_id">المتجر المصدر</label>
+            <select id="issuer_id">
+              <option value="">كل المتاجر</option>
+              ${raw(store.issuers.map((i) => `<option value="${esc(i.id)}" ${i.id === state.issuer_id ? 'selected' : ''}>${esc(i.name_ar)}</option>`).join(''))}
+            </select></div>
+          <div class="field flex-2"><label for="q">بحث سريع</label>
+            <input type="search" id="q" value="${esc(state.q)}" placeholder="رقم الفاتورة، اسم العميل، كوده، الرقم الضريبي…" /></div>
+          <div class="field field-sm"><label for="gold_invoice_type">نوع الفاتورة</label>
+            <select id="gold_invoice_type">
+              <option value="">كل الأنواع</option>
+              <option value="PRICE_AND_WAGE" ${state.gold_invoice_type === 'PRICE_AND_WAGE' ? 'selected' : ''}>سعر وأجور</option>
+              <option value="PRICE_ONLY" ${state.gold_invoice_type === 'PRICE_ONLY' ? 'selected' : ''}>سعر فقط</option>
+              <option value="WAGE_ONLY" ${state.gold_invoice_type === 'WAGE_ONLY' ? 'selected' : ''}>أجور فقط</option>
+            </select></div>
+          <div class="field"><label for="client_id">العميل</label>
+            <select id="client_id">
+              <option value="">كل العملاء</option>
+              ${raw(store.clients.map((c) => `<option value="${esc(c.id)}" ${c.id === state.client_id ? 'selected' : ''}>${esc(c.name)}</option>`).join(''))}
+            </select></div>
+          <div class="field field-sm"><label for="status">الحالة</label>
+            <select id="status">
+              <option value="">كل الحالات</option>
+              ${raw(Object.entries(store.meta?.invoice_statuses || {}).map(([k, v]) => `<option value="${esc(k)}" ${k === state.status ? 'selected' : ''}>${esc(v)}</option>`).join(''))}
+            </select></div>
+          <div class="field field-sm"><label for="invoice_type">النوع</label>
+            <select id="invoice_type">
+              <option value="">كل الأنواع</option>
+              <option value="STANDARD" ${state.invoice_type === 'STANDARD' ? 'selected' : ''}>ضريبية (B2B)</option>
+              <option value="SIMPLIFIED" ${state.invoice_type === 'SIMPLIFIED' ? 'selected' : ''}>مبسطة (B2C)</option>
+            </select></div>
+        </div>
+
+        <div class="filter-row" style="margin-top:.75rem">
+          <div class="field field-date"><label for="from">من تاريخ</label><input type="date" id="from" value="${state.from}" /></div>
+          <div class="field field-date"><label for="to">إلى تاريخ</label><input type="date" id="to" value="${state.to}" /></div>
+          <div class="field field-num"><label for="min_total">أقل قيمة</label><input type="number" id="min_total" value="${state.min_total}" placeholder="0.00" step="0.01" min="0" /></div>
+          <div class="field field-num"><label for="max_total">أعلى قيمة</label><input type="number" id="max_total" value="${state.max_total}" placeholder="0.00" step="0.01" min="0" /></div>
+          <div class="field field-sm"><label for="payment_method">طريقة الدفع</label>
+            <select id="payment_method">
+              <option value="">الكل</option>
+              ${raw(Object.entries(store.meta?.payment_methods || {}).map(([k, v]) => `<option value="${esc(k)}" ${k === state.payment_method ? 'selected' : ''}>${esc(v)}</option>`).join(''))}
+            </select></div>
+
+          <div class="filter-actions-col">
+            <label class="filter-check" title="عرض الفواتير التي عليها رصيد متبقي غير مسدد">
+              <input type="checkbox" id="has_remaining" ${state.has_remaining ? 'checked' : ''} />
+              <span>المتبقي فقط</span>
+            </label>
+            <div class="filter-btn-group">
+              <button class="btn btn-sm" data-quick="today" type="button" title="فواتير اليوم">${raw(icon.calendar({ size: 13, style: 'vertical-align:text-bottom;margin-left:3px' }))}اليوم</button>
+              <button class="btn btn-sm" data-quick="month" type="button" title="فواتير هذا الشهر">${raw(icon.calendar({ size: 13, style: 'vertical-align:text-bottom;margin-left:3px' }))}هذا الشهر</button>
+              <button class="btn btn-sm" data-quick="clear" type="button" title="إعادة تعيين الفلاتر">${raw(icon.refresh({ size: 13, style: 'vertical-align:text-bottom;margin-left:3px' }))}إعادة تعيين</button>
+            </div>
+          </div>
+        </div>
+        ${raw(state.batch_id ? `<div class="alert alert-info mt" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:10px 14px;border-radius:8px;">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div>
+              <b>دفعة توليد:</b> <span class="mono" style="font-weight:700">${esc(state.batch_id.slice(0, 8))}</span>
+              <a href="#/invoices" style="margin-inline-start:8px;text-decoration:underline">إلغاء التصفية</a>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <label for="batch-template-select" style="font-size:12px;margin:0;font-weight:600">القالب:</label>
+              <select id="batch-template-select" class="input input-sm" style="max-width:210px;height:30px;padding:2px 8px;font-size:12px;">
+                ${raw(renderTemplateOptions(state.batch_style || 'default'))}
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-sm btn-primary" id="btn-batch-print-all" type="button" title="طباعة كافة فواتير الدفعة دفعة واحدة بالقالب المختار">${raw(icon.printer({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' }))}طباعة كل الفواتير</button>
+            <a class="btn btn-sm btn-outline" id="btn-batch-dl-pdf" href="/api/bulk/batches/${esc(state.batch_id)}/pdf?style=${esc(state.batch_style || 'default')}" target="_blank" download="batch_${esc(state.batch_id.slice(0, 8))}.pdf" title="تحميل ملف PDF مجمّع لجميع فواتير الدفعة بالقالب المختار">${raw(icon.pdf({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' }))}تحميل PDF مجمّع</a>
+            <button class="btn btn-sm btn-outline" id="btn-batch-gen-vouchers" type="button" title="توليد وإصدار سندات قبض لكافة فواتير الدفعة غير المسددة">${raw(icon.receipt({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' }))}إصدار سندات الدفعة</button>
+            <button class="btn btn-sm btn-outline" id="btn-batch-print-vouchers" type="button" title="طباعة كافة سندات القبض الصادرة لهذه الدفعة">${raw(icon.receipt({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' }))}طباعة السندات</button>
+            ${raw(can('invoices.delete') ? `<button class="btn btn-sm btn-danger" id="btn-batch-delete" type="button" title="حذف الدفعة بالكامل والتراجع عنها">${icon.trash({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' })}حذف الدفعة</button>` : '')}
+          </div>
+        </div>` : '')}
+      </div>
+
+      <div class="grid grid-4">
+        <div class="stat"><div style="min-width:0"><div class="stat-val num">${amount(t.grand_total, 'SAR', { size: 16 })}</div><div class="stat-lab">إجمالي الفواتير</div></div></div>
+        <div class="stat"><div style="min-width:0"><div class="stat-val num">${amount(t.paid, 'SAR', { size: 16 })}</div><div class="stat-lab">المسدد</div></div></div>
+        <div class="stat"><div style="min-width:0"><div class="stat-val num">${amount(t.remaining, 'SAR', { size: 16 })}</div><div class="stat-lab">المتبقي</div></div></div>
+        <div class="stat"><div style="min-width:0"><div class="stat-val num">${amount(t.tax, 'SAR', { size: 16 })}</div><div class="stat-lab">الضريبة</div></div></div>
+      </div>
+
+      <div class="card pad0 mt">
+        <div class="table-wrap">
+          <table class="tbl invoices-tbl">
+            <thead><tr>
+              <th style="white-space:nowrap;min-width:125px">الرقم</th>
+              <th style="white-space:nowrap;min-width:115px">التاريخ</th>
+              <th style="min-width:190px">العميل</th>
+              <th style="min-width:110px;text-align:center;white-space:nowrap">نوع الفاتورة</th>
+              <th style="white-space:nowrap">الدفع</th>
+              <th class="text-end nowrap" style="white-space:nowrap">قبل الضريبة <span class="cur-sym">${sarSvg({ size: 12 })}</span></th>
+              <th class="text-end nowrap" style="white-space:nowrap">الضريبة <span class="cur-sym">${sarSvg({ size: 12 })}</span></th>
+              <th class="text-end nowrap" style="white-space:nowrap">الإجمالي <span class="cur-sym">${sarSvg({ size: 12 })}</span></th>
+              <th class="text-end nowrap" style="white-space:nowrap">المتبقي <span class="cur-sym">${sarSvg({ size: 12 })}</span></th>
+              <th class="text-center nowrap" style="min-width:85px;white-space:nowrap">الحالة</th>
+              <th class="text-center nowrap" style="min-width:165px;white-space:nowrap">الإجراءات</th>
+            </tr></thead>
+            <tbody>${raw(rowsHtml())}</tbody>
+          </table>
+        </div>
+        <div class="pager">
+          <button class="btn btn-sm" id="prev" ${raw(state.offset === 0 ? 'disabled' : '')} type="button">${raw(icon.arrowRight({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' }))}السابق</button>
+          <span class="tiny muted">${pageFrom} — ${pageTo} من ${num(state.data.total_count)}</span>
+          <button class="btn btn-sm" id="next" ${raw(pageTo >= state.data.total_count ? 'disabled' : '')} type="button">التالي${raw(icon.arrowLeft({ size: 14, style: 'vertical-align:text-bottom;margin-right:3px' }))}</button>
+        </div>
+      </div>`;
+
+    const reload = async () => { await load(); draw(); };
+
+    $('#q', view).addEventListener('input', debounce(async (e) => { state.q = e.target.value; state.offset = 0; await reload(); }, 350));
+    ['issuer_id', 'client_id', 'status', 'invoice_type', 'gold_invoice_type', 'from', 'to', 'payment_method'].forEach((id) => {
+      const el = $(`#${id}`, view);
+      if (el) el.addEventListener('change', async (e) => { state[id] = e.target.value; state.offset = 0; await reload(); });
+    });
+    const remEl = $('#has_remaining', view);
+    if (remEl) remEl.addEventListener('change', async (e) => { state.has_remaining = e.target.checked; state.offset = 0; await reload(); });
+    ['min_total', 'max_total'].forEach((id) => {
+      const el = $(`#${id}`, view);
+      if (el) el.addEventListener('change', async (e) => { state[id] = e.target.value; state.offset = 0; await reload(); });
+    });
+    delegate(view, 'click', '[data-quick]', async (e, btn) => {
+      const kind = btn.dataset.quick;
+      if (kind === 'month') { state.from = monthStart(); state.to = today(); }
+      else if (kind === 'today') { state.from = today(); state.to = today(); }
+      else {
+        clearFilterState('invoices');
+        Object.assign(state, defaults, { issuer_id: store.activeIssuerId, data: state.data });
+      }
+      state.offset = 0;
+      await reload();
+    });
+    $('#prev', view).addEventListener('click', async () => { state.offset = Math.max(0, state.offset - PAGE); await reload(); });
+    $('#next', view).addEventListener('click', async () => { state.offset += PAGE; await reload(); });
+
+    const headers = ['رقم الفاتورة', 'التاريخ', 'الوقت', 'العميل', 'كود العميل', 'الشركة المصدرة', 'طريقة الدفع',
+      'قبل الضريبة', 'الضريبة', 'الإجمالي', 'المسدد', 'المتبقي', 'الحالة'];
+    const rows = () => state.data.items.map((i) => [i.invoice_number, i.issue_date, i.issue_time, i.client_name,
+    i.client_code, i.issuer_name, i.payment_label, i.taxable_amount, i.tax_amount, i.grand_total,
+    i.paid_amount, i.remaining_amount, i.status_label]);
+    $('#exp-csv', view).addEventListener('click', () => exportCsv('الفواتير', headers, rows()));
+    $('#exp-xls', view).addEventListener('click', () => exportExcel('الفواتير', 'قائمة الفواتير', headers, rows(),
+      { footer: ['الإجمالي', '', '', '', '', '', '', '', money(t.tax), money(t.grand_total), money(t.paid), money(t.remaining), ''] }));
+
+    const bTplSelect = $('#batch-template-select', view);
+    const batchPdfBtn = $('#btn-batch-dl-pdf', view);
+    batchPdfBtn?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try { await downloadPdfFromUrl(batchPdfBtn.href, `دفعة_${state.batch_id.slice(0, 8)}.pdf`); }
+      catch (err) { if (err?.name !== 'AbortError') toastErr(err.message || 'تعذر حفظ ملف الدفعة'); }
+    });
+    if (bTplSelect && state.batch_id) {
+      bTplSelect.addEventListener('change', () => {
+        state.batch_style = bTplSelect.value;
+        const dlBtn = $('#btn-batch-dl-pdf', view);
+        if (dlBtn) {
+          dlBtn.href = `/api/bulk/batches/${encodeURIComponent(state.batch_id)}/pdf?style=${encodeURIComponent(state.batch_style)}`;
+        }
+      });
+    }
+
+    const batchPrintBtn = $('#btn-batch-print-all', view);
+    if (batchPrintBtn && state.batch_id) {
+      batchPrintBtn.addEventListener('click', async () => {
+        batchPrintBtn.disabled = true;
+        batchPrintBtn.textContent = 'جارٍ التجهيز…';
+        try {
+          const style = state.batch_style || (bTplSelect ? bTplSelect.value : 'default');
+          const res = await fetch(`/api/bulk/batches/${encodeURIComponent(state.batch_id)}/render-html?style=${encodeURIComponent(style)}`);
+          if (!res.ok) throw new Error('تعذر جلب فواتير الدفعة');
+          const docHtml = await res.text();
+          printDoc(docHtml);
+        } catch (err) {
+          toastErr(err.message || 'فشلت عملية الطباعة');
+        } finally {
+          batchPrintBtn.disabled = false;
+          batchPrintBtn.innerHTML = `${icon.printer({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' })}طباعة كل الفواتير`;
+        }
+      });
+    }
+
+    const batchGenVouchersBtn = $('#btn-batch-gen-vouchers', view);
+    if (batchGenVouchersBtn && state.batch_id) {
+      batchGenVouchersBtn.addEventListener('click', async () => {
+        const ok = await confirmDialog({
+          title: 'إصدار سندات قبض للدفعة',
+          message: 'هل ترغب في توليد سندات قبض لكافة فواتير هذه الدفعة غير المسددة وتحويل حالتها إلى مسددة؟',
+          okText: 'إصدار السندات',
+        });
+        if (!ok) return;
+        batchGenVouchersBtn.disabled = true;
+        batchGenVouchersBtn.textContent = 'جارٍ التوليد…';
+        try {
+          const res = await api.post(`/api/bulk/batches/${encodeURIComponent(state.batch_id)}/generate-vouchers`, { payment_type: 'TRANSFER' });
+          toastOk(`تم إصدار ${num(res.vouchers_count || 0)} سند قبض بنجاح`);
+          await reload();
+        } catch (err) {
+          toastErr(err.message || 'فشل توليد السندات');
+        } finally {
+          batchGenVouchersBtn.disabled = false;
+          batchGenVouchersBtn.innerHTML = `${icon.receipt({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' })}إصدار سندات الدفعة`;
+        }
+      });
+    }
+
+    const batchDeleteBtn = $('#btn-batch-delete', view);
+    if (batchDeleteBtn && state.batch_id) {
+      batchDeleteBtn.addEventListener('click', async () => {
+        const ok = await confirmDialog({
+          title: 'حذف الدفعة بالكامل',
+          message: 'تحذير: سيتم حذف كافة الفواتير التابعة لهذه الدفعة، وسندات القبض المخصصة لها، وحركاتها من كشف الحساب نهائياً، مع إعادة المسودة إلى حالة مسودة إن وجدت. هل ترغب بالتراجع وحذف الدفعة؟',
+          okText: 'نعم، احذف الدفعة بالكامل',
+          danger: true,
+        });
+        if (!ok) return;
+        batchDeleteBtn.disabled = true;
+        batchDeleteBtn.textContent = 'جارٍ الحذف…';
+        try {
+          await api.delete(`/api/bulk/batches/${encodeURIComponent(state.batch_id)}`);
+          toastOk('تم حذف الدفعة وكافة ملحقاتها بنجاح');
+          window.location.hash = '#/invoices';
+        } catch (err) {
+          toastErr(err.message || 'فشل حذف الدفعة');
+          batchDeleteBtn.disabled = false;
+          batchDeleteBtn.innerHTML = `${icon.trash({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' })}حذف الدفعة`;
+        }
+      });
+    }
+
+    const batchVouchersBtn = $('#btn-batch-print-vouchers', view);
+    if (batchVouchersBtn && state.batch_id) {
+      batchVouchersBtn.addEventListener('click', async () => {
+        batchVouchersBtn.disabled = true;
+        batchVouchersBtn.textContent = 'جارٍ التجهيز…';
+        try {
+          const vouchers = await api.get(`/api/bulk/batches/${encodeURIComponent(state.batch_id)}/vouchers`);
+          if (!vouchers || !vouchers.length) {
+            toastErr('لا توجد سندات قبض مرتبطة بهذه الدفعة');
+            return;
+          }
+          const docs = [];
+          for (const v of vouchers) {
+            const issuer = store.issuers.find((i) => i.id === v.issuer_id) || store.activeIssuer || {};
+            const client = store.clients.find((c) => c.id === v.client_id) || { id: v.client_id, name_ar: v.client_name };
+            docs.push(await renderStoredVoucher(v, issuer, client));
+          }
+          const combined = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>سندات القبض</title>
+          <style>
+            @media print {
+              body { margin: 0; padding: 0; background: #fff !important; }
+              .page-break { page-break-after: always; break-after: page; }
+              .page-break:last-child { page-break-after: auto; break-after: auto; }
+            }
+          </style></head><body>
+          ${docs.map((d) => `<div class="page-break">${d}</div>`).join('')}
+          </body></html>`;
+          printDoc(combined);
+        } catch (err) {
+          toastErr(err.message || 'فشلت طباعة سندات القبض');
+        } finally {
+          batchVouchersBtn.disabled = false;
+          batchVouchersBtn.innerHTML = `${icon.receipt({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' })}طباعة سندات الدفعة`;
+        }
+      });
+    }
+
+    const getInvoiceListDocHtml = async () => {
+      const issuer = store.issuers.find((item) => item.id === state.issuer_id) || store.activeIssuer || {};
+      let settings = issuer.print_settings || {};
+      if (typeof settings === 'string') { try { settings = JSON.parse(settings); } catch { settings = {}; } }
+      const template = await loadStoredTemplate('reports', settings.report_template_style || '');
+      const rowsHtml = state.data.items.map((i) => [
+        i.invoice_number, i.issue_date, i.issue_time, i.client_name, i.client_code, i.issuer_name, i.payment_label,
+        money(i.taxable_amount), money(i.tax_amount), money(i.grand_total), money(i.paid_amount), money(i.remaining_amount), i.status_label,
+      ].map((cell) => `<td>${esc(cell ?? '')}</td>`).join(''));
+      const t = state.data.totals || {};
+      const footer = ['الإجمالي', '', '', '', '', '', '', money(t.taxable_amount || (t.grand_total - t.tax)), money(t.tax), money(t.grand_total), money(t.paid), money(t.remaining), ''];
+      return fillStoredTemplate(template, {
+        title: 'تقرير قائمة الفواتير', subtitle: `إجمالي النتائج: ${num(state.data.total_count)} فاتورة`,
+        issuer_name: issuer.name_ar || '', generated_at: new Date().toLocaleString('ar-SA'), page_size: 'A4 landscape',
+        stats_html: '', headers_html: headers.map((h) => `<th>${esc(h)}</th>`).join(''),
+        rows_html: rowsHtml.length ? rowsHtml.map((row) => `<tr>${row}</tr>`).join('') : `<tr><td colspan="${headers.length}">لا توجد بيانات مسجلة</td></tr>`,
+        footer_html: `<tr>${footer.map((cell) => `<td>${esc(cell ?? '')}</td>`).join('')}</tr>`,
+      }, ['stats_html', 'headers_html', 'rows_html', 'footer_html']);
+    };
+
+    $('#btn-pdf-list', view).addEventListener('click', async (e) => {
+      e.target.disabled = true;
+      try {
+        const docHtml = await getInvoiceListDocHtml();
+        await downloadPdfFromHtml(docHtml, 'قائمة-الفواتير.pdf');
+      } catch (err) {
+        toastErr(err.message || 'تعذر تحميل ملف PDF');
+      } finally {
+        e.target.disabled = false;
+      }
+    });
+
+    $('#print-list', view).addEventListener('click', async () => {
+      try { printDoc(await getInvoiceListDocHtml()); }
+      catch (err) { toastErr(err.message || 'تعذر تحميل قالب التقرير'); }
+    });
+
+    const openImportModal = async () => {
+      const activeIssuer = store.issuers.find((i) => i.id === state.issuer_id) || store.issuers[0];
+      if (!activeIssuer) return toastErr('يرجى تحديد شركة مصدرة أولاً');
+
+      let parsedRows = [];
+      let previewResult = null;
+
+      const m = modal({
+        title: 'استيراد الفواتير من ملف Excel / CSV',
+        body: html`
+          <div class="stack">
+            <div class="row" style="align-items:center;justify-content:space-between;background:rgba(255,255,255,0.03);padding:.7rem .9rem;border-radius:var(--radius-sm);border:1px solid var(--line);gap:.6rem;flex-wrap:wrap">
+              <div>
+                <b>الشركة المصدرة:</b> <span class="mono">${esc(activeIssuer.name_ar)}</span>
+              </div>
+              <div class="flex" style="gap:.4rem;align-items:center;flex-wrap:wrap">
+                <a class="btn btn-sm btn-outline" id="btn-dl-template" href="/api/invoices/template?purpose=import&format=xlsx" download="invoice-import.xlsx">تنزيل نموذج Excel فارغ</a>
+              </div>
+            </div>
+
+            <p class="hint">1. جهّز ملف Excel بفواتيرك. 2. افتح الملف وراجع المعاينة والإجماليات. 3. اضغط اعتماد الاستيراد.</p>
+            <div class="dropzone" id="import-dropzone" style="cursor:pointer;padding:2rem 1.2rem;">
+              <div class="dropzone-icon" style="margin-bottom:.6rem;">
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3-3 3 3"/></svg>
+              </div>
+              <button type="button" class="btn btn-primary" style="margin-bottom:.8rem;font-size:1rem;padding:.65rem 1.4rem;pointer-events:none;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-left:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>فتح واختيار ملف Excel للفواتير</span>
+              </button>
+              <div style="font-size:.9rem;color:var(--muted);margin-bottom:.3rem">اسحب وأفلت ملف Excel هنا، أو انقر للاختيار</div>
+              <div class="tiny dim">الصيغ المدعومة: ملفات Excel (.xlsx, .xls) أو .csv</div>
+              <input type="file" id="import-file" accept=".xlsx,.xls,.csv,.tsv,.xml" style="display:none" />
+            </div>
+
+            <div id="import-preview-box" style="display:none"></div>
+          </div>`,
+        footer: `<button class="btn" data-close type="button">إلغاء</button>
+                 <button class="btn btn-primary" id="btn-commit-import" type="button" disabled>اعتماد واستيراد الفواتير</button>`,
+      });
+
+      const dropzone = m.el.querySelector('#import-dropzone');
+      const fileInput = m.el.querySelector('#import-file');
+      const previewBox = m.el.querySelector('#import-preview-box');
+      const commitBtn = m.el.querySelector('#btn-commit-import');
+      dropzone.addEventListener('click', () => {
+        fileInput.value = '';
+        fileInput.click();
+      });
+      dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+      dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+      });
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) processFile(e.target.files[0]);
+      });
+
+      const processFile = async (file) => {
+        try {
+          previewBox.style.display = 'block';
+          previewBox.innerHTML = '<div class="text-center muted" style="padding:1rem">جارٍ قراءة وفحص ملف Excel…</div>';
+          commitBtn.disabled = true;
+
+          const b64 = await new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = () => {
+              const res = r.result || '';
+              const commaIdx = res.indexOf(',');
+              resolve(commaIdx !== -1 ? res.slice(commaIdx + 1) : res);
+            };
+            r.onerror = reject;
+            r.readAsDataURL(file);
+          });
+          const parseRes = await api.post('/api/invoices/parse-file', { file_base64: b64, filename: file.name });
+          const rawTable = parseRes.raw_rows || [];
+          const smartRows = parseRes.rows || [];
+          const analysis = parseRes.analysis || {};
+          if (analysis.diagnostics && !analysis.diagnostics.valid) {
+            const details = (analysis.diagnostics.errors || []).map((x) => `<li>${esc(x)}</li>`).join('');
+            previewBox.innerHTML = `<div class="alert alert-danger"><b>تعذر فهم القالب تلقائياً</b><ul>${details}</ul><div class="tiny">استخدم أسماء أعمدة واضحة مثل: العميل، الصنف، الكمية، سعر الوحدة — بالعربية أو الإنجليزية.</div></div>`;
+            return;
+          }
+
+          if ((!rawTable || rawTable.length < 2) && (!smartRows || smartRows.length === 0)) {
+            previewBox.innerHTML = '<div class="alert alert-danger">الملف فارغ أو لا يحتوي على أسطر بيانات كافية</div>';
+            return;
+          }
+
+          parsedRows = smartRows;
+          if (!parsedRows.length) {
+            previewBox.innerHTML = '<div class="alert alert-danger">لم يتم العثور على صفوف صالحة للاستيراد</div>';
+            return;
+          }
+          const warnings = analysis.diagnostics?.warnings || [];
+          if (warnings.length) {
+            previewBox.innerHTML = `<div class="alert alert-info tiny">${warnings.map((x) => esc(x)).join(' — ')}</div>`;
+          }
+
+
+          previewBox.innerHTML = '<div class="text-center muted" style="padding:1rem">جارٍ فحص وتحليل البيانات مع الخادم…</div>';
+          commitBtn.disabled = true;
+
+          try {
+            previewResult = await api.post('/api/invoices/import', {
+              issuer_id: activeIssuer.id,
+              rows: parsedRows,
+              dry_run: true,
+            });
+
+            renderPreview(previewResult, file.name);
+          } catch (err) {
+            previewBox.innerHTML = `<div class="alert alert-danger">${esc(err.message || 'فشل فحص الملف')}</div>`;
+          }
+        } catch (err) {
+          previewBox.innerHTML = `<div class="alert alert-danger">${esc(err.message || 'فشل قراءة الملف')}</div>`;
+        }
+      };
+
+      const renderPreview = (res, fileName) => {
+        const hasErrors = !res.valid || (res.errors && res.errors.length > 0);
+        commitBtn.disabled = hasErrors;
+
+        const errorsHtml = hasErrors ? `
+          <div class="alert alert-danger tiny" style="max-height:140px;overflow-y:auto;margin-top:.6rem">
+            <b>تم رصد ${res.errors.length} أخطاء تمنع الاعتماد:</b>
+            <ul style="margin:.3rem 0 0 1rem;padding:0">
+              ${res.errors.map((e) => `<li>السطر ${e.row}: ${esc(e.message)}</li>`).join('')}
+            </ul>
+          </div>` : '';
+
+        const previewRowsHtml = (res.preview || []).slice(0, 15).map((p, idx) => `
+          <tr>
+            <td class="c">${idx + 1}</td>
+            <td class="mono"><b>${esc(p.group)}</b></td>
+            <td>${esc(p.client_name)}</td>
+            <td class="tiny">${esc(p.issue_date)}</td>
+            <td class="c"><span class="badge tiny">${esc(p.invoice_type)}</span></td>
+            <td class="c">${p.items_count}</td>
+            <td class="text-end num">${money(p.grand_total)}</td>
+          </tr>
+        `).join('');
+
+        previewBox.innerHTML = `
+          <div class="card pad0" style="margin-top:.6rem">
+            <div style="padding:.7rem .9rem;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
+              <div>
+                <b>الملف:</b> <span class="mono">${esc(fileName)}</span>
+                <span style="margin-inline-start:.6rem" class="badge ${hasErrors ? 'status-err' : 'status-ok'}">
+                  ${hasErrors ? `يوجد ${res.errors.length} أخطاء` : 'جاهز للاعتماد'}
+                </span>
+              </div>
+              <div class="flex" style="gap:.8rem;font-size:.84rem">
+                <div>فواتير: <b class="num">${res.invoices_count || 0}</b></div>
+                <div>أسطر: <b class="num">${res.lines_count || 0}</b></div>
+                <div>الإجمالي: <b class="num">${money(res.totals?.grand_total || 0)}</b></div>
+              </div>
+            </div>
+            ${errorsHtml}
+            <div class="preview-table-container">
+              <table class="tbl">
+                <thead>
+                  <tr><th class="c">#</th><th>المجموعة</th><th>العميل</th><th>التاريخ</th><th class="c">النوع</th><th class="c">البنود</th><th class="text-end">الإجمالي</th></tr>
+                </thead>
+                <tbody>${previewRowsHtml}</tbody>
+              </table>
+            </div>
+          </div>`;
+      };
+
+      commitBtn.addEventListener('click', async () => {
+        if (!parsedRows.length || !previewResult || !previewResult.valid) return;
+        commitBtn.disabled = true;
+        commitBtn.textContent = 'جارٍ الحفظ والترحيل…';
+        try {
+          const res = await api.post('/api/invoices/import', {
+            issuer_id: activeIssuer.id,
+            rows: parsedRows,
+            dry_run: false,
+          });
+          toastOk(`تم استيراد ${res.imported_count} فاتورة بنجاح بمبلغ ${money(res.total_amount)} ر.س`);
+          m.close();
+          await reload();
+        } catch (err) {
+          commitBtn.disabled = false;
+          commitBtn.textContent = 'اعتماد واستيراد الفواتير';
+          toastErr(err.message || 'فشل استيراد الفواتير');
+        }
+      });
+    };
+
+    const importBtn = $('#import-excel-btn', view);
+    if (importBtn) importBtn.addEventListener('click', openImportModal);
+
+    delegate(view, 'click', '[data-act]', async (e, btn) => {
+      const id = btn.dataset.id;
+      if (btn.dataset.act === 'download') {
+        btn.disabled = true;
+        try {
+          const invoice = await api.get(`/api/invoices/${id}`);
+          const [issuer, client] = await Promise.all([
+            api.get(`/api/issuers/${invoice.issuer_id}`),
+            api.get(`/api/clients/${invoice.client_id}`),
+          ]);
+          const { downloadInvoicePdf } = await import('./invoice-view.js');
+          await downloadInvoicePdf({ invoice, issuer, client });
+        } finally {
+          btn.disabled = false;
+        }
+      } else if (btn.dataset.act === 'share') {
+        btn.disabled = true;
+        try {
+          const invoice = state.data.items.find((item) => item.id === id) || { id };
+          const { shareInvoicePdfFile } = await import('./invoice-view.js');
+          await shareInvoicePdfFile({ invoice });
+        } finally {
+          btn.disabled = false;
+        }
+      } else if (btn.dataset.act === 'print' || btn.dataset.act === 'thermal') {
+        btn.disabled = true;
+        try {
+          const invoice = await api.get(`/api/invoices/${id}`);
+          const [issuer, client] = await Promise.all([
+            api.get(`/api/issuers/${invoice.issuer_id}`),
+            api.get(`/api/clients/${invoice.client_id}`),
+          ]);
+          if (btn.dataset.act === 'thermal') {
+            const res = await fetch(`/api/invoices/${encodeURIComponent(id)}/render-html?style=thermal`);
+            if (!res.ok) throw new Error('قالب الفاتورة الحرارية غير متوفر');
+            printDoc(await res.text());
+          } else {
+            const { getInvoiceDocHtml } = await import('./invoice-view.js');
+            const docHtml = await getInvoiceDocHtml({ invoice, issuer, client });
+            printDoc(docHtml);
+          }
+        } finally {
+          btn.disabled = false;
+        }
+      }
+      else if (btn.dataset.act === 'pay') {
+        const invoice = await api.get(`/api/invoices/${id}`);
+        const m = modal({
+          title: `سند قبض للفاتورة ${invoice.invoice_number}`,
+          slim: true,
+          body: html`
+            <div class="alert alert-info tiny">المتبقي على الفاتورة: <b class="num">${money(invoice.remaining_amount)}</b></div>
+            <div class="row">
+              <div class="field"><label class="req">المبلغ المستلم</label>
+                <input type="number" name="amount" value="${invoice.remaining_amount}" step="0.01" min="0.01" max="${invoice.remaining_amount}" /></div>
+              <div class="field"><label>طريقة السداد</label>
+                <select name="payment_type"><option value="CASH">نقداً</option><option value="TRANSFER">تحويل بنكي</option>
+                  <option value="CARD">شبكة</option><option value="CHEQUE">شيك</option></select></div>
+            </div>
+            <div class="row mt">
+              <div class="field"><label class="req">تاريخ السند</label>
+                <input type="date" name="voucher_date" value="${today()}" /></div>
+              <div class="field"><label>المرجع / الشيك</label>
+                <input type="text" name="reference_no" class="ltr" /></div>
+            </div>
+            <div class="field mt"><label>البيان / ملاحظات السند</label>
+              <input type="text" name="notes" value="وذلك مقابل سداد فاتورة رقم ${invoice.invoice_number}" /></div>`,
+          footer: `<button class="btn" data-close type="button">إلغاء</button>
+                   <button class="btn btn-primary" data-ok type="button">تسجيل</button>`,
+        });
+        m.el.querySelector('[data-ok]').addEventListener('click', async (ev) => {
+          const values = formValues(m.body);
+          if (!values.amount) return toastErr('أدخل المبلغ');
+          ev.target.disabled = true;
+          try {
+            const v = await api.post('/api/vouchers/for-invoice', { invoice_id: id, ...values });
+            toastOk(`تم تسجيل السند ${v.voucher_number}`);
+            m.close();
+            await reload();
+          } catch { ev.target.disabled = false; }
+          return undefined;
+        });
+      } else if (btn.dataset.act === 'del') {
+        const invNo = btn.dataset.no || '';
+        const ok = await confirmDialog({
+          title: `حذف الفاتورة ${invNo}`,
+          message: `هل أنت متأكد من حذف الفاتورة ${invNo} نهائياً؟ سيتم حذف بنودها وقيدها المرتبط.`,
+          danger: true,
+          okText: 'حذف نهائياً',
+        });
+        if (!ok) return;
+        btn.disabled = true;
+        try {
+          await api.del(`/api/invoices/${id}`);
+          toastOk(`تم حذف الفاتورة ${invNo} بنجاح`);
+          syncNotify('invoices', 'delete', id);
+          await reload();
+        } catch (err) {
+          toastErr('فشل حذف الفاتورة: ' + (err.message || err));
+          btn.disabled = false;
+        }
+      }
+    });
+  };
+
+  const unsubSync = onSync((ev) => {
+    if (ev.entity === 'invoices' || ev.entity === 'vouchers') {
+      reload();
+    }
+  });
+
+  await load();
+  draw();
+  return () => { unsubSync(); };
+}
+

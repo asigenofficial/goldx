@@ -1,0 +1,929 @@
+// ==========================================================================
+//  عرض فاتورة: التفاصيل، رمز QR، الطباعة (A4 / حراري)، التصدير، السداد.
+// ==========================================================================
+import { api } from '../core/api.js';
+import { can, store } from '../core/store.js';
+import * as router from '../core/router.js';
+import {
+  html, raw, esc, money, num, dateAr, dateTimeAr, qrSvg, printDoc, toastOk, toastErr,
+  $, modal, formValues, confirmDialog, copyText, download, statusBadge, today, icon,
+  amount, sarSvg, shareDocument, choosePdfDestination, savePdfFile, clientPdfFilename,
+} from '../core/util.js';
+import { tafqeet } from '../print/templates.js';
+
+function enforceLtrHeaderIcons(html) {
+  if (!html) return html;
+  const ltrIconsStyle = `<style>
+    .seller-en-info, .seller-en, .seller.seller-en, .seller-block.en, td.seller-en {
+      direction: ltr !important;
+      text-align: left !important;
+      justify-items: flex-start !important;
+      align-items: flex-start !important;
+      unicode-bidi: isolate !important;
+    }
+    .seller-en-info .company-name-en, .seller-en .company-name-en, .seller-en .company-name, .seller-block.en .seller-name-en, .seller-en-info h2, .seller-en h2, .seller-block.en h2 {
+      direction: ltr !important;
+      text-align: left !important;
+      unicode-bidi: isolate !important;
+    }
+    .seller-en-info .header-info-line, .seller-en .header-info-line, .seller-en .company-line, .seller-block.en .seller-row, .seller-en p, .seller.seller-en p {
+      direction: ltr !important;
+      text-align: left !important;
+      justify-content: flex-start !important;
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 6px !important;
+      unicode-bidi: isolate !important;
+    }
+    .seller-en-info .header-info-line svg, .seller-en-info .header-info-line .icon-svg, .seller-en .header-info-line svg, .seller-en .company-line svg, .seller-en .company-line .icon, .seller-block.en .seller-row svg, .seller-en p svg, .seller.seller-en p svg, .seller-en p .icon, .seller.seller-en p .icon {
+      order: -1 !important;
+      margin-right: 6px !important;
+      margin-left: 0 !important;
+      flex-shrink: 0 !important;
+    }
+    .seller-en-info .header-info-line span, .seller-en .company-line span, .seller-block.en .seller-row span, .seller-en p span {
+      order: 2 !important;
+      text-align: left !important;
+      direction: ltr !important;
+      unicode-bidi: isolate !important;
+    }
+  </style>`;
+  if (/<\/head>/i.test(html)) {
+    return html.replace(/<\/head>/i, ltrIconsStyle + '\n</head>');
+  }
+  return ltrIconsStyle + '\n' + html;
+}
+
+async function loadContext(invoiceId) {
+  const invoice = await api.get(`/api/invoices/${invoiceId}`);
+  const lines = Array.isArray(invoice.lines) ? invoice.lines : (Array.isArray(invoice.items) ? invoice.items : []);
+  invoice.lines = lines;
+  invoice.items = lines;
+  const [issuer, client] = await Promise.all([
+    api.get(`/api/issuers/${invoice.issuer_id}`),
+    api.get(`/api/clients/${invoice.client_id}`),
+  ]);
+  return { invoice, issuer, client };
+}
+
+function receiptModal(invoice, onDone) {
+  const m = modal({
+    title: `سند قبض للفاتورة ${invoice.invoice_number}`,
+    body: html`
+      <div class="alert alert-info">
+        إجمالي الفاتورة <b class="num">${money(invoice.grand_total)}</b> —
+        المسدد <b class="num">${money(invoice.paid_amount)}</b> —
+        المتبقي <b class="num">${money(invoice.remaining_amount)}</b>
+      </div>
+      <div class="row">
+        <div class="field"><label class="req">المبلغ المستلم</label>
+          <input type="number" name="amount" value="${invoice.remaining_amount}" step="0.01" min="0.01" max="${invoice.remaining_amount}" /></div>
+        <div class="field"><label>طريقة السداد</label>
+          <select name="payment_type">
+            <option value="CASH">نقداً</option>
+            <option value="TRANSFER">تحويل بنكي</option>
+            <option value="CARD">شبكة / بطاقة</option>
+            <option value="CHEQUE">شيك</option>
+          </select></div>
+      </div>
+      <div class="row mt">
+        <div class="field"><label>التاريخ</label><input type="date" name="voucher_date" value="${today()}" /></div>
+        <div class="field"><label>رقم المرجع / الشيك</label><input type="text" name="reference_no" class="ltr" /></div>
+      </div>
+      <div class="row mt">
+        <div class="field"><label>البنك</label><input type="text" name="bank_name" /></div>
+      </div>
+      <div class="field mt"><label>البيان / ملاحظات السند</label><input type="text" name="notes" value="وذلك مقابل سداد فاتورة رقم ${invoice.invoice_number}" /></div>`,
+    footer: `<button class="btn" data-close type="button">إلغاء</button>
+             <button class="btn btn-primary" data-ok type="button">تسجيل السند</button>`,
+  });
+  m.el.querySelector('[data-ok]').addEventListener('click', async (e) => {
+    const values = formValues(m.body);
+    if (!values.amount || values.amount <= 0) return toastErr('أدخل مبلغاً صحيحاً');
+    e.target.disabled = true;
+    try {
+      const voucher = await api.post('/api/vouchers/for-invoice', { invoice_id: invoice.id, ...values });
+      toastOk(`تم تسجيل سند القبض ${voucher.voucher_number}`);
+      m.close();
+      onDone();
+      try {
+        const { showVoucher } = await import('./vouchers.js');
+        showVoucher(voucher.id, onDone);
+      } catch (err) {
+        console.error('فشل عرض السند:', err);
+      }
+    } catch { e.target.disabled = false; }
+    return undefined;
+  });
+}
+
+export function formatSaudiPhone(phone) {
+  if (!phone) return '';
+  let clean = String(phone).replace(/[^0-9]/g, '');
+  if (clean.startsWith('00')) clean = clean.slice(2);
+  if (clean.startsWith('05')) clean = '966' + clean.slice(1);
+  else if (clean.startsWith('5') && clean.length === 9) clean = '966' + clean;
+  return clean;
+}
+
+export async function fetchInvoicePdfBlob(invoiceId, docHtml, style = '') {
+  try {
+    let endpoint = `/api/invoices/${encodeURIComponent(invoiceId)}/pdf`;
+    if (style) endpoint += `?style=${encodeURIComponent(style)}`;
+
+    const res = await fetch(endpoint, { credentials: 'same-origin', cache: 'no-store' });
+    if (res.ok) return await res.blob();
+  } catch (e) {
+    console.warn('PDF server endpoint unreachable:', e);
+  }
+  throw new Error('تعذر إنشاء ملف PDF من الخادم');
+}
+
+export async function getInvoiceDocHtml({ invoice, issuer, client, printSettings = null }) {
+  const cfg = printSettings || (typeof issuer?.print_settings === 'string'
+    ? JSON.parse(issuer.print_settings || '{}')
+    : (issuer?.print_settings || {})) || {};
+  const catalog = await api.get('/api/invoices/templates?type=invoices');
+  const choices = Array.isArray(catalog) ? catalog : (catalog?.data || []);
+
+  const goldTplMap = {
+    'PRICE_ONLY': 'قالب_فاتورة_ذهب_سعر_فقط',
+    'WAGE_ONLY': 'قالب_فاتورة_ذهب_أجور_فقط',
+    'PRICE_AND_WAGE': 'قالب_فاتورة_ذهب_سعر_وأجور',
+  };
+  const matchingGoldTpl = invoice?.gold_invoice_type ? goldTplMap[invoice.gold_invoice_type] : null;
+
+  let style = (matchingGoldTpl && choices.some((tpl) => tpl.id === matchingGoldTpl))
+    ? matchingGoldTpl
+    : (choices.some((tpl) => tpl.id === cfg.template_style) ? cfg.template_style : choices[0]?.id);
+  if (!style) throw new Error('لا يوجد قالب فاتورة HTML محفوظ في data');
+  const res = await fetch(`/api/invoices/${encodeURIComponent(invoice.id)}/render-html?style=${encodeURIComponent(style)}`, { credentials: 'same-origin' });
+  if (!res.ok) throw new Error('تعذر قراءة قالب الفاتورة المحفوظ');
+  const text = await res.text();
+  return enforceLtrHeaderIcons(text);
+}
+
+export async function downloadInvoicePdf({ invoice, issuer, client, printSettings = null, docHtml = null }) {
+  const invNum = (invoice.invoice_number || invoice.id || '').replace(/[\/\\?%*:|"<>]/g, '_').trim();
+  const filename = clientPdfFilename('فاتورة', client?.name || invoice.client_name || invoice.buyer_name, invNum);
+  try {
+    toastOk('جارٍ تجهيز نسخة PDF المحفوظة...');
+    const cfg = printSettings || (typeof issuer?.print_settings === 'string'
+      ? JSON.parse(issuer.print_settings || '{}') : (issuer?.print_settings || {})) || {};
+    const blob = await fetchInvoicePdfBlob(invoice.id, null, cfg.template_style || '');
+    await savePdfFile(blob, filename);
+    toastOk('تم حفظ الفاتورة PDF بنجاح');
+    return blob;
+  } catch (err) {
+    if (err?.name === 'AbortError') return null;
+    toastErr(err.message || 'تعذر تجهيز PDF؛ تحقق من حالة PDF أعلى الفاتورة');
+    return null;
+  }
+}
+
+export async function shareInvoicePdfFile({ invoice, issuer, client, text, printSettings = null, docHtml = null }) {
+  const invNum = (invoice.invoice_number || invoice.id || '').replace(/[\/\\?%*:|"<>]/g, '_').trim();
+  const filename = clientPdfFilename('فاتورة', client?.name || invoice.client_name || invoice.buyer_name, invNum);
+  let files = null;
+  let pdfBlob = null;
+  try {
+    toastOk('جارٍ تجهيز ملف PDF للمشاركة...');
+    const cfg = printSettings || (typeof issuer?.print_settings === 'string'
+      ? JSON.parse(issuer.print_settings || '{}') : (issuer?.print_settings || {})) || {};
+    pdfBlob = await fetchInvoicePdfBlob(invoice.id, null, cfg.template_style || '');
+    if (pdfBlob) {
+      const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+      files = [file];
+    }
+  } catch (err) {
+    console.warn('تعذر تجهيز ملف PDF للمشاركة:', err);
+  }
+
+  return shareDocument({
+    title: `فاتورة ${invoice.invoice_number}`,
+    text: text || `فاتورة ضريبية رقم ${invoice.invoice_number} من ${issuer?.name_ar || ''}`,
+    url: `${location.origin}${location.pathname}#/invoice-view/${encodeURIComponent(invoice.id)}`,
+    files,
+    onDownloadFile: pdfBlob ? () => savePdfFile(pdfBlob, filename) : null,
+  });
+}
+
+export function openDownloadModal({ invoice, issuer, client, printSettings = null, docHtml = null }) {
+  const m = modal({
+    title: `تحميل الفاتورة: ${invoice.invoice_number}`,
+    slim: true,
+    body: html`
+      <div class="alert alert-info" style="font-size:.85rem">
+        اختر صيغة تحميل الفاتورة المناسبة لك:
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.75rem;margin-top:1rem">
+        <!-- تحميل مباشر لملف PDF -->
+        <button class="btn btn-primary" id="dl-pdf-file-opt" type="button" style="text-align:right;padding:.9rem 1rem;display:flex;flex-direction:column;gap:3px;background:linear-gradient(135deg,#0d9488,#0f766e);border-color:#0d9488">
+          <span style="font-size:1rem;font-weight:bold;display:flex;align-items:center;gap:8px">
+            ${raw(icon.pdf({ size: 22 }))}
+            تحميل ملف الفاتورة بصيغة PDF مباشرة (.pdf)
+          </span>
+          <span style="font-size:.78rem;opacity:.95">تنزيل مستند PDF رسمي معتمد عالي الدقة جاهز للطباعة والمشاركة</span>
+        </button>
+
+        <!-- طباعة A4 -->
+        <button class="btn" id="dl-print-opt" type="button" style="text-align:right;padding:.85rem 1rem;display:flex;flex-direction:column;gap:3px">
+          <span style="font-size:.95rem;font-weight:bold;display:flex;align-items:center;gap:8px">
+            ${raw(icon.printer({ size: 20 }))}
+            طباعة الفاتورة A4 (حوار الطباعة المباشر)
+          </span>
+          <span style="font-size:.78rem;color:var(--muted)">فتح نافذة الطباعة لاختيار الطابعة أو الحفظ اليدوي</span>
+        </button>
+
+        <!-- ملف HTML مستقل -->
+        <button class="btn" id="dl-html-opt" type="button" style="text-align:right;padding:.85rem 1rem;display:flex;flex-direction:column;gap:3px">
+          <span style="font-size:.95rem;font-weight:bold;display:flex;align-items:center;gap:8px">
+            ${raw(icon.htmlFile({ size: 20 }))}
+            تحميل مستند الفاتورة (ملف HTML مستقل)
+          </span>
+          <span style="font-size:.78rem;color:var(--muted)">ملف خفيف يحتوي على رمز QR والبيانات بالكامل يعمل بدون اتصال بالإنترنت</span>
+        </button>
+
+        <!-- ملف XML ZATCA -->
+        <button class="btn" id="dl-xml-opt" type="button" style="text-align:right;padding:.85rem 1rem;display:flex;flex-direction:column;gap:3px">
+          <span style="font-size:.95rem;font-weight:bold;display:flex;align-items:center;gap:8px">
+            ${raw(icon.xml({ size: 20 }))}
+            تنزيل ملف XML الإلكتروني (ZATCA UBL 2.1)
+          </span>
+          <span style="font-size:.78rem;color:var(--muted)">الملف الإلكتروني المعتمد بصيغة XML المتوافقة مع متطلبات هيئة الزكاة</span>
+        </button>
+      </div>
+    `,
+    footer: `<button class="btn" data-close type="button">إلغاء</button>`,
+  });
+
+  $('#dl-pdf-file-opt', m.el).addEventListener('click', async () => {
+    m.close();
+    await downloadInvoicePdf({ invoice, issuer, client, printSettings, docHtml });
+  });
+
+  $('#dl-print-opt', m.el).addEventListener('click', async () => {
+    m.close();
+    try { printDoc(docHtml || await getInvoiceDocHtml({ invoice, issuer, client, printSettings })); }
+    catch (err) { toastErr(err.message); }
+  });
+
+  $('#dl-html-opt', m.el).addEventListener('click', async () => {
+    m.close();
+    try {
+      const doc = docHtml || await getInvoiceDocHtml({ invoice, issuer, client, printSettings });
+      download(`فاتورة_${invoice.invoice_number}.html`, doc, 'text/html;charset=utf-8');
+      toastOk('تم تحميل مستند الفاتورة');
+    } catch (err) { toastErr(err.message); }
+  });
+
+  $('#dl-xml-opt', m.el).addEventListener('click', async () => {
+    m.close();
+    const xml = await api.text(`/api/invoices/${invoice.id}/xml`);
+    download(`${invoice.invoice_number}.xml`, xml, 'application/xml;charset=utf-8');
+    toastOk('تم تنزيل ملف XML');
+  });
+}
+
+export function openShareModal({ invoice, issuer, client, printSettings = null, docHtml = null }) {
+  return shareInvoicePdfFile({ invoice, issuer, client, printSettings, docHtml });
+}
+
+export async function render(view, ctx) {
+  const invoiceId = ctx.params[0];
+  if (!invoiceId) {
+    router.go('invoices');
+    return undefined;
+  }
+
+  let activeViewMode = 'template'; // 'template' | 'items'
+  let zoomLevel = 82;
+  let selectedTplStyle = null;
+  let availableTemplates = [];
+
+  const draw = async () => {
+    const { invoice, issuer, client } = await loadContext(invoiceId);
+    const issuerPrintCfg = (typeof issuer.print_settings === 'string'
+      ? JSON.parse(issuer.print_settings || '{}')
+      : (issuer.print_settings || {})) || {};
+
+    try {
+      const res = await api.get('/api/invoices/templates?type=invoices');
+      availableTemplates = Array.isArray(res) ? res : (res?.data || []);
+      if (!availableTemplates.length) {
+        const fallbackRes = await api.get('/api/invoices/templates?type=all');
+        const allList = Array.isArray(fallbackRes) ? fallbackRes : (fallbackRes?.data || []);
+        availableTemplates = allList.filter((t) => !t.category || t.category === 'invoices' || t.category === 'custom' || t.category === 'custom_invoices');
+      }
+    } catch {
+      try {
+        const fallbackRes = await api.get('/api/invoices/templates?type=all');
+        const allList = Array.isArray(fallbackRes) ? fallbackRes : (fallbackRes?.data || []);
+        availableTemplates = allList.filter((t) => !t.category || t.category === 'invoices' || t.category === 'custom' || t.category === 'custom_invoices');
+      } catch {
+        availableTemplates = [];
+      }
+    }
+
+    const goldTplMap = {
+      'PRICE_ONLY': 'قالب_فاتورة_ذهب_سعر_فقط',
+      'WAGE_ONLY': 'قالب_فاتورة_ذهب_أجور_فقط',
+      'PRICE_AND_WAGE': 'قالب_فاتورة_ذهب_سعر_وأجور',
+    };
+    const matchingGoldTpl = invoice.gold_invoice_type ? goldTplMap[invoice.gold_invoice_type] : null;
+    const defaultTplStyle = (matchingGoldTpl && availableTemplates.some((tpl) => tpl.id === matchingGoldTpl))
+      ? matchingGoldTpl
+      : issuerPrintCfg.template_style;
+
+    if (!selectedTplStyle || !availableTemplates.some((tpl) => tpl.id === selectedTplStyle)) {
+      if (defaultTplStyle && availableTemplates.some((tpl) => tpl.id === defaultTplStyle)) {
+        selectedTplStyle = defaultTplStyle;
+      } else {
+        selectedTplStyle = availableTemplates[0]?.id || '';
+      }
+    }
+
+    const getPrintSettings = () => {
+      const tpl = availableTemplates.find((t) => t.id === selectedTplStyle);
+      const rawHeaders = tpl?.headers || issuerPrintCfg.headers || [];
+      const cleanHeaders = Array.isArray(rawHeaders)
+        ? rawHeaders.filter((h) => !String(h).startsWith('{{') && !/seller_|buyer_|qr_|logo/i.test(String(h)))
+        : [];
+      return {
+        ...issuerPrintCfg,
+        template_style: selectedTplStyle,
+        headers: cleanHeaders,
+        alignments: tpl?.style_meta?.alignments || issuerPrintCfg.alignments || [],
+        header_fill: tpl?.style_meta?.header_fill || tpl?.color_hex || issuerPrintCfg.header_fill,
+        banner_text: tpl?.style_meta?.banner_text || issuerPrintCfg.banner_text || '',
+        banner_fill: tpl?.style_meta?.banner_fill || issuerPrintCfg.banner_fill || '',
+        footer_text: tpl?.style_meta?.footer_text || issuerPrintCfg.footer_text || '',
+        has_signatures: tpl?.style_meta?.has_signatures || issuerPrintCfg.has_signatures || false,
+        primary_color: tpl?.color_hex || issuerPrintCfg.primary_color || '#0d9488',
+        light_color: tpl?.style_meta?.light_color || issuerPrintCfg.light_color || '',
+        template_title: tpl?.name_ar || issuerPrintCfg.template_title || '',
+      };
+    };
+
+    view.innerHTML = html`
+      <div class="page-head">
+        <div class="titles">
+          <h1>فاتورة ${invoice.invoice_number} ${raw(statusBadge(invoice.status, invoice.status_label))}
+            <span class="badge ${invoice.zatca_phase === 'PHASE2' ? 'teal' : 'blue'}" style="font-size:.78rem;vertical-align:middle">
+              ${invoice.zatca_phase === 'PHASE2' ? 'مرحلة 2' : 'مرحلة 1'}
+            </span>
+            ${raw(invoice.gold_invoice_type === 'PRICE_ONLY' ? '<span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #d97706;font-size:.78rem;vertical-align:middle">ذهب (سعر فقط)</span>'
+              : invoice.gold_invoice_type === 'WAGE_ONLY' ? '<span class="badge" style="background:#e0e7ff;color:#3730a3;border:1px solid #6366f1;font-size:.78rem;vertical-align:middle">ذهب (أجور ومصنعية فقط)</span>'
+              : '<span class="badge" style="background:#fef9c3;color:#854d0e;border:1px solid #ca8a04;font-size:.78rem;vertical-align:middle">ذهب (سعر وأجور)</span>')}
+          </h1>
+          <p>${issuer.name_ar} — ${client.name} — ${dateAr(invoice.issue_date)} ${invoice.issue_time}</p>
+        </div>
+        <div class="page-actions">
+          <span id="invoice-pdf-status" class="badge gray" title="حالة نسخة PDF المحفوظة">PDF قيد التجهيز</span>
+          <button class="btn btn-primary" id="download-invoice" type="button">
+            ${raw(icon.pdf({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' }))}
+            تحميل الفاتورة
+          </button>
+          <button class="btn" id="share-invoice" type="button" style="background:#10b981;border-color:#10b981;color:#fff;font-weight:600" title="مشاركة الفاتورة">
+            ${raw(icon.share({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' }))}
+            مشاركة
+          </button>
+          <button class="btn" id="print-more" type="button" title="طباعة الفاتورة">
+            ${raw(icon.printer({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' }))}
+            طباعة
+          </button>
+          ${raw(invoice.status !== 'CANCELLED' && invoice.remaining_amount > 0 && can('vouchers.create')
+      ? `<button class="btn btn-primary" id="pay" type="button">${icon.receipt({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' })}سند قبض</button>` : '')}
+          ${raw(invoice.status !== 'CANCELLED' && can('invoices.edit') ? `<a class="btn" href="#/invoice?edit=${esc(invoice.id)}" title="تعديل الفاتورة يدوياً">${icon.edit({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' })}تعديل الفاتورة</a>` : '')}
+          <button class="btn btn-danger" id="btn-delete-invoice" type="button" title="حذف الفاتورة نهائياً">${icon.trash({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' })}حذف الفاتورة</button>
+          <a class="btn" href="#/invoices">${raw(icon.arrowRight({ size: 14, style: 'vertical-align:text-bottom;margin-left:4px' }))}القائمة</a>
+        </div>
+      </div>
+
+      ${raw(invoice.status === 'CANCELLED' ? '<div class="alert alert-danger">هذه الفاتورة ملغاة — تم عكس قيدها في كشف حساب العميل، ورقمها وبصمتها محفوظان في السلسلة.</div>' : '')}
+
+      <div class="inv-view-grid">
+        <div>
+          <!-- شريط أدوات الفاتورة والقالب -->
+          <div class="card inv-view-toolbar" style="padding:.65rem .85rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem;border-color:var(--line-strong)">
+            <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+              <div class="tab-pill-group" style="display:flex;gap:3px;background:var(--bg);padding:3px;border-radius:8px;border:1px solid var(--line)">
+                <button type="button" class="btn btn-sm ${activeViewMode === 'template' ? 'btn-primary' : 'btn-ghost'}" id="tab-btn-template" style="padding:.35rem .75rem;border-radius:6px;font-size:.82rem">
+                  ${raw(icon.fileText({ size: 14, style: 'vertical-align:text-bottom;margin-left:4px' }))}
+                  معاينة الفاتورة بالقالب
+                </button>
+                <button type="button" class="btn btn-sm ${activeViewMode === 'items' ? 'btn-primary' : 'btn-ghost'}" id="tab-btn-items" style="padding:.35rem .75rem;border-radius:6px;font-size:.82rem">
+                  ${raw(icon.goldBar({ size: 14, style: 'vertical-align:text-bottom;margin-left:4px' }))}
+                  جدول بنود الذهب (${(invoice.lines || []).length})
+                </button>
+              </div>
+
+              <div id="tpl-select-wrap" style="display:${activeViewMode === 'template' ? 'flex' : 'none'};align-items:center;gap:10px;flex-wrap:wrap">
+                <span style="font-weight:700;font-size:13px;color:var(--brand);white-space:nowrap">
+                  قالب الفاتورة:
+                </span>
+                <select id="sel-invoice-tpl" class="input input-sm" style="min-width:0;width:100%;max-width:440px;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--field-bg, var(--card));color:var(--text);font-weight:700;cursor:pointer;">
+                  ${raw(`
+                    ${availableTemplates.length ? `
+                    <optgroup label="قوالب فواتير الذهب المعتمدة (${availableTemplates.length} قالب)">
+                      ${availableTemplates.map((t) => `<option value="${esc(t.id)}" ${t.id === selectedTplStyle ? 'selected' : ''}>${esc(t.name_ar || t.name || t.id)} (${esc(t.badge || 'فاتورة ذهب')})</option>`).join('')}
+                    </optgroup>` : ''}
+                  `)}
+                </select>
+                ${raw((() => {
+                  const isCurrentDefault = selectedTplStyle && selectedTplStyle === issuerPrintCfg.template_style;
+                  return `<button class="btn btn-sm" id="btn-adopt-invoice-tpl" type="button" style="font-size:12px;padding:6px 12px;background:${isCurrentDefault ? 'rgba(184,134,11,0.12)' : 'var(--brand-light)'};border:1px solid ${isCurrentDefault ? '#b8860b' : 'var(--brand)'};color:${isCurrentDefault ? '#b8860b' : 'var(--brand)'};font-weight:700;white-space:nowrap;border-radius:6px;flex-shrink:0" title="${isCurrentDefault ? 'هذا القالب معتمد حالياً كافتراضي لجميع فواتير هذا المتجر' : 'اعتماد هذا القالب كقالب افتراضي لجميع فواتير المتجر'}">
+                    ${isCurrentDefault ? '✓ القالب المعتمد للمتجر' : '★ اعتماد كقالب افتراضي للمتجر'}
+                  </button>`;
+                })())}
+              </div>
+            </div>
+
+            <div id="tpl-zoom-wrap" style="display:${activeViewMode === 'template' ? 'flex' : 'none'};align-items:center;gap:.5rem">
+              <div class="tpl-zoom-controls">
+                <button type="button" class="tpl-zoom-btn" id="inv-zoom-out" title="تصغير">−</button>
+                <span class="tpl-zoom-val" id="inv-zoom-text">${zoomLevel}%</span>
+                <button type="button" class="tpl-zoom-btn" id="inv-zoom-in" title="تكبير">+</button>
+                <button type="button" class="tpl-zoom-btn" id="inv-zoom-fit" title="ملاءمة العرض" style="border-inline-start:1px solid var(--line-strong);font-size:.75rem">العرض</button>
+              </div>
+              <button class="btn btn-sm" id="btn-fullscreen-inv" title="معاينة ملء الشاشة" type="button" style="padding:.3rem .55rem">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- شاشة عرض الفاتورة بالقالب الرسمي المعتمد -->
+          <div id="pane-template-preview" style="display:${activeViewMode === 'template' ? 'block' : 'none'}">
+            <div class="tpl-paper-wrapper inv-view-paper" id="inv-paper-wrapper" style="border-radius:10px;border:1px solid var(--line-strong)">
+              <div class="tpl-paper-frame" id="inv-paper-frame" style="transform: scale(${zoomLevel / 100})">
+                <iframe id="inv-iframe" class="tpl-iframe" title="معاينة الفاتورة بالقالب"></iframe>
+              </div>
+            </div>
+          </div>
+
+          <!-- شاشة عرض جدول البنود والبيانات الفنية -->
+          <div id="pane-items-details" style="display:${activeViewMode === 'items' ? 'block' : 'none'}">
+            <div class="card pad0">
+              <div class="card-head" style="display:flex;align-items:center;gap:8px;">
+                ${raw(icon.goldBar({ size: 17, style: 'color:var(--brand)' }))}
+                <h3 style="margin:0">بنود ومصوغات الذهب</h3>
+                <div class="spacer"></div>
+                <span class="tiny muted">${(invoice.lines || []).length} صنف</span>
+              </div>
+              <div class="table-wrap">
+                <table class="tbl compact">
+                  <thead><tr>
+                    <th>#</th>
+                    <th>الصنف والوصف</th>
+                    <th class="text-center">العيار</th>
+                    <th class="text-end">الوزن (جرام)</th>
+                    <th class="text-end">سعر الجرام <span class="cur-sym">${sarSvg({ size: 11 })}</span></th>
+                    <th class="text-end">الأجور <span class="cur-sym">${sarSvg({ size: 11 })}</span></th>
+                    <th class="text-end">الإجمالي للجرام <span class="cur-sym">${sarSvg({ size: 11 })}</span></th>
+                    <th class="text-end">الخصم <span class="cur-sym">${sarSvg({ size: 11 })}</span></th>
+                    <th class="text-end">قبل الضريبة <span class="cur-sym">${sarSvg({ size: 11 })}</span></th>
+                    <th class="text-center">الضريبة</th>
+                    <th class="text-end">مبلغ الضريبة <span class="cur-sym">${sarSvg({ size: 11 })}</span></th>
+                    <th class="text-end">الإجمالي <span class="cur-sym">${sarSvg({ size: 11 })}</span></th>
+                  </tr></thead>
+                  <tbody>
+                    ${(invoice.lines || []).map((l, i) => {
+                      const is24k = String(l.karat || '').trim() === '24';
+                      return raw(`<tr>
+                        <td class="tiny">${i + 1}</td>
+                        <td><b>${esc(l.item_name)}</b></td>
+                        <td class="text-center"><span class="badge gray" style="font-weight:700">عيار ${esc(l.karat || '21')}</span></td>
+                        <td class="text-end num"><b>${num(l.quantity)}</b> <small class="muted">جم</small></td>
+                        <td class="text-end num">${l.gram_price ? amount(l.gram_price) : (invoice.gold_invoice_type === 'WAGE_ONLY' ? '—' : amount(l.unit_price))}</td>
+                        <td class="text-end num">${l.wage ? amount(l.wage) : (invoice.gold_invoice_type === 'PRICE_ONLY' ? '—' : '—')}</td>
+                        <td class="text-end num" style="color:var(--primary);font-weight:700">${amount(l.unit_price)}</td>
+                        <td class="text-end num">${l.discount > 0 ? amount(l.discount) : '—'}</td>
+                        <td class="text-end num">${amount(l.taxable)}</td>
+                        <td class="text-center tiny num">
+                          ${is24k ? '<span class="badge green" style="font-size:10.5px;font-weight:700">معفى 0%</span>' : `<span class="badge blue" style="font-size:10.5px">${num(l.tax_rate)}%</span>`}
+                        </td>
+                        <td class="text-end num">${amount(l.tax_amount)}</td>
+                        <td class="text-end num"><b>${amount(l.total_line)}</b></td>
+                      </tr>`);
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          ${raw(invoice.allocations && invoice.allocations.length ? `
+            <div class="card pad0 mt">
+              <div class="card-head"><h3>سندات القبض المرتبطة</h3></div>
+              <div class="table-wrap"><table class="tbl compact">
+                <thead><tr><th>رقم السند</th><th>التاريخ</th><th>طريقة السداد</th><th class="text-end">المبلغ المخصص <span class="cur-sym">${sarSvg({ size: 11 })}</span></th><th></th></tr></thead>
+                <tbody>${invoice.allocations.map((a) => `<tr>
+                  <td class="mono">${esc(a.voucher_number)}</td>
+                  <td class="tiny">${esc(dateAr(a.voucher_date))}</td>
+                  <td class="tiny">${esc(a.payment_type)}</td>
+                  <td class="text-end num">${amount(a.allocated_amount)}</td>
+                  <td class="actions"><a class="btn btn-sm" href="#/vouchers?q=${esc(a.voucher_number)}">${icon.eye({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' })}عرض</a></td>
+                </tr>`).join('')}</tbody>
+              </table></div>
+            </div>` : '')}
+
+          <div class="card mt">
+            <h3>بيانات الفاتورة الإلكترونية</h3>
+            <dl class="kv">
+              <dt>التسلسل (ICV)</dt><dd class="mono">${invoice.sequence_no}</dd>
+              <dt>بصمة الفاتورة (Hash)</dt><dd class="mono tiny" style="word-break:break-all;overflow-wrap:anywhere;display:block;max-width:100%">${invoice.invoice_hash}</dd>
+              <dt>بصمة الفاتورة السابقة (PIH)</dt><dd class="mono tiny" style="word-break:break-all;overflow-wrap:anywhere;display:block;max-width:100%">${invoice.previous_invoice_hash}</dd>
+              <dt>وضع التوقيع</dt><dd>
+                ${raw(invoice.signature_mode === 'PRODUCTION' ? '<span class="badge green">شهادة إنتاج</span>'
+        : invoice.signature_mode === 'LOCAL' ? '<span class="badge amber">توقيع محلي (بدون شهادة معتمدة)</span>'
+          : '<span class="badge gray">المرحلة الأولى — بدون توقيع</span>')}</dd>
+              <dt>حمولة QR (Base64)</dt><dd class="mono tiny" style="word-break:break-all;overflow-wrap:anywhere;display:block;max-width:100%;max-height:80px;overflow-y:auto;background:rgba(0,0,0,0.25);padding:6px 8px;border-radius:6px;border:1px solid var(--line);line-height:1.4">${invoice.qr_payload}</dd>
+            </dl>
+            <div class="flex mt">
+              <button class="btn btn-sm" id="copy-hash" type="button">${raw(icon.copy({ size: 14, style: 'vertical-align:text-bottom;margin-left:4px' }))}نسخ البصمة</button>
+              <button class="btn btn-sm" id="copy-qr" type="button">${raw(icon.qrCode({ size: 14, style: 'vertical-align:text-bottom;margin-left:4px' }))}نسخ حمولة QR</button>
+              <button class="btn btn-sm" id="view-xml" type="button">${raw(icon.fileText({ size: 14, style: 'vertical-align:text-bottom;margin-left:4px' }))}عرض UBL XML</button>
+            </div>
+            ${raw(invoice.signature_mode === 'LOCAL' ? `<div class="alert alert-warn mt tiny">
+              التوقيع مُولَّد بمفتاح محلي لأن شهادة الإنتاج (CSID) من هيئة الزكاة والضريبة والجمارك غير مُهيَّأة لهذه المنشأة.
+              البنية والحساب مطابقان للمواصفة، لكن الاعتماد الرسمي يتطلب إتمام التسجيل والحصول على الشهادة.
+            </div>` : '')}
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <h3>الإجماليات</h3>
+            <div class="totals-box">
+              <div class="line" style="color:#b8860b;font-weight:700"><span>إجمالي الوزن</span><span class="num">${Math.round((invoice.lines || []).reduce((s, l) => s + (Number(l.quantity) || 0), 0) * 1000) / 1000} جرام</span></div>
+              <div class="line"><span>الإجمالي قبل الخصم</span><span class="num">${amount(invoice.subtotal)}</span></div>
+              <div class="line"><span>الخصم</span><span class="num">${amount(invoice.discount_amount)}</span></div>
+              <div class="line"><span>الخاضع للضريبة</span><span class="num">${amount(invoice.taxable_amount)}</span></div>
+              <div class="line"><span>ضريبة القيمة المضافة</span><span class="num">${amount(invoice.tax_amount)}</span></div>
+              <div class="line grand"><span>الإجمالي</span><span class="num">${amount(invoice.grand_total, 'SAR', { size: 16 })}</span></div>
+              <div class="line"><span>المسدد</span><span class="num">${amount(invoice.paid_amount)}</span></div>
+              <div class="line" style="font-weight:700;color:var(--danger)"><span>المتبقي</span><span class="num">${amount(invoice.remaining_amount)}</span></div>
+            </div>
+            <div class="alert alert-info mt tiny mb0">${tafqeet(invoice.grand_total, invoice.currency === 'SAR' ? 'ر.س' : invoice.currency)}</div>
+          </div>
+
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.6rem">
+              <h3 style="margin:0">رمز الاستجابة السريعة (QR)</h3>
+              <span class="badge ${invoice.zatca_phase === 'PHASE2' ? 'teal' : 'blue'}">
+                ${invoice.zatca_phase === 'PHASE2' ? 'المرحلة الثانية (مشفّر)' : 'المرحلة الأولى (أساسي)'}
+              </span>
+            </div>
+            <div class="qr-box">${raw(qrSvg(invoice.qr_payload, { scale: 5 }))}</div>
+            <p class="tiny muted text-center mb0 mt">
+              ${invoice.zatca_phase === 'PHASE2'
+        ? 'باركود معتمد للمرحلة الثانية: يتضمن الحقول الأساسية الخمسة + هاش الفاتورة والتوقيع الرقمي والمفتاح العام وسلسلة PIH.'
+        : 'باركود معتمد للمرحلة الأولى: يتضمن الحقول الإلزامية الخمسة (اسم المورد، الرقم الضريبي، التاريخ والوقت، الإجمالي، والضريبة).'}
+            </p>
+          </div>
+
+          <div class="card">
+            <h3>الأطراف</h3>
+            <dl class="kv">
+              <dt>البائع</dt><dd>${issuer.name_ar}</dd>
+              <dt>الرقم الضريبي</dt><dd class="mono">${issuer.tax_number || '—'}</dd>
+              <dt>العنوان الوطني</dt><dd class="tiny">${esc((invoice.seller_address || [issuer.city, issuer.district ? `حي ${issuer.district}` : '', issuer.street ? `شارع ${issuer.street}` : '', issuer.building_no ? `مبنى ${issuer.building_no}` : ''].filter(Boolean).join(' - ')).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim())}${issuer.address_en || issuer.street_en ? `<div class="ltr muted tiny" style="margin-top:2px">${esc((issuer.address_en || [issuer.city_en, issuer.district_en ? `${issuer.district_en} Dist.` : '', issuer.street_en ? `${issuer.street_en} St.` : '', issuer.building_no ? `Bldg. ${issuer.building_no}` : ''].filter(Boolean).join(' - ')).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim())}</div>` : ''}</dd>
+              <dt>المشتري</dt><dd><a href="#/statement/${client.id}">${client.name}</a></dd>
+              <dt>الرقم الضريبي</dt><dd class="mono">${client.tax_number || '—'}</dd>
+              <dt>العنوان الوطني</dt><dd class="tiny">${client.city || client.district || client.street || client.building_no || client.postal_code ? [client.city ? esc(client.city) : '', client.district ? `حي ${esc(client.district)}` : '', client.street ? `شارع ${esc(client.street)}` : '', client.building_no ? `مبنى ${esc(client.building_no)}` : '', client.postal_code ? `(${esc(client.postal_code)})` : ''].filter(Boolean).join(' - ') : esc(invoice.buyer_address || client.address || client.city || '—')}</dd>
+              <dt>طريقة الدفع</dt><dd>${invoice.payment_label}</dd>
+              <dt>أنشئت بواسطة</dt><dd>${invoice.created_by}</dd>
+              <dt>وقت الإنشاء</dt><dd class="tiny">${dateTimeAr(invoice.created_at)}</dd>
+              ${raw(invoice.batch_id ? `<dt>دفعة</dt><dd class="tiny mono">${esc(invoice.batch_id.slice(0, 8))}</dd>` : '')}
+            </dl>
+            ${raw(invoice.notes ? `<div class="alert alert-info mt tiny mb0"><b>ملاحظات:</b> ${esc(invoice.notes)}</div>` : '')}
+          </div>
+        </div>
+      </div>`;
+
+    const refreshPdfStatus = async (attempt = 0) => {
+      const badge = $('#invoice-pdf-status', view);
+      if (!badge) return;
+      try {
+        const pdf = await api.get(`/api/invoices/${encodeURIComponent(invoice.id)}/pdf-status`, { silent: true });
+        badge.textContent = pdf.status === 'READY' ? 'PDF محفوظ' : pdf.status === 'FAILED' ? 'تعذر تجهيز PDF' : 'PDF قيد التجهيز';
+        badge.className = `badge ${pdf.status === 'READY' ? 'green' : pdf.status === 'FAILED' ? 'red' : 'gray'}`;
+        if (pdf.error) badge.title = pdf.error;
+        if (pdf.status === 'PENDING' && attempt < 5) setTimeout(() => refreshPdfStatus(attempt + 1), 3000);
+      } catch { }
+    };
+    refreshPdfStatus();
+
+    let currentInvoiceDocHtml = '';
+    const tplHtmlCache = new Map();
+
+    function getLoadingPreviewHtml(title = 'جارٍ تحميل وتجهيز قالب الفاتورة...') {
+      return `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      margin: 0;
+      min-height: 297mm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Cairo", sans-serif;
+      background: #ffffff;
+      color: #334155;
+    }
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 3.5px solid #e2e8f0;
+      border-top-color: #0d9488;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .title {
+      margin-top: 16px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .sub {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <div class="title">${title}</div>
+  <div class="sub">يتم تجهيز المستند وفق قالب Excel المعتمد الحقيقي...</div>
+</body>
+</html>`;
+    }
+
+    async function updateInvoicePreview() {
+      const iframe = $('#inv-iframe', view);
+      if (!iframe) return;
+      const printSettings = getPrintSettings();
+      const tplId = selectedTplStyle || printSettings?.template_style;
+      {
+        // إظهار مؤشر تحميل نظيف بدلاً من وميض قالب قديم غير مرغوب
+        iframe.srcdoc = getLoadingPreviewHtml('جارٍ تجهيز قالب الفاتورة الحقيقي...');
+
+        try {
+          const res = await fetch(`/api/invoices/${encodeURIComponent(invoice.id)}/render-html?style=${encodeURIComponent(tplId)}&_t=${Date.now()}`);
+          if (res.ok) {
+            let filledHtml = await res.text();
+            if (filledHtml && filledHtml.length > 500 && iframe) {
+              filledHtml = enforceLtrHeaderIcons(filledHtml);
+              currentInvoiceDocHtml = filledHtml;
+              iframe.srcdoc = filledHtml;
+              return;
+            }
+          }
+        } catch { }
+      }
+
+      currentInvoiceDocHtml = '';
+      iframe.srcdoc = getLoadingPreviewHtml('تعذر قراءة قالب الفاتورة المختار من data');
+    }
+
+    function fitZoom() {
+      const wrapper = $('#inv-paper-wrapper', view);
+      if (wrapper && wrapper.clientWidth > 100) {
+        const availableW = wrapper.clientWidth - 20;
+        const targetW = 794;
+        const calculatedScale = Math.min(1.15, Math.max(0.28, Math.round((availableW / targetW) * 95) / 100));
+        zoomLevel = Math.round(calculatedScale * 100);
+        const zText = $('#inv-zoom-text', view);
+        if (zText) zText.textContent = `${zoomLevel}%`;
+        const frame = $('#inv-paper-frame', view);
+        if (frame) frame.style.transform = `scale(${zoomLevel / 100})`;
+      }
+    }
+
+    const updateAdoptBtnState = () => {
+      const btn = $('#btn-adopt-invoice-tpl', view);
+      if (!btn) return;
+      const isDefault = selectedTplStyle && selectedTplStyle === issuerPrintCfg.template_style;
+      if (isDefault) {
+        btn.innerHTML = '✓ القالب المعتمد للمنشأة';
+        btn.style.background = 'rgba(16,185,129,0.12)';
+        btn.style.borderColor = 'rgba(16,185,129,0.3)';
+        btn.style.color = '#10b981';
+        btn.title = 'هذا القالب معتمد حالياً كافتراضي لجميع فواتير هذه المنشأة';
+      } else {
+        btn.innerHTML = '★ اعتماد كقالب افتراضي للمنشأة';
+        btn.style.background = 'var(--brand-light)';
+        btn.style.borderColor = 'var(--brand)';
+        btn.style.color = 'var(--brand)';
+        btn.title = 'حفظ واعتماد هذا القالب ليكون القالب الافتراضي الدائم لفواتير هذه المنشأة';
+      }
+    };
+
+    // تبديل نمط القالب المعروض
+    $('#sel-invoice-tpl', view)?.addEventListener('change', (e) => {
+      selectedTplStyle = e.target.value;
+      updateAdoptBtnState();
+      updateInvoicePreview();
+    });
+
+    // اعتماد القالب المختار كافتراضي للمنشأة
+    $('#btn-adopt-invoice-tpl', view)?.addEventListener('click', async () => {
+      const btn = $('#btn-adopt-invoice-tpl', view);
+      if (btn) btn.disabled = true;
+      try {
+        const tpl = availableTemplates.find((t) => t.id === selectedTplStyle);
+        issuerPrintCfg.template_style = selectedTplStyle;
+        if (tpl) {
+          issuerPrintCfg.primary_color = tpl.color_hex || issuerPrintCfg.primary_color;
+          issuerPrintCfg.dark_color = tpl.style_meta?.header_fill || tpl.color_hex;
+          issuerPrintCfg.light_color = tpl.style_meta?.light_color || tpl.style_meta?.banner_fill || '';
+          issuerPrintCfg.template_title = tpl.name_ar || tpl.name;
+        }
+        await api.put(`/api/issuers/${issuer.id}`, {
+          ...issuer,
+          print_settings: issuerPrintCfg,
+        });
+        issuer.print_settings = issuerPrintCfg;
+        if (store.issuers) {
+          const stored = store.issuers.find((i) => i.id === issuer.id);
+          if (stored) stored.print_settings = issuerPrintCfg;
+        }
+        const tplName = tpl?.name_ar || selectedTplStyle;
+        toastOk(`تم اعتماد قالب «${tplName}» كقالب افتراضي لجميع فواتير المنشأة بنجاح`);
+        updateAdoptBtnState();
+      } catch (err) {
+        toastErr('فشل اعتماد القالب: ' + (err.message || 'حدث خطأ'));
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+
+    // أدوات التكبير والتصغير والملاءمة
+    $('#inv-zoom-in', view)?.addEventListener('click', () => {
+      zoomLevel = Math.min(150, zoomLevel + 10);
+      const zText = $('#inv-zoom-text', view);
+      if (zText) zText.textContent = `${zoomLevel}%`;
+      const frame = $('#inv-paper-frame', view);
+      if (frame) frame.style.transform = `scale(${zoomLevel / 100})`;
+    });
+
+    $('#inv-zoom-out', view)?.addEventListener('click', () => {
+      zoomLevel = Math.max(40, zoomLevel - 10);
+      const zText = $('#inv-zoom-text', view);
+      if (zText) zText.textContent = `${zoomLevel}%`;
+      const frame = $('#inv-paper-frame', view);
+      if (frame) frame.style.transform = `scale(${zoomLevel / 100})`;
+    });
+
+    $('#inv-zoom-fit', view)?.addEventListener('click', () => fitZoom());
+
+    // فتح المعاينة في شاشة كاملة
+    $('#btn-fullscreen-inv', view)?.addEventListener('click', async () => {
+      let docHtml;
+      try { docHtml = currentInvoiceDocHtml || await getInvoiceDocHtml({ invoice, issuer, client, printSettings: getPrintSettings() }); }
+      catch (err) { toastErr(err.message); return; }
+      const m = modal({
+        title: `معاينة الفاتورة: ${invoice.invoice_number}`,
+        wide: true,
+        body: '<iframe id="fs-inv-frame" style="width:100%;height:82vh;border:none;background:#fff;border-radius:4px"></iframe>',
+        footer: `<button class="btn btn-primary" id="fs-print-inv" type="button">${raw(icon.printer({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' }))}طباعة الفاتورة</button>
+                 <button class="btn" data-close type="button">إلغاء</button>`,
+      });
+      const ifr = $('#fs-inv-frame', m.el);
+      if (ifr) ifr.srcdoc = docHtml;
+      $('#fs-print-inv', m.el).addEventListener('click', () => printDoc(docHtml));
+    });
+
+    // تبديل نمط العرض بين القالب والبيانات الفنية
+    $('#tab-btn-template', view)?.addEventListener('click', () => {
+      activeViewMode = 'template';
+      const panePreview = $('#pane-template-preview', view);
+      const paneItems = $('#pane-items-details', view);
+      const selWrap = $('#tpl-select-wrap', view);
+      const zoomWrap = $('#tpl-zoom-wrap', view);
+      if (panePreview) panePreview.style.display = 'block';
+      if (paneItems) paneItems.style.display = 'none';
+      if (selWrap) selWrap.style.display = 'flex';
+      if (zoomWrap) zoomWrap.style.display = 'flex';
+      $('#tab-btn-template', view)?.classList.add('btn-primary');
+      $('#tab-btn-template', view)?.classList.remove('btn-ghost');
+      $('#tab-btn-items', view)?.classList.remove('btn-primary');
+      $('#tab-btn-items', view)?.classList.add('btn-ghost');
+      setTimeout(fitZoom, 50);
+    });
+
+    $('#tab-btn-items', view)?.addEventListener('click', () => {
+      activeViewMode = 'items';
+      const panePreview = $('#pane-template-preview', view);
+      const paneItems = $('#pane-items-details', view);
+      const selWrap = $('#tpl-select-wrap', view);
+      const zoomWrap = $('#tpl-zoom-wrap', view);
+      if (panePreview) panePreview.style.display = 'none';
+      if (paneItems) paneItems.style.display = 'block';
+      if (selWrap) selWrap.style.display = 'none';
+      if (zoomWrap) zoomWrap.style.display = 'none';
+      $('#tab-btn-template', view)?.classList.remove('btn-primary');
+      $('#tab-btn-template', view)?.classList.add('btn-ghost');
+      $('#tab-btn-items', view)?.classList.add('btn-primary');
+      $('#tab-btn-items', view)?.classList.remove('btn-ghost');
+    });
+
+    $('#download-invoice', view).addEventListener('click', async (e) => {
+      e.target.disabled = true;
+      try {
+        await downloadInvoicePdf({ invoice, issuer, client, printSettings: getPrintSettings(), docHtml: currentInvoiceDocHtml });
+      } finally {
+        e.target.disabled = false;
+      }
+    });
+
+    $('#share-invoice', view).addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      try {
+        await shareInvoicePdfFile({
+          invoice,
+          issuer,
+          client,
+          printSettings: getPrintSettings(),
+          docHtml: currentInvoiceDocHtml,
+        });
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    $('#print-more', view).addEventListener('click', async () => {
+      try { printDoc(currentInvoiceDocHtml || await getInvoiceDocHtml({ invoice, issuer, client, printSettings: getPrintSettings() })); }
+      catch (err) { toastErr(err.message); }
+    });
+
+    $('#view-xml', view).addEventListener('click', async () => {
+      const xml = await api.text(`/api/invoices/${invoice.id}/xml`);
+      modal({
+        title: `UBL 2.1 XML — ${invoice.invoice_number}`,
+        wide: true,
+        body: html`<textarea class="mono ltr" readonly style="min-height:420px;font-size:.72rem">${xml}</textarea>`,
+      });
+    });
+    $('#copy-hash', view).addEventListener('click', () => copyText(invoice.invoice_hash));
+    $('#copy-qr', view).addEventListener('click', () => copyText(invoice.qr_payload));
+
+    const payBtn = $('#pay', view);
+    if (payBtn) payBtn.addEventListener('click', () => receiptModal(invoice, draw));
+
+    const cancelBtn = $('#cancel', view);
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', async () => {
+        const ok = await confirmDialog({
+          title: 'إلغاء الفاتورة',
+          message: 'سيتم عكس قيد الفاتورة في كشف الحساب مع الاحتفاظ برقمها وبصمتها في السلسلة (الإلغاء أسلم من الحذف). هل تريد المتابعة؟',
+          danger: true,
+          okText: 'إلغاء الفاتورة',
+        });
+        if (!ok) return;
+        try {
+          await api.post(`/api/invoices/${invoice.id}/cancel`, { reason: 'إلغاء من شاشة الفاتورة' });
+          toastOk('تم إلغاء الفاتورة');
+          draw();
+        } catch { /* تنبيه تلقائي */ }
+      });
+    }
+
+    const deleteBtn = $('#btn-delete-invoice', view);
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', async () => {
+        const ok = await confirmDialog({
+          title: `حذف الفاتورة ${invoice.invoice_number}`,
+          message: `هل أنت متأكد من حذف الفاتورة ${invoice.invoice_number} نهائياً؟ سيتم حذف بنودها وقيدها المرتبط. لا يمكن التراجع عن هذه العملية.`,
+          danger: true,
+          okText: 'حذف نهائياً',
+        });
+        if (!ok) return;
+        deleteBtn.disabled = true;
+        try {
+          await api.del(`/api/invoices/${invoice.id}`);
+          toastOk(`تم حذف الفاتورة ${invoice.invoice_number} بنجاح`);
+          router.go('invoices');
+        } catch (err) {
+          toastErr('فشل حذف الفاتورة: ' + (err.message || err));
+          deleteBtn.disabled = false;
+        }
+      });
+    }
+
+    // إقلاع المعاينة الحية وملاءمة العرض
+    updateInvoicePreview();
+    setTimeout(fitZoom, 80);
+    window.addEventListener('resize', fitZoom);
+  };
+
+  await draw();
+  return undefined;
+}

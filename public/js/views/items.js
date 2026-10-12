@@ -1,0 +1,606 @@
+// ==========================================================================
+//  الأصناف والمجموعات
+// ==========================================================================
+import { api, qs } from '../core/api.js';
+import {
+  store, loadItems, loadCategories, invalidate, can,
+  getFilterState, setFilterState, clearFilterState,
+} from '../core/store.js';
+import {
+  html, raw, esc, money, amount, sarSvg, num, modal, formValues, toastOk, toastErr, confirmDialog,
+  $, delegate, debounce, exportCsv, exportExcel, icon,
+} from '../core/util.js';
+
+const UNITS = ['جرام', 'حبة', 'طقم', 'سبيكة', 'كيلو', 'أونصة', 'تولة'];
+
+function itemForm(data = {}, categories = []) {
+  const v = (k, def = '') => (data[k] === undefined || data[k] === null ? def : data[k]);
+  const curKarat = v('karat', '21');
+  const defaultTax = curKarat === '24' ? 0 : 15;
+  return html`
+    <div class="form-grid-3">
+      <div class="field"><label>رقم / كود الصنف</label>
+        <input type="text" name="item_code" value="${v('item_code')}" class="ltr" placeholder="تلقائي" /></div>
+      <div class="field" style="grid-column: span 2"><label class="req">اسم الصنف</label>
+        <input type="text" name="name_ar" value="${v('name_ar')}" placeholder="مثال: خاتم لازوردي، سوار عيار 21…" /></div>
+    </div>
+    <div class="form-grid-3 mt">
+      <div class="field"><label>العيار</label>
+        <select name="karat" id="item-karat-sel" style="font-weight:700">
+          <option value="21" ${curKarat === '21' ? 'selected' : ''}>عيار 21 (خاضع 15%)</option>
+          <option value="18" ${curKarat === '18' ? 'selected' : ''}>عيار 18 (خاضع 15%)</option>
+          <option value="22" ${curKarat === '22' ? 'selected' : ''}>عيار 22 (خاضع 15%)</option>
+          <option value="24" ${curKarat === '24' ? 'selected' : ''}>عيار 24 (معفى 0%)</option>
+        </select></div>
+      <div class="field"><label>أجور المصنعية الافتراضية للجرام</label>
+        <input type="number" name="wage" value="${v('wage', 0)}" step="0.01" min="0" placeholder="0.00" /></div>
+      <div class="field"><label>وحدة القياس</label>
+        <input type="text" name="unit" value="${v('unit', 'جرام')}" list="units-list" />
+        <datalist id="units-list">${raw(UNITS.map((u) => `<option value="${esc(u)}"></option>`).join(''))}</datalist></div>
+    </div>
+    <div class="form-grid-2 mt">
+      <div class="field"><label>الاسم بالإنجليزية</label><input type="text" name="name_en" value="${v('name_en')}" class="ltr" /></div>
+      <div class="field"><label>المجموعة</label>
+        <select name="category_id">
+          <option value="">— بدون مجموعة —</option>
+          ${raw(categories.map((c) => `<option value="${esc(c.id)}" ${c.id === v('category_id') ? 'selected' : ''}>${esc(c.name)}</option>`).join(''))}
+        </select></div>
+    </div>
+    <div class="form-grid-3 mt">
+      <div class="field"><label>سعر التكلفة للجرام</label><input type="number" name="cost_price" value="${v('cost_price', 0)}" step="0.01" min="0" /></div>
+      <div class="field"><label class="req">سعر البيع للجرام</label><input type="number" name="sale_price" value="${v('sale_price', 0)}" step="0.01" min="0" /></div>
+      <div class="field"><label>الضريبة %</label><input type="number" name="tax_rate" id="item-tax-inp" value="${v('tax_rate', defaultTax)}" step="0.01" min="0" max="100" /></div>
+    </div>
+    <div class="form-grid-2 mt">
+      <div class="field"><label>الباركود</label><input type="text" name="barcode" value="${v('barcode')}" class="ltr" /></div>
+      <div class="field"><label>ملاحظات</label><input type="text" name="notes" value="${v('notes')}" /></div>
+    </div>
+    <label class="check mt"><input type="checkbox" name="is_active" ${raw(v('is_active', true) ? 'checked' : '')} /> صنف نشط</label>`;
+}
+
+function openItemModal(item, categories, onSaved) {
+  const isNew = !item;
+  const m = modal({
+    title: isNew ? 'إضافة صنف ذهب ومجوهرات' : `تعديل: ${item.name_ar}`,
+    body: itemForm(item || {}, categories),
+    footer: `<button class="btn" data-close type="button">إلغاء</button>
+             <button class="btn btn-primary" data-save type="button">${isNew ? 'إضافة' : 'حفظ'}</button>`,
+  });
+
+  const karatSel = m.el.querySelector('#item-karat-sel');
+  const taxInp = m.el.querySelector('#item-tax-inp');
+  if (karatSel && taxInp) {
+    karatSel.addEventListener('change', () => {
+      if (karatSel.value === '24') {
+        taxInp.value = 0;
+      } else if (taxInp.value === '0' || !taxInp.value) {
+        taxInp.value = 15;
+      }
+    });
+  }
+
+  m.el.querySelector('[data-save]').addEventListener('click', async (e) => {
+    const values = formValues(m.body);
+    if (!values.name_ar) return toastErr('اسم الصنف مطلوب');
+    if (!values.category_id) values.category_id = null;
+    if (values.karat === '24') values.tax_rate = 0;
+    e.target.disabled = true;
+    try {
+      if (isNew) await api.post('/api/items', values);
+      else await api.put(`/api/items/${item.id}`, values);
+      m.close();
+      toastOk('تم الحفظ');
+      invalidate('items');
+      await loadItems(true);
+      if (onSaved) onSaved();
+    } catch { e.target.disabled = false; }
+    return undefined;
+  });
+}
+
+function openCategoryModal(category, categories, onSaved) {
+  const isNew = !category;
+  const v = (k, def = '') => (category && category[k] !== null && category[k] !== undefined ? category[k] : def);
+  const m = modal({
+    title: isNew ? 'إضافة مجموعة' : `تعديل: ${category.name}`,
+    slim: true,
+    body: html`
+      <div class="field"><label>كود المجموعة</label><input type="text" name="code" value="${v('code')}" class="ltr" placeholder="تلقائي" /></div>
+      <div class="field mt"><label class="req">اسم المجموعة</label><input type="text" name="name" value="${v('name')}" /></div>
+      <div class="field mt"><label>المجموعة الأم</label>
+        <select name="parent_id">
+          <option value="">— رئيسية —</option>
+          ${raw(categories.filter((c) => !category || c.id !== category.id)
+    .map((c) => `<option value="${esc(c.id)}" ${c.id === v('parent_id') ? 'selected' : ''}>${esc(c.name)}</option>`).join(''))}
+        </select></div>
+      <div class="field mt"><label>الوصف</label><textarea name="description" style="min-height:52px">${v('description')}</textarea></div>`,
+    footer: `<button class="btn" data-close type="button">إلغاء</button>
+             <button class="btn btn-primary" data-save type="button">حفظ</button>`,
+  });
+  m.el.querySelector('[data-save]').addEventListener('click', async (e) => {
+    const values = formValues(m.body);
+    if (!values.name) return toastErr('اسم المجموعة مطلوب');
+    if (!values.parent_id) values.parent_id = null;
+    e.target.disabled = true;
+    try {
+      if (isNew) await api.post('/api/categories', values);
+      else await api.put(`/api/categories/${category.id}`, values);
+      m.close();
+      toastOk('تم الحفظ');
+      invalidate('categories');
+      await loadCategories(true);
+      if (onSaved) onSaved();
+    } catch { e.target.disabled = false; }
+    return undefined;
+  });
+}
+
+function openImportModal(onSuccess) {
+  const m = modal({
+    title: 'استيراد الأصناف من ملف Excel / CSV',
+    body: html`
+      <div class="stack">
+        <div class="dropzone" id="import-dropzone" style="margin-top:.4rem;padding:2rem 1.2rem;cursor:pointer;">
+          <div class="dropzone-icon" style="margin-bottom:.6rem;">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3-3 3 3"/></svg>
+          </div>
+          <button type="button" class="btn btn-primary" id="btn-browse-item-file" style="margin-bottom:.8rem;font-size:1rem;padding:.65rem 1.4rem;pointer-events:none;">
+            ${icon.upload({ size: 18 })}
+            <span>فتح واختيار ملف Excel أو CSV من جهازك</span>
+          </button>
+          <div style="font-size:.9rem;color:var(--muted);margin-bottom:.3rem;">
+            أو اسحب ملف الإكسل وأفلته مباشرة هنا
+          </div>
+          <div class="tiny dim" id="selected-file-name">
+            الصيغ المدعومة: ملفات Excel (.xlsx, .xls) أو .csv
+          </div>
+          <input type="file" id="import-file-input" accept=".xlsx,.xls,.csv" style="display:none;" />
+        </div>
+
+        <div class="row items-center justify-between" style="padding:.2rem .4rem;margin-top:.2rem;">
+          <span class="tiny muted">يقوم النظام تلقائياً بالتعرف على الأعمدة وتحديث الأصناف المتطابقة وإضافة الجدد</span>
+          <a class="tiny muted" href="/api/items/template" download="items-import-template.xlsx" style="text-decoration:underline;">
+            ${icon.download({ size: 13, style: 'vertical-align:text-bottom;margin-left:3px;' })}تنزيل نموذج Excel تجريبي فارغ
+          </a>
+        </div>
+
+        <div id="import-preview-area" style="display:none"></div>
+
+        <div style="margin-top:14px;padding:10px 14px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:8px;">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.88rem;margin:0;">
+            <input type="checkbox" id="replace-existing-items" style="width:16px;height:16px;accent-color:var(--danger, #dc2626);" />
+            <span><b>استبدال وحذف كافة الأصناف السابقة</b> (ينصح به عند رفع ملف شامل جديد لتجنب تراكم الملفات وتكرار الأصناف)</span>
+          </label>
+        </div>
+      </div>
+    `,
+    footer: `
+      <button class="btn" data-close type="button">إلغاء</button>
+      <button class="btn btn-primary" id="commit-import-btn" type="button" disabled>اعتماد وإضافة الأصناف</button>
+    `,
+  });
+
+  const dropzone = m.el.querySelector('#import-dropzone');
+  const fileInput = m.el.querySelector('#import-file-input');
+  const fileNameEl = m.el.querySelector('#selected-file-name');
+  const previewArea = m.el.querySelector('#import-preview-area');
+  const commitBtn = m.el.querySelector('#commit-import-btn');
+  let parsedItems = [];
+
+  dropzone.addEventListener('click', () => {
+    fileInput.value = '';
+    fileInput.click();
+  });
+  dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('dragover');
+  });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) handleFile(file);
+  });
+
+  async function handleFile(file) {
+    fileNameEl.innerHTML = `<span style="color:var(--brand);font-weight:700;">ملف محدد: ${esc(file.name)} (${(file.size / 1024).toFixed(1)} ك.ب)</span>`;
+    previewArea.style.display = 'block';
+    previewArea.innerHTML = '<div class="text-center muted" style="padding:1.5rem">جارٍ قراءة وفحص ملف الأصناف…</div>';
+    commitBtn.disabled = true;
+
+    try {
+      const b64 = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => {
+          const res = r.result || '';
+          const commaIdx = res.indexOf(',');
+          resolve(commaIdx !== -1 ? res.slice(commaIdx + 1) : res);
+        };
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+
+      const res = await api.post('/api/items/analyze-excel', { file_base64: b64, filename: file.name });
+      parsedItems = (res.rows || []).filter((r) => !r.errors || r.errors.length === 0);
+
+      const errorRows = (res.rows || []).filter((r) => r.errors && r.errors.length > 0);
+      let errorsSnippet = '';
+      if (errorRows.length) {
+        errorsSnippet = `
+          <div class="alert alert-danger tiny mt" style="max-height:100px;overflow-y:auto">
+            <b>تحذير: تم استبعاد ${errorRows.length} صف لاحتوائها على أخطاء:</b>
+            <ul>${errorRows.slice(0, 5).map((er) => `<li>صف ${er.row_index}: ${esc(er.name_ar || 'بدون اسم')} (${er.errors.join('، ')})</li>`).join('')}</ul>
+          </div>
+        `;
+      }
+
+      previewArea.innerHTML = html`
+        <div class="card pad0 mt" style="border:1px solid var(--line);background:var(--card-solid);">
+          <div style="padding:.6rem 1rem;background:rgba(255,255,255,0.03);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);">
+            <b>معاينة الأصناف الجاهزة للاستيراد (${parsedItems.length} صنف)</b>
+            <span class="badge blue">${res.total_rows} سطر في الملف</span>
+          </div>
+          <div class="table-wrap" style="max-height:220px;overflow-y:auto">
+            <table class="tbl tiny">
+              <thead><tr><th>#</th><th>كود</th><th>اسم الصنف</th><th>المجموعة</th><th>الوحدة</th><th>التكلفة</th><th>سعر البيع</th><th>الضريبة</th></tr></thead>
+              <tbody>
+                ${parsedItems.slice(0, 25).map((it, idx) => `
+                  <tr>
+                    <td>${idx + 1}</td>
+                    <td class="mono">${esc(it.item_code || 'تلقائي')}</td>
+                    <td><b>${esc(it.name_ar)}</b></td>
+                    <td>${esc(it.category || '—')}</td>
+                    <td>${esc(it.unit || 'حبة')}</td>
+                    <td class="num">${esc(it.cost_price)}</td>
+                    <td class="num"><b>${esc(it.sale_price)}</b></td>
+                    <td class="num">${esc(it.tax_rate)}%</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          ${raw(parsedItems.length > 25 ? `<div class="tiny muted text-center" style="padding:.4rem">تم عرض أول 25 صنفاً فقط من أصل ${parsedItems.length}…</div>` : '')}
+        </div>
+        ${raw(errorsSnippet)}
+      `;
+
+      if (parsedItems.length > 0) {
+        commitBtn.disabled = false;
+      } else {
+        previewArea.innerHTML += '<div class="alert alert-danger tiny mt">لم يتم العثور على أي أصناف صالحة للاستيراد في الملف</div>';
+      }
+    } catch (err) {
+      previewArea.innerHTML = `<div class="alert alert-danger tiny">${esc(err.message || 'فشل فحص الملف')}</div>`;
+    }
+  }
+
+  commitBtn.addEventListener('click', async () => {
+    if (!parsedItems.length) return;
+    const replaceExisting = !!m.el.querySelector('#replace-existing-items')?.checked;
+    commitBtn.disabled = true;
+    commitBtn.textContent = 'جارٍ الحفظ في قاعدة البيانات…';
+    try {
+      const saveRes = await api.post('/api/items/import', { items: parsedItems, replace_existing: replaceExisting });
+      const msg = replaceExisting
+        ? `تم استبدال وحفظ الأصناف بنجاح (إجمالي: ${saveRes.created || parsedItems.length})`
+        : `تم استيراد الأصناف بنجاح (جديد: ${saveRes.created || 0}، محدث: ${saveRes.updated || 0})`;
+      toastOk(msg);
+      m.close();
+      clearFilterState('items');
+      invalidate('items');
+      invalidate('categories');
+      await loadCategories(true);
+      await onSuccess();
+    } catch (err) {
+      commitBtn.disabled = false;
+      commitBtn.textContent = 'اعتماد وإضافة الأصناف';
+      toastErr(err.message || 'فشل استيراد الأصناف');
+    }
+  });
+}
+
+export async function render(view, ctx) {
+  const initial = getFilterState('items', {
+    tab: (ctx && ctx.query && ctx.query.tab) || 'items',
+    q: '',
+    categoryId: (ctx && ctx.query && ctx.query.cat) || '',
+    status: '',
+  });
+  if (ctx && ctx.query && ctx.query.tab) initial.tab = ctx.query.tab;
+  if (ctx && ctx.query && ctx.query.cat) initial.categoryId = ctx.query.cat;
+
+  const state = {
+    ...initial,
+    items: [],
+    categories: [],
+  };
+  const writable = can('items.write');
+
+  const load = async () => {
+    try {
+      const catsRes = await api.get('/api/categories');
+      state.categories = Array.isArray(catsRes) ? catsRes : [];
+      if (state.categoryId && !state.categories.some((c) => c.id === state.categoryId)) {
+        state.categoryId = '';
+      }
+      const params = { q: state.q, category_id: state.categoryId };
+      if (state.status) params.status = state.status;
+      const itemsRes = await api.get(qs('/api/items', params));
+      state.items = Array.isArray(itemsRes) ? itemsRes : [];
+    } catch {
+      state.items = [];
+      state.categories = [];
+    }
+    store.items = state.items;
+    store.categories = state.categories;
+    setFilterState('items', {
+      tab: state.tab,
+      q: state.q,
+      categoryId: state.categoryId,
+      status: state.status,
+    });
+  };
+
+  const itemsRows = () => {
+    const list = Array.isArray(state.items) ? state.items : [];
+    if (!list.length) return '<tr><td colspan="12" class="text-center muted" style="padding:1.5rem">لا توجد أصناف</td></tr>';
+    return list.map((i) => {
+      const is24k = String(i.karat || '').trim() === '24';
+      return `<tr>
+      <td class="mono tiny nowrap" style="white-space:nowrap;font-weight:700">
+        <span class="badge gray mono" style="font-size:11px;padding:2px 6px;letter-spacing:0.3px;white-space:nowrap">${esc(i.item_code)}</span>
+      </td>
+      <td style="min-width:190px;max-width:280px">
+        <div style="font-weight:600;line-height:1.4;word-break:normal">${esc(i.name_ar)}</div>
+        ${i.name_en ? `<div class="tiny muted ltr" style="font-size:11px;margin-top:2px">${esc(i.name_en)}</div>` : ''}
+      </td>
+      <td class="text-center nowrap" style="white-space:nowrap">
+        <span class="badge" style="background:rgba(212,175,55,0.15);color:#8c6d1f;border:1px solid rgba(212,175,55,0.35);font-weight:700">عيار ${esc(i.karat || '21')}</span>
+      </td>
+      <td class="tiny">${esc(i.category_name || '—')}</td>
+      <td class="tiny nowrap" style="white-space:nowrap">${esc(i.unit || 'جرام')}</td>
+      <td class="text-end num nowrap" style="white-space:nowrap">${amount(i.wage || 0)}</td>
+      <td class="mono tiny nowrap" style="white-space:nowrap">${esc(i.barcode || '—')}</td>
+      <td class="text-end num nowrap" style="white-space:nowrap">${amount(i.cost_price)}</td>
+      <td class="text-end num nowrap" style="white-space:nowrap"><b>${amount(i.sale_price)}</b></td>
+      <td class="text-center tiny nowrap" style="white-space:nowrap">
+        ${is24k ? '<span class="badge green" style="font-size:10px;font-weight:700">معفى 0% (سبائك)</span>' : `${i.tax_rate}%`}
+      </td>
+      <td class="text-center nowrap" style="white-space:nowrap">
+        <span class="badge ${i.is_active ? 'green' : 'gray'}" style="white-space:nowrap">${i.is_active ? 'نشط' : 'موقوف'}</span>
+      </td>
+      <td class="actions">
+        <div class="row-actions-group">
+          ${writable ? `
+            <button class="btn btn-sm btn-icon" data-act="edit-item" data-id="${esc(i.id)}" type="button" title="تعديل الصنف">
+              ${icon.edit({ size: 13, style: 'vertical-align:middle' })}
+            </button>
+            <button class="btn btn-sm btn-icon btn-danger" data-act="del-item" data-id="${esc(i.id)}" type="button" title="حذف الصنف">
+              ${icon.trash({ size: 13, style: 'vertical-align:middle' })}
+            </button>
+          ` : ''}
+        </div>
+      </td>
+    </tr>`;
+    }).join('');
+  };
+
+  const catRows = () => {
+    const list = Array.isArray(state.categories) ? state.categories : [];
+    if (!list.length) return '<tr><td colspan="6" class="text-center muted" style="padding:1.5rem">لا توجد مجموعات</td></tr>';
+    return list.map((c) => `<tr>
+      <td class="mono tiny nowrap" style="white-space:nowrap;font-weight:700">
+        <span class="badge gray mono" style="font-size:11px;padding:2px 6px;letter-spacing:0.3px;white-space:nowrap">${esc(c.code)}</span>
+      </td>
+      <td><b>${esc(c.name)}</b></td>
+      <td class="tiny">${esc(c.parent_name || '—')}</td>
+      <td class="tiny">${esc(c.description || '—')}</td>
+      <td class="text-center nowrap" style="white-space:nowrap">
+        <span class="badge gray mono" style="font-size:11px;white-space:nowrap">${num(c.items_count)} صنف</span>
+      </td>
+      <td class="actions">
+        <div class="row-actions-group">
+          <a class="btn btn-sm btn-ghost" href="#/items?tab=items&cat=${esc(c.id)}" title="عرض أصناف المجموعة" style="padding:.28rem .55rem">
+            ${icon.eye({ size: 13, style: 'vertical-align:middle;margin-left:3px' })}<span>الأصناف</span>
+          </a>
+          ${writable ? `
+            <button class="btn btn-sm btn-icon" data-act="edit-cat" data-id="${esc(c.id)}" type="button" title="تعديل المجموعة">
+              ${icon.edit({ size: 13, style: 'vertical-align:middle' })}
+            </button>
+            <button class="btn btn-sm btn-icon btn-danger" data-act="del-cat" data-id="${esc(c.id)}" type="button" title="حذف المجموعة">
+              ${icon.trash({ size: 13, style: 'vertical-align:middle' })}
+            </button>
+          ` : ''}
+        </div>
+      </td>
+    </tr>`).join('');
+  };
+
+  const draw = () => {
+    const itemsList = Array.isArray(state.items) ? state.items : [];
+    const catList = Array.isArray(state.categories) ? state.categories : [];
+
+    view.innerHTML = html`
+      <div class="page-head">
+        <div class="titles">
+          <h1>${raw(icon.goldBar({ size: 24, style: 'vertical-align:middle;margin-left:8px;color:#d4af37' }))}أصناف ومصوغات الذهب</h1>
+          <p>كتالوج مصوغات وسبائك الذهب — إدارة العيارات (18، 21، 22، 24)، الأوزان، أجور المصنعية وأسعار الجرام.</p>
+        </div>
+        <div class="page-actions">
+          ${raw(writable ? `<button class="btn btn-primary" id="add-item" type="button">${icon.goldBar({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' })}إضافة صنف ذهب</button>` : '')}
+          ${raw(writable ? `<button class="btn btn-outline" id="import-items-btn" type="button">${icon.upload({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' })}استيراد Excel</button>` : '')}
+          ${raw(writable ? `<button class="btn" id="add-cat" type="button">${icon.diamond({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' })}إضافة مجموعة</button>` : '')}
+          <button class="btn" id="exp-xls" type="button">${raw(icon.fileSpreadsheet({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' }))}تصدير Excel</button>
+          <button class="btn" id="exp-csv" type="button">${raw(icon.fileText({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' }))}CSV</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab ${state.tab === 'items' ? 'active' : ''}" data-tab="items">الأصناف (${itemsList.length})</div>
+        <div class="tab ${state.tab === 'cats' ? 'active' : ''}" data-tab="cats">المجموعات (${catList.length})</div>
+      </div>
+
+      ${raw(state.tab === 'items' ? `
+        <div class="card">
+          <div class="row">
+            <div class="field" style="flex:2"><label>بحث الأصناف</label>
+              <input type="search" id="q" value="${esc(state.q)}" placeholder="اسم، كود، باركود…" /></div>
+            <div class="field" style="max-width:220px"><label>المجموعة</label>
+              <select id="cat-filter">
+                <option value="">كل المجموعات</option>
+                ${catList.map((c) => `<option value="${esc(c.id)}" ${c.id === state.categoryId ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}
+              </select></div>
+            <div class="field" style="max-width:160px"><label>الحالة</label>
+              <select id="status-filter">
+                <option value="" ${!state.status ? 'selected' : ''}>كل الحالات</option>
+                <option value="active" ${state.status === 'active' ? 'selected' : ''}>نشط فقط</option>
+                <option value="inactive" ${state.status === 'inactive' ? 'selected' : ''}>موقوف فقط</option>
+              </select></div>
+            <div class="field-actions" style="align-self:flex-end">
+              <button class="btn btn-sm" id="clear-filters" type="button" title="إعادة ضبط الفلاتر">مسح</button>
+            </div>
+          </div>
+        </div>
+        <div class="card pad0">
+          <div class="table-wrap"><table class="tbl items-tbl">
+            <thead><tr>
+              <th class="nowrap" style="min-width:125px;white-space:nowrap">رقم / كود الصنف</th>
+              <th style="min-width:180px">الصنف</th>
+              <th class="text-center nowrap" style="min-width:80px;white-space:nowrap">العيار</th>
+              <th style="min-width:100px">المجموعة</th>
+              <th class="nowrap" style="min-width:65px;white-space:nowrap">الوحدة</th>
+              <th class="text-end nowrap" style="min-width:85px;white-space:nowrap">الأجور <span class="cur-sym">${sarSvg({ size: 11 })}</span></th>
+              <th class="mono nowrap" style="min-width:100px;white-space:nowrap">الباركود</th>
+              <th class="text-end nowrap" style="min-width:90px;white-space:nowrap">التكلفة <span class="cur-sym">${sarSvg({ size: 11 })}</span></th>
+              <th class="text-end nowrap" style="min-width:90px;white-space:nowrap">سعر البيع <span class="cur-sym">${sarSvg({ size: 11 })}</span></th>
+              <th class="text-center nowrap" style="min-width:75px;white-space:nowrap">الضريبة</th>
+              <th class="text-center nowrap" style="min-width:75px;white-space:nowrap">الحالة</th>
+              <th class="text-center nowrap" style="min-width:90px;white-space:nowrap">الإجراءات</th>
+            </tr></thead>
+            <tbody>${itemsRows()}</tbody>
+          </table></div>
+        </div>` : `
+        <div class="card pad0">
+          <div class="table-wrap"><table class="tbl categories-tbl">
+            <thead><tr>
+              <th class="nowrap" style="min-width:90px;white-space:nowrap">الكود</th>
+              <th style="min-width:160px">المجموعة</th>
+              <th style="min-width:140px">المجموعة الأم</th>
+              <th style="min-width:180px">الوصف</th>
+              <th class="text-center nowrap" style="min-width:90px;white-space:nowrap">الأصناف</th>
+              <th class="text-center nowrap" style="min-width:130px;white-space:nowrap">الإجراءات</th>
+            </tr></thead>
+            <tbody>${catRows()}</tbody>
+          </table></div>
+        </div>`)}`;
+
+    delegate(view, 'click', '.tab', (e, tab) => {
+      state.tab = tab.dataset.tab;
+      setFilterState('items', {
+        tab: state.tab,
+        q: state.q,
+        categoryId: state.categoryId,
+        status: state.status,
+      });
+      draw();
+    });
+
+    if (state.tab === 'items') {
+      $('#q', view).addEventListener('input', debounce(async (e) => {
+        state.q = e.target.value;
+        await load();
+        draw();
+      }, 300));
+      $('#cat-filter', view).addEventListener('change', async (e) => {
+        state.categoryId = e.target.value;
+        await load();
+        draw();
+      });
+      $('#status-filter', view).addEventListener('change', async (e) => {
+        state.status = e.target.value;
+        await load();
+        draw();
+      });
+      $('#clear-filters', view).addEventListener('click', async () => {
+        clearFilterState('items');
+        state.q = '';
+        state.categoryId = '';
+        state.status = '';
+        await load();
+        draw();
+      });
+    }
+
+    const addItemBtn = $('#add-item', view);
+    if (addItemBtn) addItemBtn.addEventListener('click', () => openItemModal(null, state.categories, async () => { await load(); draw(); }));
+    const importItemsBtn = $('#import-items-btn', view);
+    if (importItemsBtn) importItemsBtn.addEventListener('click', () => openImportModal(async () => {
+      clearFilterState('items');
+      state.q = '';
+      state.categoryId = '';
+      state.status = '';
+      state.tab = 'items';
+      await load();
+      draw();
+    }));
+    const addCatBtn = $('#add-cat', view);
+    if (addCatBtn) addCatBtn.addEventListener('click', () => openCategoryModal(null, state.categories, async () => { await load(); draw(); }));
+
+    $('#exp-csv', view).addEventListener('click', () => {
+      if (state.tab === 'items') {
+        exportCsv('الأصناف', ['الكود', 'الصنف', 'الإنجليزي', 'المجموعة', 'الوحدة', 'الباركود', 'التكلفة', 'سعر البيع', 'الضريبة%'],
+          state.items.map((i) => [i.item_code, i.name_ar, i.name_en || '', i.category_name || '', i.unit, i.barcode || '', i.cost_price, i.sale_price, i.tax_rate]));
+      } else {
+        exportCsv('المجموعات', ['الكود', 'المجموعة', 'الأم', 'الوصف', 'عدد الأصناف'],
+          state.categories.map((c) => [c.code, c.name, c.parent_name || '', c.description || '', c.items_count]));
+      }
+    });
+    $('#exp-xls', view).addEventListener('click', () => {
+      if (state.tab === 'items') {
+        exportExcel('الأصناف', 'كتالوج الأصناف', ['الكود', 'الصنف', 'المجموعة', 'الوحدة', 'التكلفة', 'سعر البيع', 'الضريبة%'],
+          state.items.map((i) => [i.item_code, i.name_ar, i.category_name || '', i.unit, i.cost_price, i.sale_price, i.tax_rate]));
+      } else {
+        exportExcel('المجموعات', 'مجموعات الأصناف', ['الكود', 'المجموعة', 'الأم', 'عدد الأصناف'],
+          state.categories.map((c) => [c.code, c.name, c.parent_name || '', c.items_count]));
+      }
+    });
+
+  };
+
+  delegate(view, 'click', '[data-act]', async (e, btn) => {
+    const id = btn.dataset.id;
+    const reload = async () => { await load(); draw(); };
+    switch (btn.dataset.act) {
+      case 'edit-item': openItemModal(await api.get(`/api/items/${id}`), state.categories, reload); break;
+      case 'edit-cat': openCategoryModal(state.categories.find((c) => c.id === id), state.categories, reload); break;
+      case 'del-item': {
+        const item = state.items.find((x) => x.id === id);
+        if (!await confirmDialog({ title: 'حذف صنف', message: `حذف «${item.name_ar}»؟ لا يمكن الحذف إذا كان مستخدماً في فواتير.`, danger: true, okText: 'حذف' })) return;
+        const row = btn.closest('tr');
+        if (row) row.style.opacity = '0.3';
+        try { await api.del(`/api/items/${id}`); toastOk('تم الحذف'); invalidate('items'); await reload(); } catch { if (row) row.style.opacity = '1'; }
+        break;
+      }
+      case 'del-cat': {
+        const cat = state.categories.find((x) => x.id === id);
+        if (!await confirmDialog({ title: 'حذف مجموعة', message: `حذف «${cat.name}»؟ لا يمكن الحذف إذا كانت تحتوي أصنافاً.`, danger: true, okText: 'حذف' })) return;
+        const row = btn.closest('tr');
+        if (row) row.style.opacity = '0.3';
+        try { await api.del(`/api/categories/${id}`); toastOk('تم الحذف'); invalidate('categories'); await reload(); } catch { if (row) row.style.opacity = '1'; }
+        break;
+      }
+      default: break;
+    }
+  });
+
+  await load();
+  draw();
+  return undefined;
+}

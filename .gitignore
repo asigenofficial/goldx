@@ -1,0 +1,30 @@
+# SQLite Database and local state
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/secret.key
+data/backups/
+
+# Environment / Keys
+.env
+.env.local
+*.key
+
+# Logs & temp
+*.log
+
+# Binaries
+*.exe
+*.exe~
+goldx.exe
+
+# OS files
+.DS_Store
+Thumbs.db
+*.zip
+
+# Tests, Agents & PDFs
+.agents/
+AGENTS.md
+*.pdf
+.gocache/

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="GOLDX - الشعار الرسمي">
+  <defs>
+    <clipPath id="appleSquircleClip">
+      <rect x="0" y="0" width="200" height="200" rx="42"/>
+    </clipPath>
+    <filter id="logoGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#d4af37" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect x="2" y="2" width="196" height="196" rx="42" fill="#ffffff" stroke="#d4af37" stroke-width="1.5" stroke-opacity="0.35" filter="url(#logoGlow)"/>
+  <g clip-path="url(#appleSquircleClip)">
+    <image href="/img/logo-banner.jpg" x="0" y="0" width="200" height="200" preserveAspectRatio="xMidYMid slice"/>
+  </g>
+</svg>

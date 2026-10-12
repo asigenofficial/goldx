@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="GOLDX favicon">
+  <defs>
+    <clipPath id="favClip">
+      <rect x="0" y="0" width="120" height="120" rx="28"/>
+    </clipPath>
+  </defs>
+  <rect x="1" y="1" width="118" height="118" rx="27" fill="#ffffff" stroke="#d4af37" stroke-width="1.5" stroke-opacity="0.4"/>
+  <g clip-path="url(#favClip)">
+    <image href="/img/logo-banner.jpg" x="0" y="0" width="120" height="120" preserveAspectRatio="xMidYMid slice"/>
+  </g>
+</svg>
