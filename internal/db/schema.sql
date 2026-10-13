@@ -330,6 +330,28 @@ CREATE INDEX IF NOT EXISTS idx_ledger_issuer ON client_ledger(issuer_id);
 CREATE INDEX IF NOT EXISTS idx_ledger_doc ON client_ledger(doc_type, doc_id);
 
 -- ---------------------------------------------------------- سجل التدقيق
+CREATE TABLE IF NOT EXISTS gold_receipts (
+  id TEXT PRIMARY KEY,
+  voucher_number TEXT NOT NULL,
+  issuer_id TEXT NOT NULL REFERENCES issuers(id) ON DELETE RESTRICT,
+  client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
+  invoice_id TEXT NOT NULL REFERENCES invoices(id) ON DELETE RESTRICT,
+  invoice_number TEXT NOT NULL,
+  voucher_date TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK(kind IN ('METAL','WAGES')),
+  total_weight REAL NOT NULL CHECK(total_weight > 0),
+  gold_price INTEGER NOT NULL DEFAULT 0,
+  invoice_total INTEGER NOT NULL,
+  lines TEXT NOT NULL,
+  notes TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'ACTIVE',
+  created_by TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(issuer_id,voucher_number)
+);
+CREATE INDEX IF NOT EXISTS idx_gold_receipts_invoice ON gold_receipts(invoice_id,status);
+CREATE INDEX IF NOT EXISTS idx_gold_receipts_date ON gold_receipts(issuer_id,voucher_date);
+
 CREATE TABLE IF NOT EXISTS audit_logs (
   id          TEXT PRIMARY KEY,
   user_name   TEXT NOT NULL DEFAULT '',

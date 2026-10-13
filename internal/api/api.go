@@ -149,6 +149,7 @@ func (s *Server) clientIP(r *http.Request) string {
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
+	s.registerGoldReceipts(mux)
 	mux.HandleFunc("GET /invoice-layout.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-cache")
@@ -3462,7 +3463,9 @@ func (s *Server) handleImportSystemPackage(w http.ResponseWriter, r *http.Reques
 					part = parts[i+1]
 				}
 				switch part {
-				case "partials", "reports", "statements", "invoices":
+				case "partials":
+					return ""
+				case "reports", "statements", "invoices":
 					return part
 				case "documents", "vouchers":
 					return "documents"
@@ -3479,7 +3482,9 @@ func (s *Server) handleImportSystemPackage(w http.ResponseWriter, r *http.Reques
 			}
 			baseName := filepath.Base(cleanName)
 			if strings.HasSuffix(lower, ".html") && baseName != "index.html" && f.UncompressedSize64 > 0 {
-				archiveCategories[templateCategory(cleanName)] = true
+				if category := templateCategory(cleanName); category != "" {
+					archiveCategories[category] = true
+				}
 			}
 		}
 
@@ -3530,6 +3535,9 @@ func (s *Server) handleImportSystemPackage(w http.ResponseWriter, r *http.Reques
 				}
 
 				targetSub := templateCategory(cleanName)
+				if targetSub == "" {
+					continue
+				}
 
 				targetDir := filepath.Join(s.cfg.DataDir, "templates", targetSub)
 				_ = os.MkdirAll(targetDir, 0755)

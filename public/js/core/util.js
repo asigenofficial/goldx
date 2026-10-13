@@ -1285,6 +1285,10 @@ export function fillDynamicTemplateHtml(rawHtml, { issuer = {}, client = {}, vou
     // 1. مخصص في extra
     if (extra[rawKey] !== undefined) return String(extra[rawKey]);
     if (extra[k] !== undefined) return String(extra[k]);
+    const receiptLabels = {receipt_title:'سند قبض نقدي',receipt_subtitle:'Cash Receipt — SAR',receipt_payment_label:'طريقة السداد',receipt_reference_label:'مرجع السداد',receipt_currency_label:'العملة / Currency',receipt_currency:'ريال سعودي / SAR',receipt_total_label:'المبلغ المستلم',receipt_unit:'ريال سعودي',receipt_footer:'سند قبض بمبلغ مالي بالريال السعودي.'};
+    if (k in receiptLabels) return receiptLabels[k];
+    if (k === 'receipt_value') return `<span class="sar-amount" dir="rtl"><bdi dir="ltr">${money(docTotal)}</bdi>${sarSvg({size:13})}</span>`;
+    if (['receipt_items','receipt_conversion','receipt_weight_summary'].includes(k)) return '';
     if (k === 'gold_invoice_type') return invoice?.gold_invoice_type || 'PRICE_AND_WAGE';
     if (k === 'gold_type_label') return ({PRICE_ONLY:'سعر فقط (ذهب فقط)',WAGE_ONLY:'أجور فقط (مصنعية فقط)',PRICE_AND_WAGE:'سعر وأجور (ذهب ومصنعية)'})[invoice?.gold_invoice_type || 'PRICE_AND_WAGE'];
     if (k === 'total_weight') return (invoice?.lines || invoice?.items || []).reduce((sum,line) => sum + Number(line.quantity || 0),0).toFixed(2);

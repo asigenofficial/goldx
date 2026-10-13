@@ -1086,6 +1086,7 @@ export async function render(view, ctx) {
           <p>سندات قبض مالي وتسديد فواتير ومصوغات الذهب كلياً أو جزئياً بدقة متناهية.</p>
         </div>
         <div class="page-actions">
+          <a class="btn" href="#/gold-receipts">سندات قبض الذهب بالجرام</a>
           ${raw(can('vouchers.create') ? `
             <button class="btn btn-primary" id="new-v" type="button">
               ${icon.receipt({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' })}سند قبض جديد
@@ -1439,5 +1440,76 @@ export async function render(view, ctx) {
   await load();
   draw();
   return () => { unsubSync(); };
+}
+
+
+const kindLabel=kind=>kind==='WAGES'?'قبض أجور بذهب عيار 24':'قبض معدن كسر';
+export async function showGoldReceipt(id) {
+ try {
+  const result=await api.get('/api/invoices/templates?type=documents');
+  const templates=Array.isArray(result)?result:(result?.data||[]);
+  let style=localStorage.getItem('zs.gold_receipt_style')||'';
+  if(!templates.some(t=>t.id===style))style='';
+  let {html:documentHTML}=await api.get(`/api/vouchers/gold/${encodeURIComponent(id)}/html?style=${encodeURIComponent(style)}`);
+  const m=modal({title:'سند قبض الذهب',wide:true,body:'',footer:`<button class="btn" data-close>إغلاق</button><button class="btn" data-print>طباعة</button><a class="btn btn-primary" href="/api/vouchers/gold/${encodeURIComponent(id)}/pdf">تحميل PDF</a>`});
+  const frame=document.createElement('iframe');frame.title='معاينة سند قبض الذهب';frame.style.cssText='width:100%;height:70vh;border:0';frame.srcdoc=documentHTML;m.body.append(frame);
+  const field=document.createElement('div');field.className='field';
+  field.innerHTML=html`<label>قالب السند</label><select><option value="">القالب الافتراضي</option>${raw(templates.map(t=>`<option value="${esc(t.id)}" ${t.id===style?'selected':''}>${esc(t.name_ar||t.name||t.id)}</option>`).join(''))}</select>`;
+  m.body.prepend(field);
+  const pdfLink=m.el.querySelector('a[href]');
+  pdfLink.href=`/api/vouchers/gold/${encodeURIComponent(id)}/pdf?style=${encodeURIComponent(style)}`;
+  field.querySelector('select').addEventListener('change',async e=>{
+    const selected=e.target.value;
+    try{const result=await api.get(`/api/vouchers/gold/${encodeURIComponent(id)}/html?style=${encodeURIComponent(selected)}`);style=selected;documentHTML=result.html;frame.srcdoc=documentHTML;pdfLink.href=`/api/vouchers/gold/${encodeURIComponent(id)}/pdf?style=${encodeURIComponent(style)}`;localStorage.setItem('zs.gold_receipt_style',style)}catch(error){e.target.value=style;toastErr(error.message||'تعذر تحميل القالب')}
+  });
+  m.el.querySelector('[data-print]').addEventListener('click',()=>printDoc(documentHTML));
+ } catch(error){toastErr(error.message||'تعذر عرض السند')}
+}
+
+export async function goldReceiptModal(invoice,kind,onDone=()=>{}) {
+ try {
+  const previous=await api.get(`/api/vouchers/gold?invoice_id=${encodeURIComponent(invoice.id)}`);
+  const weights={};for(const line of invoice.lines||[]) {const k=String(line.karat||'21');weights[k]=(weights[k]||0)+Number(line.quantity||0)}
+  for(const receipt of previous.filter(v=>v.kind==='METAL'&&v.status==='ACTIVE')) for(const line of receipt.lines)weights[line.karat]=(weights[line.karat]||0)-line.weight;
+  const karats=['18','21','22','24'].filter(k=>Math.round((weights[k]||0)*1000)>0);
+  if(kind==='METAL'&&!karats.length)return toastErr('لا يوجد وزن متبقٍ للقبض في الفاتورة');
+  if(kind==='WAGES'&&previous.some(v=>v.kind==='WAGES'&&v.status==='ACTIVE'))return toastErr('يوجد سند أجور ذهب لهذه الفاتورة');
+  const savedPrice=kind==='WAGES'?await api.get(`/api/vouchers/gold/price?issuer_id=${encodeURIComponent(invoice.issuer_id)}&date=${encodeURIComponent(invoice.issue_date)}`):{};
+  const m=modal({title:kindLabel(kind),body:html`
+   <p>فاتورة <b>${invoice.invoice_number}</b> · العميل: ${invoice.client_name||invoice.buyer_name||''}</p>
+   <div class="field"><label>تاريخ الفاتورة وسعر الذهب</label><input type="date" value="${invoice.issue_date}" readonly /></div>
+   ${raw(kind==='WAGES'?`<p>إجمالي الفاتورة شامل الضريبة: <b>${money(invoice.grand_total)}</b> ريال سعودي</p><div class="field"><label>سعر جرام الذهب عيار 24 في تاريخ الفاتورة (ريال سعودي)</label><input name="gold_price" type="number" min="0.01" step="0.01" value="${savedPrice.gold_price||''}" required /></div><p>إجمالي الفاتورة ÷ سعر الجرام = <b id="gold-result">—</b> جرام عيار 24</p>`:karats.map(k=>`<div class="field"><label>ذهب كسر عيار ${k} — الوزن المقبوض بالجرام</label><input name="weight_${k}" type="number" min="0" max="${weights[k].toFixed(3)}" step="0.001" value="${weights[k].toFixed(3)}" /></div>`).join(''))}
+   <div class="field mt"><label>بيان السند</label><textarea name="notes">قبض ذهب مقابل فاتورة رقم ${invoice.invoice_number}</textarea></div>`,footer:'<button class="btn" data-close>إلغاء</button><button class="btn btn-primary" data-save>تسجيل سند الذهب</button>'});
+  const price=m.body.querySelector('[name="gold_price"]');
+  if(price){const update=()=>{const p=Number(price.value);m.body.querySelector('#gold-result').textContent=p>0?(Number(invoice.grand_total)/p).toFixed(3):'—'};price.addEventListener('input',update);update()}
+  m.el.querySelector('[data-save]').addEventListener('click',async(e)=>{
+   const values=formValues(m.body);
+   if(kind==='WAGES'&&!(Number(values.gold_price)>0))return toastErr('أدخل سعر جرام عيار 24 في تاريخ الفاتورة');
+   const lines=kind==='METAL'?karats.map(k=>({karat:k,weight:Number(values['weight_'+k])})).filter(l=>l.weight>0):[];
+   if(kind==='METAL'&&!lines.length)return toastErr('أدخل وزن الذهب المقبوض');
+   e.target.disabled=true;
+   try{const v=await api.post('/api/vouchers/gold',{invoice_id:invoice.id,kind,gold_price:Number(values.gold_price||0),lines,notes:values.notes});m.close();toastOk(`تم تسجيل ${v.voucher_number}: ${v.total_weight.toFixed(3)} جرام`);await onDone();await showGoldReceipt(v.id)}catch(error){toastErr(error.message||'تعذر حفظ السند');e.target.disabled=false}
+  });
+ } catch(error){toastErr(error.message||'تعذر قراءة بيانات الفاتورة')}
+}
+
+export async function renderGoldReceipts(view) {
+ let issuerID=store.activeIssuerId||'';
+ async function draw(){
+  const receipts=await api.get(`/api/vouchers/gold?issuer_id=${encodeURIComponent(issuerID)}`);
+  view.innerHTML=html`<div class="page-head"><div class="titles"><h1>سندات قبض الذهب</h1><p>قبض كسر بالجرام، وقبض أجور بذهب عيار 24 حسب سعر تاريخ الفاتورة.</p></div><div class="page-actions"><a class="btn" href="#/vouchers">سندات القبض بالريال</a>${raw(can('vouchers.create')?'<button class="btn btn-primary" id="new-gold">سند قبض ذهب جديد</button>':'')}</div></div>
+   <div class="card"><div class="field"><label>المتجر المصدر</label><select id="gold-issuer"><option value="">كل المتاجر</option>${raw(store.issuers.map(i=>`<option value="${esc(i.id)}" ${i.id===issuerID?'selected':''}>${esc(i.name_ar)}</option>`).join(''))}</select></div></div>
+   <div class="card table-wrap"><table class="tbl"><thead><tr><th>السند</th><th>المتجر / العميل</th><th>الفاتورة</th><th>التاريخ</th><th>النوع</th><th>الوزن بالجرام</th><th>الحالة</th><th></th></tr></thead><tbody>${raw(receipts.map(v=>`<tr><td>${esc(v.voucher_number)}</td><td>${esc(v.issuer_name)}<br>${esc(v.client_name)}</td><td><a href="#/invoice-view/${esc(v.invoice_id)}">${esc(v.invoice_number)}</a></td><td>${esc(v.voucher_date)}</td><td>${kindLabel(v.kind)}</td><td>${v.total_weight.toFixed(3)}</td><td>${v.status==='ACTIVE'?'نشط':'ملغى'}</td><td><button class="btn btn-sm" data-show="${esc(v.id)}">عرض</button>${v.status==='ACTIVE'&&can('vouchers.cancel')?`<button class="btn btn-sm" data-cancel="${esc(v.id)}">إلغاء</button>`:''}</td></tr>`).join('')||'<tr><td colspan="8">لا توجد سندات قبض ذهب بعد</td></tr>')}</tbody></table></div>`;
+  view.querySelector('#gold-issuer').addEventListener('change',async e=>{issuerID=e.target.value;await draw()});
+  view.querySelectorAll('[data-show]').forEach(b=>b.addEventListener('click',()=>showGoldReceipt(b.dataset.show)));
+  view.querySelectorAll('[data-cancel]').forEach(b=>b.addEventListener('click',async()=>{if(await confirmDialog({title:'إلغاء سند الذهب',body:'سيُلغى السند ويُتاح وزنه للقبض من جديد.'})){await api.post(`/api/vouchers/gold/${b.dataset.cancel}/cancel`,{});await draw()}}));
+  view.querySelector('#new-gold')?.addEventListener('click',async()=>{
+   const result=await api.get(`/api/invoices?issuer_id=${encodeURIComponent(issuerID)}&limit=200`);
+   const invoices=(result.items||[]).filter(i=>i.status!=='CANCELLED');
+   const m=modal({title:'قبض ذهب من فاتورة',body:html`<div class="field"><label>الفاتورة</label><select name="invoice_id">${raw(invoices.map(i=>`<option value="${esc(i.id)}">${esc(i.invoice_number)} — ${esc(i.client_name||i.buyer_name)}</option>`).join(''))}</select></div><div class="field"><label>نوع السند</label><select name="kind"><option value="METAL">قبض معدن كسر</option><option value="WAGES">قبض أجور بذهب عيار 24</option></select></div>`,footer:'<button class="btn" data-close>إلغاء</button><button class="btn btn-primary" data-next>التالي</button>'});
+   m.el.querySelector('[data-next]').addEventListener('click',async()=>{const values=formValues(m.body);if(!values.invoice_id)return toastErr('اختر فاتورة');const invoice=await api.get(`/api/invoices/${values.invoice_id}`);m.close();await goldReceiptModal(invoice,values.kind,draw)});
+  });
+ }
+ await draw();
 }
 

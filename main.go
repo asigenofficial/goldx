@@ -183,7 +183,7 @@ func ensureDataInitialized(dataDir string) {
 
 	// Bundled presets are versioned with the app. Refresh their exact filenames
 	// on a persistent volume; files created by users have different names.
-	for _, sub := range []string{"invoices", "documents", "reports", "statements", "partials"} {
+	for _, sub := range []string{"invoices", "documents", "reports", "statements"} {
 		targetSub := filepath.Join(dataDir, "templates", sub)
 		_ = os.MkdirAll(targetSub, 0755)
 		srcSub := filepath.Join(defaultsDir, "templates", sub)

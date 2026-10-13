@@ -100,8 +100,6 @@ func injectTemplateStyle(h, style string) string {
 type TemplateService struct {
 	db           *db.DB
 	dataDir      string
-	itemRowHTML  string
-	itemCellHTML string
 	sarSymbolSVG string
 }
 
@@ -123,20 +121,8 @@ func NewTemplateService(d *db.DB, dataDir string) *TemplateService {
 	_ = os.MkdirAll(filepath.Join(tplDir, "documents"), 0755)
 	_ = os.MkdirAll(filepath.Join(tplDir, "reports"), 0755)
 	_ = os.MkdirAll(filepath.Join(tplDir, "statements"), 0755)
-	partialsDir := filepath.Join(tplDir, "partials")
-	_ = os.MkdirAll(partialsDir, 0755)
-	itemRow, _ := os.ReadFile(filepath.Join(partialsDir, "invoice-item-row.html"))
-	itemCell, _ := os.ReadFile(filepath.Join(partialsDir, "invoice-item-cell.html"))
 	sarSymbol, _ := os.ReadFile(filepath.Join(dataDir, "saudi_riyal_symbol.svg"))
-	rowHTML := string(itemRow)
-	if rowHTML == "" {
-		rowHTML = "<tr>{{cells}}</tr>"
-	}
-	cellHTML := string(itemCell)
-	if cellHTML == "" {
-		cellHTML = "<td>{{value}}</td>"
-	}
-	s := &TemplateService{db: d, dataDir: dataDir, itemRowHTML: rowHTML, itemCellHTML: cellHTML, sarSymbolSVG: string(sarSymbol)}
+	s := &TemplateService{db: d, dataDir: dataDir, sarSymbolSVG: string(sarSymbol)}
 	_ = s.SyncDiskTemplates()
 	return s
 }
@@ -873,12 +859,6 @@ func (s *TemplateService) FirstTemplateID(category string) (string, error) {
 
 // RenderInvoiceHTML loads the HTML template and substitutes invoice data tags.
 func (s *TemplateService) RenderInvoiceHTML(inv *InvoiceView, style string) (string, error) {
-	if s.itemRowHTML == "" {
-		s.itemRowHTML = "<tr>{{cells}}</tr>"
-	}
-	if s.itemCellHTML == "" {
-		s.itemCellHTML = "<td>{{value}}</td>"
-	}
 	if style == "" || style == "default" {
 		if inv.IssuerSnapshot != nil && inv.IssuerSnapshot.PrintSettings != "" {
 			var pCfg map[string]any
@@ -1920,9 +1900,9 @@ func (s *TemplateService) generateSmartRowsSlice(tpl string, lines []InvoiceItem
 			default:
 				value = item.ItemName
 			}
-			cells.WriteString(strings.ReplaceAll(s.itemCellHTML, "{{value}}", html.EscapeString(value)))
+			cells.WriteString("<td>" + html.EscapeString(value) + "</td>")
 		}
-		rows.WriteString(strings.ReplaceAll(s.itemRowHTML, "{{cells}}", cells.String()))
+		rows.WriteString("<tr>" + cells.String() + "</tr>")
 	}
 
 	return rows.String()
@@ -2179,7 +2159,7 @@ func init() {
 	_ = moneySarRegex2
 }
 
-// CombineHTMLDocuments applies the HTML wrapper stored in data/templates/partials.
+// CombineHTMLDocuments joins complete documents for batch preview and printing.
 func (s *TemplateService) CombineHTMLDocuments(docs []string) string {
 	if len(docs) == 0 {
 		return ""
@@ -2188,16 +2168,30 @@ func (s *TemplateService) CombineHTMLDocuments(docs []string) string {
 		return docs[0]
 	}
 
-	wrapperBytes, err := os.ReadFile(filepath.Join(s.dataDir, "templates", "partials", "batch-documents.html"))
-	if err != nil {
-		return ""
-	}
-	itemBytes, err := os.ReadFile(filepath.Join(s.dataDir, "templates", "partials", "batch-document-item.html"))
-	if err != nil {
-		return ""
-	}
-	wrapper := string(wrapperBytes)
-	itemTemplate := string(itemBytes)
+	const wrapper = `<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>مستندات الدفعة</title>
+<style>
+@page { size: A4 portrait; margin: 4mm 5mm; }
+@media print {
+  html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+  .batch-doc-item { margin: 0 !important; padding: 0 !important; page-break-after: always !important; break-after: page !important; }
+  .batch-doc-item:last-child { page-break-after: auto !important; break-after: auto !important; }
+}
+@media screen {
+  body { background: #334155; padding: 20px 0; }
+  .batch-doc-item { margin-bottom: 25px; }
+}
+{{styles}}
+</style>
+</head>
+<body style="margin:0;padding:0;">
+{{documents}}
+</body>
+</html>`
+	const itemTemplate = `<div class="batch-doc-item">{{content}}</div>`
 
 	var allStyles strings.Builder
 	var allBodies strings.Builder
@@ -2233,8 +2227,8 @@ func (s *TemplateService) CombineHTMLDocuments(docs []string) string {
 		allBodies.WriteString(strings.ReplaceAll(itemTemplate, "{{content}}", content))
 	}
 
-	wrapper = strings.ReplaceAll(wrapper, "{{styles}}", allStyles.String())
-	result := strings.ReplaceAll(wrapper, "{{documents}}", allBodies.String())
+	styledWrapper := strings.ReplaceAll(wrapper, "{{styles}}", allStyles.String())
+	result := strings.ReplaceAll(styledWrapper, "{{documents}}", allBodies.String())
 	for _, doc := range docs {
 		if strings.Contains(doc, "data-invoice-layout-runtime") {
 			return injectTemplateStyle(result, `<script data-invoice-layout-runtime>`+invoiceLayoutScript+`</script>`)

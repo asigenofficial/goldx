@@ -259,7 +259,7 @@ func (s *IssuerService) NextVoucherNumber(tx *sql.Tx, issuerID string) (number s
 		return "", 0, err
 	}
 	// Keep the counter above all existing serials, even if settings were manually lowered.
-	rows, err := tx.Query("SELECT voucher_number FROM receipt_vouchers WHERE issuer_id = ?", issuerID)
+	rows, err := tx.Query("SELECT voucher_number FROM receipt_vouchers WHERE issuer_id = ? UNION ALL SELECT substr(voucher_number,3) FROM gold_receipts WHERE issuer_id = ?", issuerID, issuerID)
 	if err != nil {
 		return "", 0, err
 	}

@@ -55,6 +55,8 @@ function saveDraft(state) {
       notes: state.notes,
       cheque_no: state.cheque_no, cheque_date: state.cheque_date, due_date: state.due_date,
       auto_receipt: state.auto_receipt,
+      auto_gold_receipt: state.auto_gold_receipt,
+      receipt_gold_price: state.receipt_gold_price,
       print_after: state.print_after,
       header_discount_percent: state.header_discount_percent,
       lines: state.lines,
@@ -530,6 +532,7 @@ export async function render(view, ctx) {
             <textarea id="notes" style="min-height:70px" placeholder="مثال: البضاعة المباعة لا ترد ولا تستبدل بعد 3 أيام...">${esc(state.notes)}</textarea></div>
           <label class="check mt"><input type="checkbox" id="auto_receipt" ${raw(state.auto_receipt ? 'checked' : '')} />
             إنشاء سند قبض تلقائي بكامل المبلغ (للفواتير غير الآجلة)</label>
+          ${raw(!state.is_edit && can('vouchers.create') ? `<div class="field mt"><label>سند قبض ذهب مع الفاتورة الجديدة</label><select id="auto_gold_receipt"><option value="">بدون سند ذهب</option><option value="METAL" ${state.auto_gold_receipt==='METAL'?'selected':''}>قبض معدن كسر بأوزان الفاتورة</option><option value="WAGES" ${state.auto_gold_receipt==='WAGES'?'selected':''}>قبض أجور بذهب عيار 24</option></select></div><div class="field ${state.auto_gold_receipt==='WAGES'?'':'hidden'}" id="receipt-gold-price-field"><label>سعر جرام عيار 24 في تاريخ الفاتورة (ريال سعودي)</label><input id="receipt_gold_price" type="number" min="0.01" step="0.01" value="${esc(state.receipt_gold_price||'')}" /></div>` : '')}
           <label class="check"><input type="checkbox" id="print_after" ${raw(state.print_after ? 'checked' : '')} />
             الانتقال لشاشة الفاتورة للتحميل والمشاركة بعد الحفظ</label>
         </div>
@@ -699,6 +702,8 @@ export async function render(view, ctx) {
     $('#header_discount', view).addEventListener('input', (e) => { state.header_discount_percent = toNum(e.target.value); refreshLines(); });
     $('#notes', view).addEventListener('input', (e) => { state.notes = e.target.value; saveDraft(state); });
     $('#auto_receipt', view).addEventListener('change', (e) => { state.auto_receipt = e.target.checked; saveDraft(state); });
+    $('#auto_gold_receipt',view)?.addEventListener('change',e=>{state.auto_gold_receipt=e.target.value;saveDraft(state);draw()});
+    $('#receipt_gold_price',view)?.addEventListener('input',e=>{state.receipt_gold_price=Number(e.target.value);saveDraft(state)});
     $('#print_after', view).addEventListener('change', (e) => { state.print_after = e.target.checked; saveDraft(state); });
     $('#add-line', view).addEventListener('click', () => {
       const l = emptyLine();
@@ -1181,6 +1186,7 @@ export async function render(view, ctx) {
         return undefined;
       }
 
+      if(state.auto_gold_receipt==='WAGES' && !(Number(state.receipt_gold_price)>0)) return toastErr('أدخل سعر جرام عيار 24 في تاريخ الفاتورة لسند الذهب');
       const invoice = await api.post('/api/invoices', {
         issuer_id: state.issuer_id,
         client_id: state.client_id,
@@ -1201,6 +1207,10 @@ export async function render(view, ctx) {
       });
       clearDraft();
       toastOk(`تم إصدار الفاتورة ${invoice.invoice_number} بمبلغ ${money(invoice.grand_total)}`);
+      if(state.auto_gold_receipt){
+        try{await api.post('/api/vouchers/gold',{invoice_id:invoice.id,kind:state.auto_gold_receipt,gold_price:Number(state.receipt_gold_price||0)});syncNotify('vouchers','create');toastOk('تم إنشاء سند قبض الذهب للفاتورة')}
+        catch(error){toastErr(`الفاتورة محفوظة، لكن تعذر إنشاء سند الذهب: ${error.message||''}`);router.go(`invoice-view/${invoice.id}`);return}
+      }
       syncNotify('invoices', 'create', invoice);
       syncNotify('clients', 'update', invoice.client_id);
       syncNotify('issuers', 'update', invoice.issuer_id);

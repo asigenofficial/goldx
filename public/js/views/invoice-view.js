@@ -10,6 +10,7 @@ import {
   amount, sarSvg, shareDocument, choosePdfDestination, savePdfFile, clientPdfFilename,
 } from '../core/util.js';
 import { tafqeet } from '../print/templates.js';
+import {goldReceiptModal} from './vouchers.js';
 
 function enforceLtrHeaderIcons(html) {
   if (!html) return html;
@@ -398,6 +399,8 @@ export async function render(view, ctx) {
           ${raw(invoice.status !== 'CANCELLED' && can('invoices.edit') ? `<a class="btn" href="#/invoice?edit=${esc(invoice.id)}" title="تعديل الفاتورة يدوياً">${icon.edit({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' })}تعديل الفاتورة</a>` : '')}
           <button class="btn btn-danger" id="btn-delete-invoice" type="button" title="حذف الفاتورة نهائياً">${icon.trash({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' })}حذف الفاتورة</button>
           <a class="btn" href="#/invoices">${raw(icon.arrowRight({ size: 14, style: 'vertical-align:text-bottom;margin-left:4px' }))}القائمة</a>
+          ${raw(invoice.status !== 'CANCELLED' && can('vouchers.create') ? '<button class="btn" id="gold-metal">قبض ذهب كسر</button><button class="btn" id="gold-wages">قبض أجور بذهب عيار 24</button>' : '')}
+          <a class="btn" href="#/gold-receipts">سندات قبض الذهب</a>
         </div>
       </div>
 
@@ -877,6 +880,8 @@ export async function render(view, ctx) {
 
     const payBtn = $('#pay', view);
     if (payBtn) payBtn.addEventListener('click', () => receiptModal(invoice, draw));
+    $('#gold-metal',view)?.addEventListener('click',()=>goldReceiptModal(invoice,'METAL',draw));
+    $('#gold-wages',view)?.addEventListener('click',()=>goldReceiptModal(invoice,'WAGES',draw));
 
     const cancelBtn = $('#cancel', view);
     if (cancelBtn) {

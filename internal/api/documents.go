@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"goldx/internal/models"
 	"html"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -301,7 +303,7 @@ func (s *Server) failPDF(kind, id string, revision int64, renderErr error) {
 // Invalidate cached PDFs when their rendering rules change.
 func documentPDFStyleKey(kind, style string) string {
 	if kind == "voucher" {
-		return style + "|amount-grouping-v1"
+		return style + "|amount-grouping-v1|receipt-svg-v2"
 	}
 	if kind == "invoice" {
 		return style + "|invoice-table-fill-v7"
@@ -331,13 +333,11 @@ func (s *Server) renderVoucherHTML(id, style string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if style == "" {
-		style, err = s.templates.FirstTemplateID("documents")
-		if err != nil {
-			return "", err
-		}
+	client, err := s.clients.GetClient(v.ClientID)
+	if err != nil {
+		return "", err
 	}
-	tpl, err := s.templates.RenderTemplateHTML(style)
+	tpl, err := s.receiptTemplate(style)
 	if err != nil {
 		return "", err
 	}
@@ -357,6 +357,7 @@ func (s *Server) renderVoucherHTML(id, style string) (string, error) {
 		"seller_address_en": issuer.AddressEn,
 		"seller_meta_ar":    issuer.NameAr, "seller_meta_en": issuer.NameEn,
 		"buyer_name": v.ClientName, "client_name": v.ClientName, "received_from": v.ClientName,
+		"buyer_address": client.Address, "buyer_tax": client.TaxNumber,
 		"voucher_number": v.VoucherNumber, "invoice_number": v.VoucherNumber,
 		"voucher_date": v.VoucherDate, "issue_date": v.VoucherDate,
 		"payment_method": v.PaymentLabel, "reference_no": v.ReferenceNo,
@@ -364,20 +365,11 @@ func (s *Server) renderVoucherHTML(id, style string) (string, error) {
 		"amount": amount, "total_amount": amount, "grand_total": amount,
 		"qr_code": "", "amount_in_words": services.TafqeetArabic(v.TotalAmount), "tafqeet": services.TafqeetArabic(v.TotalAmount), "receiver_name": issuer.NameAr,
 	}
-	for key, value := range replacements {
-		tpl = strings.ReplaceAll(tpl, "{{"+key+"}}", html.EscapeString(value))
+	for key, value := range cashReceiptLabels() {
+		replacements[key] = value
 	}
-	sarSymbol := s.templates.SARSymbolSVG()
-	tpl = strings.ReplaceAll(tpl, "{{sar_symbol}}", sarSymbol)
-	tpl = strings.ReplaceAll(tpl, "{{currency_symbol}}", sarSymbol)
-	logo := `<img style="max-width:130px;max-height:80px;object-fit:cover;border-radius:6px;" src="/img/logo-banner.jpg" alt="GOLDX">`
-	if issuer.LogoData != nil && *issuer.LogoData != "" {
-		src := html.EscapeString(*issuer.LogoData)
-		logo = `<img style="max-width:130px;max-height:80px;object-fit:cover;border-radius:6px;" src="` + src + `" alt="Logo">`
-	}
-	tpl = strings.ReplaceAll(tpl, "{{logo}}", logo)
-	tpl = injectVoucherPrintStyle(tpl)
-	return tpl, nil
+	blocks := map[string]string{"receipt_value": `<span class="sar-amount" dir="rtl"><bdi dir="ltr">` + amount + `</bdi>{{sar_symbol}}</span>`, "receipt_items": "", "receipt_conversion": "", "receipt_weight_summary": ""}
+	return s.fillReceiptTemplate(tpl, issuer, replacements, blocks), nil
 }
 
 func injectVoucherPrintStyle(template string) string {
@@ -413,4 +405,158 @@ body > .receipt-card > *, body > .receipt-container > *, body > .receipt-page > 
 		return template[:headEnd] + style + "\n" + template[headEnd:]
 	}
 	return style + "\n" + template
+}
+
+func (s *Server) registerGoldReceipts(mux *http.ServeMux) {
+	mux.HandleFunc("GET /api/vouchers/gold", func(w http.ResponseWriter, r *http.Request) {
+		items, err := s.vouchers.ListGoldReceipts(r.URL.Query().Get("issuer_id"), r.URL.Query().Get("invoice_id"))
+		if err != nil {
+			s.err(w, 500, err.Error())
+			return
+		}
+		s.json(w, 200, items)
+	})
+	mux.HandleFunc("GET /api/vouchers/gold/price", func(w http.ResponseWriter, r *http.Request) {
+		var price int64
+		_ = s.db.QueryRow(`SELECT gold_price FROM gold_receipts WHERE issuer_id=? AND voucher_date=? AND kind='WAGES' AND status='ACTIVE' ORDER BY created_at DESC LIMIT 1`, r.URL.Query().Get("issuer_id"), r.URL.Query().Get("date")).Scan(&price)
+		s.json(w, 200, map[string]any{"gold_price": models.ToMajor(price)})
+	})
+	mux.HandleFunc("POST /api/vouchers/gold", func(w http.ResponseWriter, r *http.Request) {
+		var input services.CreateGoldReceiptInput
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			s.err(w, 400, "بيانات السند غير صالحة")
+			return
+		}
+		actor := "system"
+		if u := s.getSessionUser(r); u != nil {
+			actor = u.Username
+		}
+		v, err := s.vouchers.CreateGoldReceipt(input, actor, s.clientIP(r))
+		if err != nil {
+			s.err(w, 400, err.Error())
+			return
+		}
+		s.sync.Broadcast(services.SyncEvent{Type: "voucher:created", Entity: "voucher", Action: "create", Actor: actor, Data: map[string]any{"id": v.ID, "kind": v.Kind, "total_weight": v.TotalWeight}})
+		s.json(w, 200, v)
+	})
+	mux.HandleFunc("POST /api/vouchers/gold/{id}/cancel", func(w http.ResponseWriter, r *http.Request) {
+		actor := "system"
+		if u := s.getSessionUser(r); u != nil {
+			actor = u.Username
+		}
+		if err := s.vouchers.CancelGoldReceipt(r.PathValue("id"), actor, s.clientIP(r)); err != nil {
+			s.err(w, 400, err.Error())
+			return
+		}
+		s.sync.Broadcast(services.SyncEvent{Type: "voucher:updated", Entity: "voucher", Action: "cancel", Actor: actor})
+		s.json(w, 200, map[string]bool{"ok": true})
+	})
+	mux.HandleFunc("GET /api/vouchers/gold/{id}/html", func(w http.ResponseWriter, r *http.Request) {
+		doc, err := s.renderGoldReceiptHTML(r.PathValue("id"), r.URL.Query().Get("style"))
+		if err != nil {
+			s.err(w, 404, err.Error())
+			return
+		}
+		s.json(w, 200, map[string]string{"html": doc})
+	})
+	mux.HandleFunc("GET /api/vouchers/gold/{id}/pdf", func(w http.ResponseWriter, r *http.Request) {
+		doc, err := s.renderGoldReceiptHTML(r.PathValue("id"), r.URL.Query().Get("style"))
+		if err != nil {
+			s.err(w, 404, err.Error())
+			return
+		}
+		pdf, err := services.RenderHTMLToPDF(doc)
+		if err != nil {
+			s.err(w, 500, err.Error())
+			return
+		}
+		w.Header().Set("Content-Type", "application/pdf")
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Disposition", `attachment; filename="gold-receipt.pdf"; filename*=UTF-8''`+url.PathEscape("سند_قبض_ذهب.pdf"))
+		w.Write(pdf)
+	})
+}
+
+func (s *Server) renderGoldReceiptHTML(id, style string) (string, error) {
+	v, err := s.vouchers.GetGoldReceipt(id)
+	if err != nil {
+		return "", err
+	}
+	issuer, err := s.issuers.GetIssuer(v.IssuerID)
+	if err != nil {
+		return "", err
+	}
+	client, err := s.clients.GetClient(v.ClientID)
+	if err != nil {
+		return "", err
+	}
+	tpl, err := s.receiptTemplate(style)
+	if err != nil {
+		return "", err
+	}
+	title := "سند قبض معدن كسر"
+	if v.Kind == "WAGES" {
+		title = "سند قبض أجور بالذهب"
+	}
+	if v.Status == "CANCELLED" {
+		title += " — ملغى"
+	}
+	replacements := map[string]string{"receipt_title": title, "receipt_subtitle": "Gold Receipt", "receipt_payment_label": "نوع القبض", "receipt_reference_label": "الفاتورة المرتبطة", "receipt_currency_label": "الوحدة / Unit", "receipt_currency": "ذهب بالجرام / Gold grams", "receipt_total_label": "إجمالي الذهب المقبوض", "receipt_unit": "جرام", "receipt_footer": "سند قبض ذهب — جميع الأوزان بالجرام", "seller_name": issuer.NameAr, "seller_name_en": issuer.NameEn, "seller_address": issuer.Street, "seller_address_en": issuer.AddressEn, "seller_tax": issuer.TaxNumber, "seller_cr": issuer.CommercialRegister, "seller_phone": issuer.Phone, "received_from": client.Name, "voucher_number": v.VoucherNumber, "voucher_date": v.VoucherDate, "payment_method": map[string]string{"METAL": "قبض معدن كسر", "WAGES": "قبض أجور بذهب عيار 24"}[v.Kind], "reference_no": v.InvoiceNumber, "paid_for": "قبض ذهب مقابل فاتورة رقم " + v.InvoiceNumber + " — " + v.Notes, "amount_in_words": ""}
+	replacements["buyer_address"] = client.Address
+	if client.Address == "" {
+		replacements["buyer_address"] = strings.Join([]string{client.City, client.District, client.Street}, " ")
+	}
+	replacements["buyer_tax"] = client.TaxNumber
+	weights := map[string]float64{}
+	var rows strings.Builder
+	for i, line := range v.Lines {
+		weights[line.Karat] += line.Weight
+		stockName := "ذهب عيار " + line.Karat
+		if v.Kind == "METAL" {
+			stockName = "ذهب كسر عيار " + line.Karat
+		}
+		fmt.Fprintf(&rows, `<tr><td>%d</td><td>%s</td><td dir="ltr">%.3f</td><td dir="ltr">%sK</td></tr>`, i+1, html.EscapeString(stockName), line.Weight, html.EscapeString(line.Karat))
+	}
+	items := `<table class="receipt-items"><thead><tr><th>#</th><th>الصنف / Stock Name</th><th>الوزن بالجرام / Weight</th><th>العيار / Purity</th></tr></thead><tbody>` + rows.String() + `</tbody></table>`
+	summary := `<table class="receipt-weight-summary"><caption>ملخص القبض حسب العيار</caption><tr><th>18K</th><th>21K</th><th>22K</th><th>24K</th></tr><tr>`
+	for _, k := range []string{"18", "21", "22", "24"} {
+		summary += fmt.Sprintf(`<td dir="ltr">%.3f</td>`, weights[k])
+	}
+	summary += `</tr></table>`
+	conversion := ""
+	if v.Kind == "WAGES" {
+		conversion = fmt.Sprintf(`<div class="receipt-conversion">إجمالي الفاتورة شامل الضريبة: <b dir="ltr">%.2f</b> ريال سعودي ÷ سعر جرام عيار 24 بتاريخ %s: <b dir="ltr">%.2f</b> ريال سعودي = <b dir="ltr">%.3f</b> جرام ذهب عيار 24</div>`, v.InvoiceTotal, html.EscapeString(v.VoucherDate), v.GoldPrice, v.TotalWeight)
+	}
+	return s.fillReceiptTemplate(tpl, issuer, replacements, map[string]string{"receipt_value": fmt.Sprintf(`<bdi dir="ltr">%.3f</bdi>`, v.TotalWeight), "receipt_items": items, "receipt_conversion": conversion, "receipt_weight_summary": summary}), nil
+}
+
+func cashReceiptLabels() map[string]string {
+	return map[string]string{"receipt_title": "سند قبض نقدي", "receipt_subtitle": "Cash Receipt — SAR", "receipt_payment_label": "طريقة السداد", "receipt_reference_label": "مرجع السداد", "receipt_currency_label": "العملة / Currency", "receipt_currency": "ريال سعودي / SAR", "receipt_total_label": "المبلغ المستلم", "receipt_unit": "ريال سعودي", "receipt_footer": "سند قبض بمبلغ مالي بالريال السعودي."}
+}
+
+func (s *Server) receiptTemplate(style string) (string, error) {
+	var err error
+	if style == "" {
+		style, err = s.templates.FirstTemplateID("documents")
+		if err != nil {
+			return "", err
+		}
+	}
+	return s.templates.RenderTemplateHTML(style)
+}
+
+func (s *Server) fillReceiptTemplate(tpl string, issuer *models.Issuer, values map[string]string, blocks map[string]string) string {
+	for key, value := range values {
+		tpl = strings.ReplaceAll(tpl, "{{"+key+"}}", html.EscapeString(value))
+	}
+	for key, value := range blocks {
+		tpl = strings.ReplaceAll(tpl, "{{"+key+"}}", value)
+	}
+	symbol := s.templates.SARSymbolSVG()
+	tpl = strings.NewReplacer("{{sar_symbol}}", symbol, "{{currency_symbol}}", symbol).Replace(tpl)
+	logo := `<span class="gold-mark">◇</span>`
+	if issuer.LogoData != nil && *issuer.LogoData != "" {
+		logo = `<img style="max-width:130px;max-height:80px;object-fit:contain;" src="` + html.EscapeString(*issuer.LogoData) + `" alt="شعار المتجر">`
+	}
+	return injectVoucherPrintStyle(strings.ReplaceAll(tpl, "{{logo}}", logo))
 }

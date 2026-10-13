@@ -23,6 +23,7 @@ const NAV = [
   { name: 'invoices', label: 'فواتير الذهب', icon: icon.invoice(), perm: 'invoices.view' },
   { name: 'bulk', label: 'التوليد الدفعي للفواتير', icon: icon.invoicePlus(), perm: 'bulk.generate' },
   { name: 'vouchers', label: 'سندات القبض', icon: icon.receipt(), perm: 'vouchers.view' },
+  { name: 'gold-receipts', label: 'سندات قبض الذهب', icon: icon.goldBar(), perm: 'vouchers.view' },
   { name: 'statement', label: 'كشف حساب عميل', icon: icon.goldScale(), perm: 'ledger.view' },
   { name: 'reports', label: 'التقارير المالية', icon: icon.report(), perm: 'reports.view' },
   { group: 'البيانات الأساسية' },
@@ -44,6 +45,7 @@ const VIEWS = {
   'invoice-view': () => import('./views/invoice-view.js'),
   bulk: () => import('./views/bulk.js'),
   vouchers: () => import('./views/vouchers.js'),
+  'gold-receipts': () => import('./views/vouchers.js').then(m => ({render: m.renderGoldReceipts})),
   'vouchers-install': () => import('./views/vouchers.js').then((m) => ({
     render: (view, ctx) => m.render(view, { ...(ctx || {}), query: { ...((ctx && ctx.query) || {}), mode: 'install' } }),
   })),
@@ -312,6 +314,7 @@ const ROUTE_PERMS = {
   'invoice-view': 'invoices.view',
   bulk: 'bulk.generate',
   vouchers: 'vouchers.view',
+  'gold-receipts': 'vouchers.view',
   statement: 'ledger.view',
   issuers: 'issuers.view',
   templates: 'invoices.view',

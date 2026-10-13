@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -773,3 +774,248 @@ func (s *VoucherService) DeleteVoucher(id, actor, ip string) error {
 
 // Bound monetary inputs before conversion, arithmetic and accumulation.
 func validAmount(v float64) bool { return !math.IsNaN(v) && !math.IsInf(v, 0) && v >= 0 && v <= 1e12 }
+
+type GoldReceiptLine struct {
+	Karat  string  `json:"karat"`
+	Weight float64 `json:"weight"`
+}
+type CreateGoldReceiptInput struct {
+	InvoiceID string            `json:"invoice_id"`
+	Kind      string            `json:"kind"`
+	GoldPrice float64           `json:"gold_price"`
+	Lines     []GoldReceiptLine `json:"lines"`
+	Notes     string            `json:"notes"`
+}
+type GoldReceipt struct {
+	ID            string            `json:"id"`
+	VoucherNumber string            `json:"voucher_number"`
+	IssuerID      string            `json:"issuer_id"`
+	ClientID      string            `json:"client_id"`
+	InvoiceID     string            `json:"invoice_id"`
+	InvoiceNumber string            `json:"invoice_number"`
+	VoucherDate   string            `json:"voucher_date"`
+	Kind          string            `json:"kind"`
+	TotalWeight   float64           `json:"total_weight"`
+	GoldPrice     float64           `json:"gold_price"`
+	InvoiceTotal  float64           `json:"invoice_total"`
+	Lines         []GoldReceiptLine `json:"lines"`
+	Notes         string            `json:"notes"`
+	Status        string            `json:"status"`
+	IssuerName    string            `json:"issuer_name"`
+	ClientName    string            `json:"client_name"`
+}
+
+func goldWeight(total, price int64) (float64, error) {
+	if total <= 0 || price <= 0 {
+		return 0, errors.New("إجمالي الفاتورة وسعر جرام الذهب يجب أن يكونا أكبر من الصفر")
+	}
+	weight := math.Round(float64(total)/float64(price)*1000) / 1000
+	if weight <= 0 || weight > 1e9 {
+		return 0, errors.New("وزن الذهب خارج النطاق المسموح")
+	}
+	return weight, nil
+}
+
+func (s *VoucherService) CreateGoldReceipt(input CreateGoldReceiptInput, actor, ip string) (*GoldReceipt, error) {
+	if input.Kind != "METAL" && input.Kind != "WAGES" {
+		return nil, errors.New("اختر قبض كسر أو قبض أجور بالذهب")
+	}
+	if !validAmount(input.GoldPrice) {
+		return nil, errors.New("سعر الذهب غير صالح")
+	}
+	s.db.WriteLock()
+	defer s.db.WriteUnlock()
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	v := GoldReceipt{ID: crypto.UUID(), InvoiceID: input.InvoiceID, Kind: input.Kind, Notes: strings.TrimSpace(input.Notes), Status: "ACTIVE"}
+	var total int64
+	var status string
+	err = tx.QueryRow(`SELECT issuer_id,client_id,invoice_number,issue_date,grand_total,status FROM invoices WHERE id=?`, input.InvoiceID).Scan(&v.IssuerID, &v.ClientID, &v.InvoiceNumber, &v.VoucherDate, &total, &status)
+	if err != nil {
+		return nil, errors.New("الفاتورة غير موجودة")
+	}
+	if status == "CANCELLED" {
+		return nil, errors.New("لا يمكن قبض ذهب لفاتورة ملغاة")
+	}
+	v.InvoiceTotal = models.ToMajor(total)
+	price := models.ToMinor(input.GoldPrice)
+	if input.Kind == "WAGES" {
+		var count int
+		if err = tx.QueryRow(`SELECT COUNT(*) FROM gold_receipts WHERE invoice_id=? AND kind='WAGES' AND status='ACTIVE'`, input.InvoiceID).Scan(&count); err != nil {
+			return nil, err
+		}
+		if count > 0 {
+			return nil, errors.New("يوجد سند قبض أجور ذهب نشط لهذه الفاتورة")
+		}
+		if price == 0 {
+			_ = tx.QueryRow(`SELECT gold_price FROM gold_receipts WHERE issuer_id=? AND voucher_date=? AND kind='WAGES' AND status='ACTIVE' ORDER BY created_at DESC LIMIT 1`, v.IssuerID, v.VoucherDate).Scan(&price)
+		}
+		weight, e := goldWeight(total, price)
+		if e != nil {
+			return nil, e
+		}
+		v.Lines = []GoldReceiptLine{{Karat: "24", Weight: weight}}
+		v.TotalWeight = weight
+		v.GoldPrice = models.ToMajor(price)
+	} else {
+		price = 0
+		available := map[string]float64{}
+		rows, e := tx.Query(`SELECT COALESCE(NULLIF(karat,''),'21'),SUM(quantity) FROM invoice_items WHERE invoice_id=? GROUP BY COALESCE(NULLIF(karat,''),'21')`, input.InvoiceID)
+		if e != nil {
+			return nil, e
+		}
+		for rows.Next() {
+			var k string
+			var w float64
+			if e = rows.Scan(&k, &w); e != nil {
+				rows.Close()
+				return nil, e
+			}
+			available[k] = math.Round(w*1000) / 1000
+		}
+		e = rows.Err()
+		rows.Close()
+		if e != nil {
+			return nil, e
+		}
+		rows, e = tx.Query(`SELECT lines FROM gold_receipts WHERE invoice_id=? AND kind='METAL' AND status='ACTIVE'`, input.InvoiceID)
+		if e != nil {
+			return nil, e
+		}
+		for rows.Next() {
+			var data string
+			var lines []GoldReceiptLine
+			if e = rows.Scan(&data); e != nil {
+				rows.Close()
+				return nil, e
+			}
+			if e = json.Unmarshal([]byte(data), &lines); e != nil {
+				rows.Close()
+				return nil, e
+			}
+			for _, line := range lines {
+				available[line.Karat] -= line.Weight
+			}
+		}
+		e = rows.Err()
+		rows.Close()
+		if e != nil {
+			return nil, e
+		}
+		lines := input.Lines
+		if len(lines) == 0 {
+			for _, k := range []string{"18", "21", "22", "24"} {
+				if w := math.Round(available[k]*1000) / 1000; w > 0 {
+					lines = append(lines, GoldReceiptLine{Karat: k, Weight: w})
+				}
+			}
+		}
+		seen := map[string]bool{}
+		for _, line := range lines {
+			if seen[line.Karat] || (line.Karat != "18" && line.Karat != "21" && line.Karat != "22" && line.Karat != "24") || math.IsNaN(line.Weight) || math.IsInf(line.Weight, 0) || line.Weight <= 0 || line.Weight > 1e9 {
+				return nil, errors.New("وزن أو عيار غير صالح")
+			}
+			seen[line.Karat] = true
+			line.Weight = math.Round(line.Weight*1000) / 1000
+			if line.Weight <= 0 || line.Weight > available[line.Karat]+0.00001 {
+				return nil, fmt.Errorf("وزن عيار %s يتجاوز الوزن المتبقي للقبض في الفاتورة", line.Karat)
+			}
+			v.Lines = append(v.Lines, line)
+			v.TotalWeight += line.Weight
+		}
+		v.TotalWeight = math.Round(v.TotalWeight*1000) / 1000
+		if v.TotalWeight <= 0 {
+			return nil, errors.New("لا يوجد وزن متبقٍ للقبض في الفاتورة")
+		}
+	}
+	number, _, err := s.issuers.NextVoucherNumber(tx, v.IssuerID)
+	if err != nil {
+		return nil, err
+	}
+	v.VoucherNumber = "G-" + number
+	data, err := json.Marshal(v.Lines)
+	if err != nil {
+		return nil, err
+	}
+	_, err = tx.Exec(`INSERT INTO gold_receipts(id,voucher_number,issuer_id,client_id,invoice_id,invoice_number,voucher_date,kind,total_weight,gold_price,invoice_total,lines,notes,status,created_by,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,'ACTIVE',?,?)`, v.ID, v.VoucherNumber, v.IssuerID, v.ClientID, v.InvoiceID, v.InvoiceNumber, v.VoucherDate, v.Kind, v.TotalWeight, price, total, string(data), v.Notes, actor, db.NowIso())
+	if err != nil {
+		return nil, err
+	}
+	if err = db.AuditTx(tx, actor, "GOLD_RECEIPT_CREATE", "gold_receipt", v.ID, v.IssuerID, v, ip); err != nil {
+		return nil, err
+	}
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+	return s.GetGoldReceipt(v.ID)
+}
+
+func (s *VoucherService) GetGoldReceipt(id string) (*GoldReceipt, error) {
+	var v GoldReceipt
+	var price, total int64
+	var lines string
+	err := s.db.QueryRow(`SELECT g.id,g.voucher_number,g.issuer_id,g.client_id,g.invoice_id,g.invoice_number,g.voucher_date,g.kind,g.total_weight,g.gold_price,g.invoice_total,g.lines,g.notes,g.status,i.name_ar,c.name FROM gold_receipts g JOIN issuers i ON i.id=g.issuer_id JOIN clients c ON c.id=g.client_id WHERE g.id=?`, id).Scan(&v.ID, &v.VoucherNumber, &v.IssuerID, &v.ClientID, &v.InvoiceID, &v.InvoiceNumber, &v.VoucherDate, &v.Kind, &v.TotalWeight, &price, &total, &lines, &v.Notes, &v.Status, &v.IssuerName, &v.ClientName)
+	if err != nil {
+		return nil, err
+	}
+	v.GoldPrice = models.ToMajor(price)
+	v.InvoiceTotal = models.ToMajor(total)
+	if err = json.Unmarshal([]byte(lines), &v.Lines); err != nil {
+		return nil, err
+	}
+	return &v, nil
+}
+
+func (s *VoucherService) ListGoldReceipts(issuerID, invoiceID string) ([]GoldReceipt, error) {
+	rows, err := s.db.Query(`SELECT id FROM gold_receipts WHERE (?='' OR issuer_id=?) AND (?='' OR invoice_id=?) ORDER BY created_at DESC LIMIT 500`, issuerID, issuerID, invoiceID, invoiceID)
+	if err != nil {
+		return nil, err
+	}
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err = rows.Scan(&id); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return nil, err
+	}
+	result := []GoldReceipt{}
+	for _, id := range ids {
+		v, e := s.GetGoldReceipt(id)
+		if e != nil {
+			return nil, e
+		}
+		result = append(result, *v)
+	}
+	return result, nil
+}
+
+func (s *VoucherService) CancelGoldReceipt(id, actor, ip string) error {
+	s.db.WriteLock()
+	defer s.db.WriteUnlock()
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var issuer string
+	if err = tx.QueryRow(`SELECT issuer_id FROM gold_receipts WHERE id=? AND status='ACTIVE'`, id).Scan(&issuer); err != nil {
+		return errors.New("السند غير موجود أو ملغى")
+	}
+	if _, err = tx.Exec(`UPDATE gold_receipts SET status='CANCELLED' WHERE id=?`, id); err != nil {
+		return err
+	}
+	if err = db.AuditTx(tx, actor, "GOLD_RECEIPT_CANCEL", "gold_receipt", id, issuer, nil, ip); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
