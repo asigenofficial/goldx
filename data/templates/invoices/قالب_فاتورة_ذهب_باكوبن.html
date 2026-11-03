@@ -351,21 +351,27 @@
       margin-top: 2px;
     }
 
-    /* ─── 7. القسم السفلي: باركود QR على اليسار والإجماليات والتفقيط على اليمين ─── */
-    .bottom-totals-qr-grid {
+    /* ─── 7. القسم السفلي: باركود QR على اليسار والإجماليات على اليمين والتفقيط بكامل العرض ─── */
+    .bottom-totals-section {
+      width: 100%;
+      margin-top: 4px;
+      margin-bottom: 4px;
+    }
+
+    .qr-and-totals-row {
       display: flex;
       flex-direction: row;
       justify-content: space-between;
       align-items: flex-end;
-      gap: 15px;
-      margin-bottom: 6px;
+      width: 100%;
+      margin-bottom: 4px;
       direction: ltr !important;
     }
 
     .qr-container-box {
-      flex: 0 0 130px;
-      width: 130px;
-      height: 130px;
+      flex: 0 0 120px;
+      width: 120px;
+      height: 120px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -375,19 +381,12 @@
     .qr-container-box svg,
     .qr-container-box img,
     .qr-container-box .zatca-qr-container svg {
-      width: 125px !important;
-      height: 125px !important;
-      max-width: 125px !important;
-      max-height: 125px !important;
+      width: 118px !important;
+      height: 118px !important;
+      max-width: 118px !important;
+      max-height: 118px !important;
       display: block;
-      margin: 0 auto;
-    }
-
-    .totals-tafqeet-stack {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
+      margin: 0;
     }
 
     table.totals-summary-table {
@@ -395,7 +394,7 @@
       border-collapse: collapse;
       border: 1.5px solid #000;
       font-size: 10.5px;
-      margin-bottom: 5px;
+      direction: rtl;
     }
 
     table.totals-summary-table td {
@@ -408,40 +407,63 @@
       text-align: right;
       font-weight: bold;
       background: #fff;
-      width: 68%;
+      width: 65%;
+      white-space: nowrap;
     }
 
     table.totals-summary-table td.val {
       text-align: center;
       font-weight: bold;
       font-variant-numeric: tabular-nums;
-      width: 32%;
+      width: 35%;
+      direction: ltr;
     }
 
-    table.tafqeet-box-table {
+    /* صندوق التفقيط المستقل بعرض كامل مطابق لنموذج باكوبن بدقة متناهية */
+    table.bakoban-tafqeet-full-box {
       width: 100%;
       border-collapse: collapse;
       border: 1.5px solid #000;
-      font-size: 10.5px;
+      font-size: 11px;
+      font-weight: bold;
+      direction: rtl;
+      background: #fff;
+      margin-top: 2px;
+      margin-bottom: 4px;
     }
 
-    table.tafqeet-box-table td {
-      border: 1px solid #000;
-      padding: 3.5px 6px;
+    table.bakoban-tafqeet-full-box td {
+      border: none !important;
+      padding: 2.5px 8px;
       height: 22px;
+      vertical-align: middle;
     }
 
-    table.tafqeet-box-table td.words-col {
+    .tafqeet-money-row,
+    .tafqeet-money-row td {
+      color: #008000 !important; /* أخضر مميز في نموذج باكوبن */
+    }
+
+    .tafqeet-gold-row,
+    .tafqeet-gold-row td {
+      color: #8b0000 !important; /* بني عنابي مميز في نموذج باكوبن */
+    }
+
+    table.bakoban-tafqeet-full-box td.tafqeet-val {
+      width: 80px;
       text-align: right;
-      font-weight: bold;
+      direction: ltr;
+      font-weight: 900;
       padding-right: 8px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
     }
 
-    table.tafqeet-box-table td.val-col {
-      width: 85px;
-      text-align: center;
+    table.bakoban-tafqeet-full-box td.tafqeet-words {
+      text-align: right;
+      padding-right: 12px;
       font-weight: bold;
-      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.1px;
     }
 
     /* ─── 8. إقرار الخطأ والسهو وتاريخ الطباعة ─── */
@@ -459,8 +481,8 @@
 
     /* ─── 9. تذييل الفاتورة في أسفل الصفحة تماماً ─── */
     .invoice-footer-wrap {
-      border-top: 1.5px solid #000;
-      padding-top: 4px;
+      border-top: none;
+      padding-top: 2px;
       font-size: 9.5px;
       font-weight: bold;
       text-align: center;
@@ -640,14 +662,13 @@
       </section>
 
       <!-- ─── 7. شبكة الباركود الموسع والإجماليات والتفقيط ─── -->
-      <section class="bottom-totals-qr-grid">
-        <!-- باركود الزكاة والضريبة QR الموسع والواضح -->
-        <div class="qr-container-box">
-          {{qr_code}}
-        </div>
+      <section class="bottom-totals-section">
+        <!-- السطر العلوي: رمز QR على اليسار، وجدول الإجماليات الثلاثي على اليمين -->
+        <div class="qr-and-totals-row">
+          <div class="qr-container-box">
+            {{qr_code}}
+          </div>
 
-        <!-- مكدس جدول الإجماليات والتفقيط -->
-        <div class="totals-tafqeet-stack">
           <!-- جدول الإجماليات الثلاثي -->
           <table class="totals-summary-table">
             <tr>
@@ -663,19 +684,19 @@
               <td class="val" style="font-weight: 900;" id="sum-grand-total">{{grand_total}}</td>
             </tr>
           </table>
-
-          <!-- صندوق التفقيط المزدوج للمبلغ والذهب (النص على اليمين والمبلغ على اليسار) -->
-          <table class="tafqeet-box-table">
-            <tr>
-              <td class="words-col" id="tafqeet-amount-words">{{amount_in_words}}</td>
-              <td class="val-col" id="tafqeet-amount-num">{{grand_total}}</td>
-            </tr>
-            <tr>
-              <td class="words-col" id="tafqeet-gold-words">{{gold_amount_in_words}}</td>
-              <td class="val-col" id="tafqeet-gold-num">{{total_weight}}</td>
-            </tr>
-          </table>
         </div>
+
+        <!-- صندوق التفقيط المستقل بعرض كامل مطابق تماماً لنموذج باكوبن بالألوان والترتيب -->
+        <table class="bakoban-tafqeet-full-box">
+          <tr class="tafqeet-money-row">
+            <td class="tafqeet-val" id="tafqeet-amount-num">{{grand_total}}</td>
+            <td class="tafqeet-words" id="tafqeet-amount-words">{{amount_in_words}}</td>
+          </tr>
+          <tr class="tafqeet-gold-row">
+            <td class="tafqeet-val" id="tafqeet-gold-num">{{total_weight}}</td>
+            <td class="tafqeet-words" id="tafqeet-gold-words">{{gold_amount_in_words}}</td>
+          </tr>
+        </table>
       </section>
 
       <!-- ─── 8. إقرار الخطأ والسهو وتاريخ الطباعة ─── -->
