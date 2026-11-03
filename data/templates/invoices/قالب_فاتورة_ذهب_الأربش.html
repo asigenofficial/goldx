@@ -841,24 +841,7 @@
         return words.join(" ");
       }
 
-      // 1. معالجة وتعبئة بيانات الفاتورة والعميل الافتراضية عند غياب المتغيرات (للمعاينة المطابقة للأصل)
-      function fillIfPlaceholder(selector, defaultVal) {
-        var el = document.querySelector(selector);
-        if (el && (!el.textContent.trim() || el.textContent.indexOf('{{') !== -1)) {
-          el.textContent = defaultVal;
-        }
-      }
-
-      fillIfPlaceholder('.val-number', '366');
-      fillIfPlaceholder('.meta-table-left tr:nth-child(2) .val', '2023/10/04');
-      fillIfPlaceholder('.credit-days-val', '0');
-      fillIfPlaceholder('.inv-time', '05:42:34 PM');
-
-      fillIfPlaceholder('.meta-table-right tr:nth-child(1) td:nth-child(1)', 'مؤسسة جوهرة كادي للذهب والمجوهرات');
-      fillIfPlaceholder('.meta-table-right tr:nth-child(1) td:nth-child(2)', '030177');
-      fillIfPlaceholder('.meta-table-right tr:nth-child(2) td:nth-child(1)', '0559116084');
-      fillIfPlaceholder('.meta-table-right tr:nth-child(3) td:nth-child(1)', '301206259100003');
-
+      // باركود QR
       var qrBox = document.querySelector('.qr-container-box');
       if (qrBox && (qrBox.innerHTML.indexOf('{{') !== -1 || !qrBox.children.length)) {
         qrBox.innerHTML = '<svg viewBox="0 0 100 100" width="102" height="102" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#fff"/><path d="M5 5h30v30H5zm5 5v20h20V10zm5 5h10v10H15zm50-10h30v30H65zm5 5v20h20V10zm5 5h10v10H75zM5 65h30v30H5zm5 5v20h20V70zm5 5h10v10H15zm30-65h5v20h-5zm10 0h5v10h-5zm0 15h10v5H55zm-15 15h15v5H40zm25 0h10v10H65zm15 5h15v5H80zm-40 10h10v15H40zm15 5h10v5H55zm15-5h5v10h-5zm10 0h15v5H80zm5 10h10v5H85zm-45 15h5v15h-5zm10 5h10v10H50zm15-5h10v5H65zm15 0h15v10H80zm-15 10h5v10h-5zm10 5h5v5h-5z" fill="#000"/></svg>';

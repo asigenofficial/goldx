@@ -309,7 +309,7 @@ table.items-grid-table {
   direction: rtl;
 }
 table.items-grid-table th {
-  background: #7a7f85;
+  background: #e2e6ea;
   border: 1px solid #333;
   padding: 4.5px 2px;
   font-weight: bold;
@@ -320,7 +320,7 @@ table.items-grid-table th {
 table.items-grid-table th small {
   display: block;
   font-size: 8.5px;
-  color: #111;
+  color: #222;
   font-family: Arial, sans-serif;
   font-weight: normal;
 }
@@ -460,7 +460,7 @@ table.payment-mini-table {
   font-size: 10.5px;
 }
 table.payment-mini-table th {
-  background: #7a7f85;
+  background: #e2e6ea;
   border: 1px solid #333;
   padding: 4px 3px;
   font-weight: bold;
@@ -644,10 +644,6 @@ table.payment-mini-table td {
           <tr>
             <td class="lbl">التاريخ والوقت :</td>
             <td class="val"><span class="inv-time">{{issue_time}}</span> {{issue_date}}</td>
-          </tr>
-          <tr>
-            <td class="lbl">الموافق :</td>
-            <td class="val">{{gregorian_date}}</td>
           </tr>
           <tr>
             <td class="lbl">نسخة الطباعة :</td>
@@ -877,33 +873,6 @@ table.payment-mini-table td {
     return words.join(" ");
   }
 
-  // 1. معالجة وتعبئة بيانات الفاتورة والعميل الافتراضية عند غياب المتغيرات (للمعاينة المطابقة للأصل)
-  function fillIfEmpty(selector, val) {
-    var el = document.querySelector(selector);
-    if (el && (!el.textContent.trim() || el.textContent.indexOf('{{') !== -1)) {
-      el.textContent = val;
-    }
-  }
-
-  // العمود الأيمن (العميل)
-  fillIfEmpty('.meta-col:nth-child(1) tr:nth-child(1) .val', '986');
-  fillIfEmpty('.meta-col:nth-child(1) tr:nth-child(2) .val', 'شركة الاصالة العربية / كياو 10 / إبراهيم السلمي');
-  fillIfEmpty('.meta-col:nth-child(1) tr:nth-child(3) .val', '311394460600003');
-  fillIfEmpty('.meta-col:nth-child(1) tr:nth-child(4) .val', '966560293801');
-  fillIfEmpty('.meta-col:nth-child(1) tr:nth-child(5) .val', 'جدة');
-
-  // العمود الأيسر (الفاتورة)
-  fillIfEmpty('.meta-col:nth-child(2) tr:nth-child(1) .val', '300834097800003');
-  fillIfEmpty('.meta-col:nth-child(2) tr:nth-child(2) .val', '1703');
-  fillIfEmpty('.meta-col:nth-child(2) tr:nth-child(3) .val', '10:35:12 04/01/1447 ص');
-  fillIfEmpty('.meta-col:nth-child(2) tr:nth-child(4) .val', '29/06/2025');
-
-  // باركود QR مطابق للصورة
-  var qrBox = document.querySelector('.qr-box-left');
-  if (qrBox && (qrBox.innerHTML.indexOf('{{') !== -1 || !qrBox.children.length)) {
-    qrBox.innerHTML = '<svg viewBox="0 0 100 100" width="85" height="85" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#fff"/><path d="M5 5h30v30H5zm5 5v20h20V10zm5 5h10v10H15zm50-10h30v30H65zm5 5v20h20V10zm5 5h10v10H75zM5 65h30v30H5zm5 5v20h20V70zm5 5h10v10H15zm30-65h5v20h-5zm10 0h5v10h-5zm0 15h10v5H55zm-15 15h15v5H40zm25 0h10v10H65zm15 5h15v5H80zm-40 10h10v15H40zm15 5h10v5H55zm15-5h5v10h-5zm10 0h15v5H80zm5 10h10v5H85zm-45 15h5v15h-5zm10 5h10v10H50zm15-5h10v5H65zm15 0h15v10H80zm-15 10h5v10h-5zm10 5h5v5h-5z" fill="#000"/></svg>';
-  }
-
   // الشعار
   var userLogo = document.querySelector('.user-logo-container');
   var defLogo = document.querySelector('.shamasi-default-logo');
@@ -919,10 +888,6 @@ table.payment-mini-table td {
   var weights = { '18': 0, '21': 0, '24': 0, 'other': 0 };
 
   if (table) {
-    var tbody = table.querySelector('tbody');
-    if (tbody && (tbody.innerHTML.indexOf('{{') !== -1 || tbody.children.length === 0)) {
-      tbody.innerHTML = '<tr><td>1</td><td>بناجر مشغول</td><td>21</td><td>28.20</td><td>28.20</td><td>7.00</td><td>197.40</td></tr>';
-    }
     var rows = table.querySelectorAll('tbody tr');
     var rowIndex = 1;
     rows.forEach(function(row) {
@@ -994,16 +959,13 @@ table.payment-mini-table td {
     footSub.textContent = fmtNum(totalSub, 2);
   }
 
-  // 4. تحديث تفقيط الريال والذهب
-  var moneyTafEl = document.getElementById('tafqeet-money');
-  if (moneyTafEl && (!moneyTafEl.textContent.trim() || moneyTafEl.textContent.indexOf('{{') !== -1)) {
-    moneyTafEl.textContent = 'فقط مئتان و سبعة و عشرون ريالاً سعودياً و هللة لا غير.';
-  }
-
+  // 4. تحديث تفقيط الذهب (إذا لم يكن معبأ من النظام)
   var goldTafEl = document.getElementById('tafqeet-gold');
   if (goldTafEl && (!goldTafEl.textContent.trim() || goldTafEl.textContent.indexOf('{{') !== -1)) {
     var goldW = parseNum(ftPrev ? ftPrev.textContent : totalPrevalent875);
-    goldTafEl.textContent = tafqeetGold(goldW, 'عيار 875');
+    if (goldW > 0) {
+      goldTafEl.textContent = tafqeetGold(goldW, 'عيار 875');
+    }
   }
 
   // 5. تحديث الأوزان في الصندوق الأوسط
@@ -1020,8 +982,8 @@ table.payment-mini-table td {
 
   // 6. وزن الأكياس والوزن الإجمالي القائم
   var bagsEl = document.getElementById('bags-weight');
-  if (bagsEl && (!bagsEl.textContent.trim() || bagsEl.textContent.indexOf('{{') !== -1 || bagsEl.textContent.trim() === '0.00')) {
-    bagsEl.textContent = '2.50';
+  if (bagsEl && (!bagsEl.textContent.trim() || bagsEl.textContent.indexOf('{{') !== -1)) {
+    bagsEl.textContent = '0.00';
   }
 
   var grossEl = document.getElementById('gross-weight');
