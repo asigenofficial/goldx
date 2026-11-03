@@ -244,6 +244,7 @@
       font-size: 10.5px;
       text-align: center;
       margin-bottom: 24px;
+      direction: ltr !important;
     }
 
     table.bakoban-items-table thead tr.th-en-row td {
@@ -283,6 +284,7 @@
       border: 1.5px solid #000;
       font-size: 10.5px;
       margin-bottom: 8px;
+      direction: ltr !important;
     }
 
     table.table-summary-strip td {
@@ -303,6 +305,7 @@
       padding: 0 45px;
       margin-top: 6px;
       margin-bottom: 25px;
+      direction: ltr !important;
     }
 
     .sign-col-customer {
@@ -356,6 +359,7 @@
       align-items: flex-end;
       gap: 15px;
       margin-bottom: 6px;
+      direction: ltr !important;
     }
 
     .qr-container-box {
@@ -450,6 +454,7 @@
       font-weight: bold;
       margin-top: 4px;
       margin-bottom: 4px;
+      direction: ltr !important;
     }
 
     /* ─── 9. تذييل الفاتورة في أسفل الصفحة تماماً ─── */
@@ -465,7 +470,8 @@
 
     .page-count-marker {
       position: absolute;
-      left: 0;
+      right: 0;
+      left: auto;
       bottom: 0;
       font-size: 9.5px;
       font-weight: bold;
@@ -519,7 +525,7 @@
             </tr>
             <tr>
               <td class="lbl">مناولة السيد</td>
-              <td class="val">{{received_from}}</td>
+              <td class="val"></td>
             </tr>
             <tr>
               <td class="lbl">الرقم الضريبي للعميل</td>
@@ -589,36 +595,30 @@
     <div class="bottom-content">
       <!-- ─── 5. شريط ملخص الأوزان والتفصيل ─── -->
       <table class="table-summary-strip">
-        <tr>
-          <td style="width: 18%;" id="foot-subtotal">{{subtotal}}</td>
-          <td style="width: 28%; text-align: right; padding-right: 12px; font-weight: 900;">
-            Total &nbsp; الإجمالــــــــــــــــي
-          </td>
-          <td style="width: 14%;" id="foot-gross-weight">{{total_weight}}</td>
-          <td style="width: 18%; font-weight: bold;">جرام الوزن مع الأكياس</td>
-          <td style="width: 14%;" id="foot-bags-weight">{{bags_weight}}</td>
-          <td style="width: 8%;">
-            <span style="float: right;">العدد</span>
-            <span id="foot-pieces-count">{{total_pieces}}</span>
-          </td>
+        <tr style="direction: ltr;">
+          <td style="width: 3.5%; text-align: center;" id="foot-pieces-count">{{total_pieces}}</td>
+          <td style="width: 5.5%; text-align: center; font-weight: bold;">العدد</td>
+          <td style="width: 27%; text-align: center; font-weight: bold;">جرام الوزن مع الأكياس</td>
+          <td style="width: 14%; text-align: center; font-weight: bold;" id="foot-gross-weight">{{total_weight}}</td>
+          <td style="width: 31%; text-align: center; font-weight: 900;">Total &nbsp; الإجمالــــــــــــــــي</td>
+          <td style="width: 19%; text-align: center; font-weight: bold;" id="foot-subtotal">{{subtotal}}</td>
         </tr>
-        <tr>
-          <td style="width: 18%; text-align: center;">
-            <span style="margin-left: 6px;" id="foot-k18">{{weight_18}}</span>
-            <span>جرام عيار 18</span>
-          </td>
-          <td style="width: 28%; text-align: center;">
-            <span style="margin-left: 8px;" id="foot-k21">{{weight_21}}</span>
-            <span>جرام عيار 21</span>
-          </td>
-          <td style="width: 14%; text-align: center;">
-            <span style="margin-left: 6px;" id="foot-kother">{{weight_other}}</span>
+        <tr style="direction: ltr;">
+          <td colspan="3" style="text-align: center;">
+            <span style="margin-right: 8px;" id="foot-kother">{{weight_other}}</span>
             <span>جرام عيار آخر</span>
           </td>
-          <td colspan="3" style="background: #fff;"></td>
+          <td colspan="2" style="text-align: center;">
+            <span style="margin-right: 8px;" id="foot-k21">{{weight_21}}</span>
+            <span>جرام عيار 21</span>
+          </td>
+          <td style="text-align: center;">
+            <span style="margin-right: 8px;" id="foot-k18">{{weight_18}}</span>
+            <span>جرام عيار 18</span>
+          </td>
         </tr>
         <tr>
-          <td colspan="6" style="text-align: right; padding-right: 12px; font-weight: normal;">
+          <td colspan="6" style="text-align: right; direction: rtl; padding-right: 12px; font-weight: normal;">
             <b style="margin-left: 10px;">ملاحظات</b>
             <span id="foot-notes">{{notes}}</span>
           </td>
