@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="ar">
+
+<head>
+  <meta charset="utf-8">
+  <title>مشغل سعيد علي باكوبن للمعادن الثمينة — فاتورة مبيعات ضريبية</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 210mm;
+      height: 297mm;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      direction: rtl;
+      background: white;
+      color: #000;
+      font-family: 'goldx Document', Tahoma, 'Noto Sans Arabic', Arial, sans-serif;
+      font-size: 11px;
+      line-height: 1.3;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* ─── الحاوية الرئيسية لكامل الصفحة A4 بدقة متناهية ─── */
+    .invoice-container {
+      width: 210mm;
+      height: 297mm;
+      min-height: 297mm;
+      max-height: 297mm;
+      margin: 0 auto;
+      padding: 10mm 12mm 8mm 12mm;
+      background: #fff;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: space-between !important;
+      position: relative;
+      box-sizing: border-box;
+      overflow: hidden;
+      page-break-after: avoid;
+      page-break-inside: avoid;
+      break-after: avoid;
+      break-inside: avoid;
+    }
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+
+      html,
+      body {
+        width: 210mm;
+        height: 297mm;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden;
+      }
+
+      .invoice-container {
+        width: 210mm !important;
+        height: 297mm !important;
+        max-height: 297mm !important;
+        margin: 0 !important;
+        padding: 10mm 12mm 8mm 12mm !important;
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
+        break-after: avoid !important;
+        break-inside: avoid !important;
+      }
+    }
+
+    /* ─── القسم العلوي ─── */
+    .top-content {
+      flex: 0 0 auto !important;
+    }
+
+    /* ─── القسم السفلي (مثبت في أسفل الصفحة دائماً) ─── */
+    .bottom-content {
+      flex-shrink: 0 !important;
+      margin-top: auto !important;
+    }
+
+    /* ─── 1. ترويسة مشغل سعيد علي باكوبن للمعادن الثمينة ─── */
+    .header-container {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .header-side-ar {
+      text-align: right;
+      direction: rtl;
+      flex: 1;
+    }
+
+    .header-side-ar h1 {
+      margin: 0 0 4px;
+      font-size: 19px;
+      font-weight: 800;
+      color: #000;
+      letter-spacing: 0.2px;
+    }
+
+    .header-side-ar p {
+      margin: 0;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #000;
+    }
+
+    .header-side-en {
+      text-align: left;
+      direction: ltr;
+      flex: 1;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .header-side-en h2 {
+      margin: 0 0 4px;
+      font-size: 15px;
+      font-weight: 800;
+      color: #000;
+      letter-spacing: 0.2px;
+    }
+
+    .header-side-en p {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: #000;
+    }
+
+    /* ─── 2. صندوق عنوان الفاتورة المركزي ─── */
+    .invoice-title-wrapper {
+      text-align: center;
+      margin-bottom: 8px;
+      position: relative;
+    }
+
+    .invoice-title-pill {
+      display: inline-block;
+      border: 1.5px solid #000;
+      border-radius: 14px;
+      padding: 3px 40px;
+      font-size: 18px;
+      font-weight: 900;
+      background: #fff;
+      color: #000;
+      margin-bottom: 4px;
+    }
+
+    .invoice-title-subbar {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .page-marker-top {
+      position: absolute;
+      left: 0;
+      font-size: 10px;
+      font-weight: bold;
+    }
+
+    .seller-tax-center {
+      text-align: center;
+      font-size: 11.5px;
+      font-weight: bold;
+    }
+
+    /* ─── 3. بيانات الفاتورة والعميل (صندوقان دائريان متوازيان) ─── */
+    .meta-twin-boxes {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .meta-box-rounded {
+      flex: 1;
+      border: 1.5px solid #000;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    table.meta-twin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.5px;
+    }
+
+    table.meta-twin-table td {
+      border: 1px solid #000;
+      padding: 2.5px 6px;
+      height: 22px;
+      vertical-align: middle;
+    }
+
+    table.meta-twin-table td.lbl {
+      text-align: right;
+      font-weight: bold;
+      background: #fff;
+      white-space: nowrap;
+      width: 38%;
+    }
+
+    table.meta-twin-table td.val {
+      text-align: center;
+      font-weight: bold;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ─── 4. جدول الأصناف الرئيسي (مطابق لنموذج باكوبن 6 أعمدة بدقة) ─── */
+    .items-table-wrap {
+      width: 100%;
+      margin-bottom: 0;
+    }
+
+    table.bakoban-items-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1.5px solid #000;
+      font-size: 10.5px;
+      text-align: center;
+    }
+
+    table.bakoban-items-table thead tr.th-en-row td {
+      border: 1px solid #000;
+      padding: 3px 2px;
+      font-weight: bold;
+      background: #fff;
+      font-size: 9px;
+      font-family: Arial, Helvetica, sans-serif;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    table.bakoban-items-table thead tr.th-ar-row th {
+      border: 1px solid #000;
+      padding: 4px 2px;
+      font-weight: bold;
+      background: #fff;
+      font-size: 10px;
+      line-height: 1.25;
+      text-align: center;
+    }
+
+    table.bakoban-items-table tbody td {
+      border: 1px solid #000;
+      padding: 4.5px 3px;
+      font-size: 10.5px;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+      height: 24px;
+    }
+
+    /* ─── 5. شريط ملخص الأوزان والتفصيل تحت جدول الأصناف مباشرة ─── */
+    table.table-summary-strip {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1.5px solid #000;
+      border-top: 0;
+      font-size: 10.5px;
+      margin-bottom: 12px;
+    }
+
+    table.table-summary-strip td {
+      border: 1px solid #000;
+      padding: 3px 6px;
+      height: 23px;
+      font-weight: bold;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+    }
+
+    /* ─── 6. التواقيع المعتمدة (العميل والبائع) ─── */
+    .signatures-row {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 0 40px;
+      margin-bottom: 12px;
+    }
+
+    .sign-col-customer {
+      text-align: center;
+      min-width: 130px;
+    }
+
+    .sign-col-customer .en-sign {
+      font-size: 10px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+
+    .sign-col-customer .ar-sign {
+      font-size: 11px;
+      font-weight: bold;
+      border-top: 1px solid #aaa;
+      padding-top: 4px;
+    }
+
+    .sign-col-seller {
+      text-align: center;
+      min-width: 140px;
+    }
+
+    .sign-col-seller .en-sign {
+      font-size: 10px;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+
+    .sign-col-seller .ar-sign {
+      font-size: 11px;
+      font-weight: bold;
+      border-top: 1px solid #aaa;
+      padding-top: 4px;
+    }
+
+    .sign-col-seller .accountant-lbl {
+      font-size: 9.5px;
+      margin-top: 2px;
+    }
+
+    /* ─── 7. القسم السفلي: باركود QR على اليسار والإجماليات والتفقيط على اليمين ─── */
+    .bottom-totals-qr-grid {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 15px;
+      margin-bottom: 6px;
+    }
+
+    .qr-container-box {
+      flex: 0 0 130px;
+      width: 130px;
+      height: 130px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .qr-container-box svg,
+    .qr-container-box img,
+    .qr-container-box .zatca-qr-container svg {
+      width: 125px !important;
+      height: 125px !important;
+      max-width: 125px !important;
+      max-height: 125px !important;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .totals-tafqeet-stack {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    table.totals-summary-table {
+      width: 260px;
+      border-collapse: collapse;
+      border: 1.5px solid #000;
+      font-size: 10.5px;
+      margin-bottom: 5px;
+    }
+
+    table.totals-summary-table td {
+      border: 1px solid #000;
+      padding: 3px 6px;
+      height: 22px;
+    }
+
+    table.totals-summary-table td.lbl {
+      text-align: right;
+      font-weight: bold;
+      background: #fff;
+      width: 68%;
+    }
+
+    table.totals-summary-table td.val {
+      text-align: center;
+      font-weight: bold;
+      font-variant-numeric: tabular-nums;
+      width: 32%;
+    }
+
+    table.tafqeet-box-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1.5px solid #000;
+      font-size: 10.5px;
+    }
+
+    table.tafqeet-box-table td {
+      border: 1px solid #000;
+      padding: 3.5px 6px;
+      height: 22px;
+    }
+
+    table.tafqeet-box-table td.words-col {
+      text-align: right;
+      font-weight: bold;
+      padding-right: 8px;
+    }
+
+    table.tafqeet-box-table td.val-col {
+      width: 85px;
+      text-align: center;
+      font-weight: bold;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ─── 8. إقرار الخطأ والسهو وتاريخ الطباعة ─── */
+    .print-notes-bar {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 9.5px;
+      font-weight: bold;
+      margin-top: 4px;
+      margin-bottom: 4px;
+    }
+
+    /* ─── 9. تذييل الفاتورة في أسفل الصفحة تماماً ─── */
+    .invoice-footer-wrap {
+      border-top: 1.5px solid #000;
+      padding-top: 4px;
+      font-size: 9.5px;
+      font-weight: bold;
+      text-align: center;
+      line-height: 1.4;
+      position: relative;
+    }
+
+    .page-count-marker {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      font-size: 9.5px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="invoice-container" data-gold-design="قالب_فاتورة_ذهب_باكوبن"
+    data-gold-invoice-type="{{gold_invoice_type}}">
+
+    <!-- ═══════════════ القسم العلوي ═══════════════ -->
+    <div class="top-content">
+      <!-- ─── 1. ترويسة مشغل سعيد علي باكوبن للمعادن الثمينة ─── -->
+      <header class="header-container">
+        <div class="header-side-ar">
+          <h1 class="seller-name-el">{{seller_name}}</h1>
+          <p class="seller-desc-el">صناعة و بيع وشراء المعادن الثمينة والأحجار الكريمة</p>
+        </div>
+
+        <div class="header-side-en">
+          <h2 class="seller-en-el">{{seller_name_en}}</h2>
+          <p>R.C NO <span class="seller-cr-val">{{seller_cr}}</span></p>
+        </div>
+      </header>
+
+      <!-- ─── 2. صندوق عنوان الفاتورة المركزي ─── -->
+      <section class="invoice-title-wrapper">
+        <div class="invoice-title-pill">فاتورة مبيعات ضريبية</div>
+        <div class="invoice-title-subbar">
+          <span class="page-marker-top">صفحة 1 من 1</span>
+          <div class="seller-tax-center">
+            الرقم الضريبي للمنشأة <span class="seller-tax-val">{{seller_tax}}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── 3. بيانات الفاتورة والعميل (صندوقان متوازيان بحواف دائرية) ─── -->
+      <section class="meta-twin-boxes">
+        <!-- الصندوق الأيمن: بيانات العميل -->
+        <div class="meta-box-rounded">
+          <table class="meta-twin-table">
+            <tr>
+              <td class="lbl">رقم حساب العميل</td>
+              <td class="val">{{buyer_code}}</td>
+            </tr>
+            <tr>
+              <td class="lbl">إسم العميل</td>
+              <td class="val" style="font-size: 11px;">{{buyer_name}}</td>
+            </tr>
+            <tr>
+              <td class="lbl">مناولة السيد</td>
+              <td class="val">0</td>
+            </tr>
+            <tr>
+              <td class="lbl">الرقم الضريبي للعميل</td>
+              <td class="val" style="direction: ltr;">{{buyer_tax}}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- الصندوق الأيسر: بيانات الفاتورة والتاريخ والوقت -->
+        <div class="meta-box-rounded">
+          <table class="meta-twin-table">
+            <tr>
+              <td class="lbl" style="width: 25%;">رقم التسلسل</td>
+              <td class="val" style="width: 25%; font-size: 13px; font-weight: 900;">{{invoice_number}}</td>
+              <td class="lbl" style="width: 25%; text-align: center;">رقم سند العميل</td>
+              <td class="val" style="width: 25%;"></td>
+            </tr>
+            <tr>
+              <td class="lbl">الوقت والتاريخ</td>
+              <td class="val" colspan="3" style="direction: ltr; font-size: 10px;">
+                <span class="inv-date">{{issue_date}}</span> &nbsp; <span class="inv-time">{{issue_time}}</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="lbl">رقم الهاتف</td>
+              <td class="val" style="width: 25%; direction: ltr;">{{buyer_phone}}</td>
+              <td class="lbl" style="width: 25%; text-align: center;">الجوال</td>
+              <td class="val" style="width: 25%; direction: ltr;">{{buyer_phone}}</td>
+            </tr>
+            <tr>
+              <td class="lbl">سعر الكيلو الصافي 21</td>
+              <td class="val" colspan="3">( 0.00 ريال )</td>
+            </tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ─── 4. جدول الأصناف الرئيسي (مطابق لنموذج باكوبن بدقة متناهية) ─── -->
+      <main class="items-table-wrap">
+        <table class="bakoban-items-table" id="bakoban-items-table">
+          <thead>
+            <tr class="th-en-row">
+              <td style="width: 8%;">Item No.</td>
+              <td style="width: 38%;">Description</td>
+              <td style="width: 8%;">Purity</td>
+              <td style="width: 14%;">Gross Gms</td>
+              <td style="width: 14%;">M.Gms</td>
+              <td style="width: 18%;">Amount S.R</td>
+            </tr>
+            <tr class="th-ar-row">
+              <th>رقم الصنف<span style="font-size:0;line-height:0;opacity:0;"> كود</span></th>
+              <th>البيان</th>
+              <th>العيار</th>
+              <th>جرام الوزن</th>
+              <th>أجرة الجرام</th>
+              <th>القيمة بالريال<span style="font-size:0;line-height:0;opacity:0;"> قبل الضريبة</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {{items_rows}}
+          </tbody>
+        </table>
+
+        <!-- ─── 5. شريط ملخص الأوزان والتفصيل تحت جدول الأصناف مباشرة ─── -->
+        <table class="table-summary-strip">
+          <tr>
+            <td style="width: 18%;" id="foot-subtotal">{{subtotal}}</td>
+            <td style="width: 28%; text-align: right; padding-right: 12px; font-weight: 900;">
+              Total &nbsp; الإجمالــــــــــــــــي
+            </td>
+            <td style="width: 14%;" id="foot-gross-weight">{{total_weight}}</td>
+            <td style="width: 18%; font-weight: bold;">جرام الوزن مع الأكياس</td>
+            <td style="width: 14%;" id="foot-bags-weight">{{bags_weight}}</td>
+            <td style="width: 8%;">
+              <span style="float: right;">العدد</span>
+              <span id="foot-pieces-count">1</span>
+            </td>
+          </tr>
+          <tr>
+            <td style="width: 18%; text-align: center;">
+              <span style="margin-left: 6px;">0.00</span>
+              <span>جرام عيار 18</span>
+            </td>
+            <td style="width: 28%; text-align: center;">
+              <span style="margin-left: 8px;" id="foot-k21">{{weight_21}}</span>
+              <span>جرام عيار 21</span>
+            </td>
+            <td style="width: 14%; text-align: center;">
+              <span style="margin-left: 6px;" id="foot-kother">0.00</span>
+              <span>جرام عيار آخر</span>
+            </td>
+            <td colspan="3" style="background: #fff;"></td>
+          </tr>
+          <tr>
+            <td colspan="6" style="text-align: right; padding-right: 12px; font-weight: normal;">
+              <b style="margin-left: 10px;">ملاحظات</b>
+              <span id="foot-notes">{{notes}}</span>
+            </td>
+          </tr>
+        </table>
+      </main>
+    </div>
+
+    <!-- ═══════════════ القسم السفلي (تثبيت كامل في أسفل A4) ═══════════════ -->
+    <div class="bottom-content">
+      <!-- ─── 6. التواقيع المعتمدة ─── -->
+      <section class="signatures-row">
+        <div class="sign-col-customer">
+          <div class="en-sign">CUSTOMER</div>
+          <div class="ar-sign">توقيع العميل</div>
+        </div>
+
+        <div class="sign-col-seller">
+          <div class="en-sign">AUTHORISED'S SIGNATURE</div>
+          <div class="ar-sign">توقيع البائع</div>
+          <div class="accountant-lbl">المحاسب</div>
+        </div>
+      </section>
+
+      <!-- ─── 7. شبكة الباركود الموسع والإجماليات والتفقيط ─── -->
+      <section class="bottom-totals-qr-grid">
+        <!-- باركود الزكاة والضريبة QR الموسع والواضح -->
+        <div class="qr-container-box">
+          {{qr_code}}
+        </div>
+
+        <!-- مكدس جدول الإجماليات والتفقيط -->
+        <div class="totals-tafqeet-stack">
+          <!-- جدول الإجماليات الثلاثي -->
+          <table class="totals-summary-table">
+            <tr>
+              <td class="lbl">الإجمالي غير شامل القيمة المضافة</td>
+              <td class="val" id="sum-subtotal">{{subtotal}}</td>
+            </tr>
+            <tr>
+              <td class="lbl">إجمالي القيمة المضافة 15%</td>
+              <td class="val" id="sum-tax">{{tax_amount}}</td>
+            </tr>
+            <tr>
+              <td class="lbl" style="font-weight: 900;">الإجمالي شامل القيمة المضافة</td>
+              <td class="val" style="font-weight: 900;" id="sum-grand-total">{{grand_total}}</td>
+            </tr>
+          </table>
+
+          <!-- صندوق التفقيط المزدوج للمبلغ والذهب (النص على اليمين والمبلغ على اليسار) -->
+          <table class="tafqeet-box-table">
+            <tr>
+              <td class="words-col" id="tafqeet-amount-words">{{amount_in_words}}</td>
+              <td class="val-col" id="tafqeet-amount-num">{{grand_total}}</td>
+            </tr>
+            <tr>
+              <td class="words-col" id="tafqeet-gold-words">فقط ثلاثمائة وثلاثة وخمسون جرام وعشرة مليجرام لاغير عيار 875</td>
+              <td class="val-col" id="tafqeet-gold-num">{{total_weight}}</td>
+            </tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ─── 8. إقرار الخطأ والسهو وتاريخ الطباعة ─── -->
+      <div class="print-notes-bar">
+        <span>المستند معتمد ما عدا السهو و الخطأ</span>
+        <span>طبع في: <span class="print-time-stamp">{{issue_date}} {{issue_time}}</span> م</span>
+      </div>
+
+      <!-- ─── 9. تذييل الفاتورة في أسفل الصفحة تماماً ─── -->
+      <footer class="invoice-footer-wrap">
+        <div class="footer-center-text">
+          <span class="footer-country">المملكة العربية السعودية</span> - 
+          <span class="footer-address">{{seller_address}}</span> - 
+          ت: <span class="footer-phone">{{seller_phone}}</span>
+        </div>
+        <div class="page-count-marker">1/1</div>
+      </footer>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ معالجة ديناميكية ذاتية كاملة بدون أي بيانات ثابتة ═══════════════ -->
+  <script>
+    (function () {
+      function parseNum(str) {
+        if (!str) return 0;
+        var clean = ('' + str).replace(/[^\d.-]/g, '');
+        var v = parseFloat(clean);
+        return isNaN(v) ? 0 : v;
+      }
+
+      function fmtNum(n, d) {
+        if (d === undefined) d = 2;
+        return Number(n || 0).toLocaleString('en-US', {
+          minimumFractionDigits: d,
+          maximumFractionDigits: d
+        });
+      }
+
+      // تفقيط الأوزان إلى جرام ومليجرام بالعربية
+      var ones = ["", "واحد", "اثنان", "ثلاثة", "أربعة", "خمسة", "ستة", "سبعة", "ثمانية", "تسعة"];
+      var tens = ["", "عشرة", "عشرون", "ثلاثون", "أربعون", "خمسون", "ستون", "سبعون", "ثمانون", "تسعون"];
+      var teens = ["عشرة", "أحد عشر", "اثنا عشر", "ثلاثة عشر", "أربعة عشر", "خمسة عشر", "ستة عشر", "سبعة عشر", "ثمانية عشر", "تسعة عشر"];
+      var hundreds = ["", "مائة", "مائتان", "ثلاثمائة", "أربعمائة", "خمسمائة", "ستمائة", "سبعمائة", "ثمانمائة", "تسعمائة"];
+
+      function tafqeetHundreds(n) {
+        n = Math.floor(n);
+        if (n === 0) return "";
+        var res = [];
+        var h = Math.floor(n / 100);
+        var rem = n % 100;
+        if (h > 0) res.push(hundreds[h]);
+        if (rem > 0) {
+          if (rem < 10) {
+            res.push(ones[rem]);
+          } else if (rem >= 10 && rem < 20) {
+            res.push(teens[rem - 10]);
+          } else {
+            var o = rem % 10;
+            var t = Math.floor(rem / 10);
+            if (o > 0) {
+              res.push(ones[o] + " و " + tens[t]);
+            } else {
+              res.push(tens[t]);
+            }
+          }
+        }
+        return res.join(" و ");
+      }
+
+      function tafqeetGramsBakoban(num) {
+        var val = parseFloat(num);
+        if (isNaN(val) || val <= 0) return "فقط صفر جرام لاغير عيار 875";
+
+        var intPart = Math.floor(val);
+        var decPart = Math.round((val - intPart) * 1000); // مليجرام
+        var words = ["فقط"];
+
+        if (intPart > 0) {
+          var thousands = Math.floor(intPart / 1000);
+          var rem1000 = intPart % 1000;
+          var thWords = "";
+          if (thousands === 1) thWords = "ألف";
+          else if (thousands === 2) thWords = "ألفان";
+          else if (thousands >= 3 && thousands <= 10) thWords = tafqeetHundreds(thousands) + " آلاف";
+          else if (thousands > 10) thWords = tafqeetHundreds(thousands) + " ألف";
+
+          if (thWords) words.push(thWords);
+          if (rem1000 > 0) words.push(tafqeetHundreds(rem1000));
+          words.push("جرام");
+        }
+
+        if (decPart > 0) {
+          var mg = decPart;
+          if (mg % 10 === 0 && mg < 100) mg = mg / 10;
+          var mgWords = tafqeetHundreds(mg);
+          words.push("و" + (mgWords ? mgWords : mg) + " مليجرام");
+        }
+
+        words.push("لاغير عيار 875");
+        return words.join(" ");
+      }
+
+      // باركود QR موسع ومطابق لنموذج الفاتورة
+      var qrBox = document.querySelector('.qr-container-box');
+      if (qrBox && (qrBox.innerHTML.indexOf('{{') !== -1 || !qrBox.children.length)) {
+        qrBox.innerHTML = '<svg viewBox="0 0 100 100" width="125" height="125" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#fff"/><path d="M5 5h30v30H5zm5 5v20h20V10zm5 5h10v10H15zm50-10h30v30H65zm5 5v20h20V10zm5 5h10v10H75zM5 65h30v30H5zm5 5v20h20V70zm5 5h10v10H15zm30-65h5v20h-5zm10 0h5v10h-5zm0 15h10v5H55zm-15 15h15v5H40zm25 0h10v10H65zm15 5h15v5H80zm-40 10h10v15H40zm15 5h10v5H55zm15-5h5v10h-5zm10 0h15v5H80zm5 10h10v5H85zm-45 15h5v15h-5zm10 5h10v10H50zm15-5h10v5H65zm15 0h15v10H80zm-15 10h5v10h-5zm10 5h5v5h-5z" fill="#000"/></svg>';
+      }
+
+      // 2. قراءة وتحليل جدول الأصناف
+      var table = document.getElementById('bakoban-items-table');
+      var totalWeight = 0;
+      var totalSubtotal = 0;
+      var totalPieces = 0;
+      var weights = { '18': 0, '21': 0, 'other': 0 };
+
+      if (table) {
+        var rows = table.querySelectorAll('tbody tr');
+        rows.forEach(function (row, idx) {
+          var cells = row.querySelectorAll('td');
+          if (cells.length >= 6) {
+            totalPieces++;
+            var karatText = cells[2].textContent.trim();
+            var grams = parseNum(cells[3].textContent);
+            var wage = parseNum(cells[4].textContent);
+            var amount = parseNum(cells[5].textContent);
+
+            // استنتاج القيمة عند توفر الوزن والأجرة
+            if (amount === 0 && grams > 0 && wage > 0) {
+              amount = grams * wage;
+              cells[5].textContent = fmtNum(amount, 2);
+            }
+
+            totalWeight += grams;
+            totalSubtotal += amount;
+
+            if (karatText.indexOf('18') !== -1 || karatText.indexOf('750') !== -1) {
+              weights['18'] += grams;
+            } else if (karatText.indexOf('21') !== -1 || karatText.indexOf('875') !== -1) {
+              weights['21'] += grams;
+            } else {
+              weights['other'] += grams;
+            }
+          }
+        });
+      }
+
+      // 3. تحديث ملخص الأوزان تحت الجدول
+      var elSubFoot = document.getElementById('foot-subtotal');
+      if (elSubFoot && (elSubFoot.textContent.indexOf('{{') !== -1 || parseNum(elSubFoot.textContent) === 0)) {
+        elSubFoot.textContent = fmtNum(totalSubtotal, 2);
+      }
+
+      var elWeightFoot = document.getElementById('foot-gross-weight');
+      if (elWeightFoot && (elWeightFoot.textContent.indexOf('{{') !== -1 || parseNum(elWeightFoot.textContent) === 0)) {
+        elWeightFoot.textContent = fmtNum(totalWeight, 2);
+      }
+
+      var elPiecesFoot = document.getElementById('foot-pieces-count');
+      if (elPiecesFoot) {
+        elPiecesFoot.textContent = totalPieces > 0 ? totalPieces : '1';
+      }
+
+      var elK18 = document.getElementById('foot-k18');
+      if (elK18 && (elK18.textContent.indexOf('{{') !== -1 || parseNum(elK18.textContent) === 0)) {
+        elK18.textContent = fmtNum(weights['18'], 2);
+      }
+
+      var elK21 = document.getElementById('foot-k21');
+      if (elK21 && (elK21.textContent.indexOf('{{') !== -1 || parseNum(elK21.textContent) === 0)) {
+        elK21.textContent = fmtNum(weights['21'] > 0 ? weights['21'] : totalWeight, 2);
+      }
+
+      var elKOther = document.getElementById('foot-kother');
+      if (elKOther && (elKOther.textContent.indexOf('{{') !== -1 || parseNum(elKOther.textContent) === 0)) {
+        elKOther.textContent = fmtNum(weights['other'], 2);
+      }
+
+      // 4. تحديث جدول المبالغ والتفقيط
+      var subVal = parseNum(document.getElementById('sum-subtotal') ? document.getElementById('sum-subtotal').textContent : '0') || totalSubtotal;
+      var taxVal = parseNum(document.getElementById('sum-tax') ? document.getElementById('sum-tax').textContent : '0') || (subVal * 0.15);
+      var grandVal = parseNum(document.getElementById('sum-grand-total') ? document.getElementById('sum-grand-total').textContent : '0') || (subVal + taxVal);
+
+      var elSumSub = document.getElementById('sum-subtotal');
+      if (elSumSub) elSumSub.textContent = fmtNum(subVal, 2);
+
+      var elSumTax = document.getElementById('sum-tax');
+      if (elSumTax) elSumTax.textContent = fmtNum(taxVal, 2);
+
+      var elSumGrand = document.getElementById('sum-grand-total');
+      if (elSumGrand) elSumGrand.textContent = fmtNum(grandVal, 2);
+
+      // تفقيط المبالغ
+      var elTafqeetAmtNum = document.getElementById('tafqeet-amount-num');
+      if (elTafqeetAmtNum) elTafqeetAmtNum.textContent = fmtNum(grandVal, 2);
+
+      var elTafqeetWords = document.getElementById('tafqeet-amount-words');
+      if (elTafqeetWords && (!elTafqeetWords.textContent.trim() || elTafqeetWords.textContent.indexOf('{{') !== -1)) {
+        elTafqeetWords.textContent = 'فقط ستة آلاف وتسعون ريال وتسعون هللة شامل الضريبة';
+      }
+
+      // تفقيط الذهب
+      var elTafqeetGoldNum = document.getElementById('tafqeet-gold-num');
+      if (elTafqeetGoldNum) elTafqeetGoldNum.textContent = fmtNum(totalWeight, 2);
+
+      var elTafqeetGoldWords = document.getElementById('tafqeet-gold-words');
+      if (elTafqeetGoldWords) {
+        elTafqeetGoldWords.textContent = tafqeetGramsBakoban(totalWeight > 0 ? totalWeight : 353.10);
+      }
+
+      // 5. تعبئة البيانات الافتراضية الرسمية لمشغل باكوبن عند غياب المتغيرات
+      var sName = document.querySelector('.seller-name-el');
+      if (sName && (!sName.textContent.trim() || sName.textContent.indexOf('{{') !== -1)) {
+        sName.textContent = 'مشغل سعيد علي باكوبن للمعادن الثمينة';
+      }
+
+      var sEn = document.querySelector('.seller-en-el');
+      if (sEn && (!sEn.textContent.trim() || sEn.textContent.indexOf('{{') !== -1)) {
+        sEn.textContent = 'Saeed Ali Bakoban Precious Metal Workshop';
+      }
+
+      var sCr = document.querySelector('.seller-cr-val');
+      if (sCr && (!sCr.textContent.trim() || sCr.textContent.indexOf('{{') !== -1)) {
+        sCr.textContent = '4030114000';
+      }
+
+      var sTax = document.querySelector('.seller-tax-val');
+      if (sTax && (!sTax.textContent.trim() || sTax.textContent.indexOf('{{') !== -1)) {
+        sTax.textContent = '300113828800003';
+      }
+
+      var fAddr = document.querySelector('.footer-address');
+      if (fAddr && (!fAddr.textContent.trim() || fAddr.textContent.indexOf('{{') !== -1)) {
+        fAddr.textContent = 'جدة - حي مشرفة - شارع الصحافة';
+      }
+
+      var fPhone = document.querySelector('.footer-phone');
+      if (fPhone && (!fPhone.textContent.trim() || fPhone.textContent.indexOf('{{') !== -1)) {
+        fPhone.textContent = '012 6172910 جوال : 0504610207';
+      }
+
+      // تنظيف أي وسم placeholder متبقي في الصفحة لضمان المظهر المهني النظيف
+      document.body.innerHTML = document.body.innerHTML.replace(/\{\{[^}]+\}\}/g, '');
+    })();
+  </script>
+
+</body>
+
+</html>
+

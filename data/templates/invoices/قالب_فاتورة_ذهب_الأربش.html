@@ -102,6 +102,29 @@
 
     .header-logo-box {
       flex: 0 0 85px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .arbash-logo-shell {
+      width: 78px;
+      height: 78px;
+      border: 2px solid #000;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .arbash-logo-shell img,
+    .arbash-logo-shell svg {
+      max-height: 72px !important;
+      max-width: 72px !important;
+      object-fit: contain;
+      display: block;
     }
 
     .header-titles-box {
@@ -112,16 +135,16 @@
 
     .header-titles-box h1 {
       margin: 0 0 2px;
-      font-size: 21px;
+      font-size: 17px;
       font-weight: 800;
       color: #000;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.2px;
     }
 
     .header-titles-box h2 {
       margin: 0 0 4px;
-      font-size: 14px;
-      font-weight: 700;
+      font-size: 12.5px;
+      font-weight: 600;
       color: #000;
       direction: ltr;
       text-align: right;
@@ -130,10 +153,12 @@
 
     .header-cr-tax-row {
       display: flex;
-      flex-direction: row-reverse;
+      flex-direction: row;
       justify-content: flex-start;
-      gap: 40px;
-      font-size: 11.5px;
+      direction: rtl;
+      text-align: right;
+      gap: 20px;
+      font-size: 11px;
       font-weight: bold;
       color: #000;
     }
@@ -179,7 +204,7 @@
 
     /* الصندوق الأيسر: رقم الفاتورة والوقت والتاريخ */
     .meta-left-box {
-      flex: 0 0 195px;
+      flex: 0 0 185px;
     }
 
     table.meta-table-left {
@@ -192,7 +217,7 @@
     table.meta-table-left td {
       border: 1px solid #000;
       padding: 3px 6px;
-      height: 23px;
+      height: 27px;
     }
 
     table.meta-table-left td.val {
@@ -212,19 +237,24 @@
       font-weight: 900;
     }
 
-    /* الوسط: الباركود */
+    /* الوسط: الباركود الموسع بدقة */
     .qr-container-box {
-      flex: 0 0 115px;
+      flex: 0 0 135px;
       display: flex;
       align-items: center;
       justify-content: center;
+      text-align: center;
     }
 
     .qr-container-box svg,
-    .qr-container-box img {
-      width: 102px !important;
-      height: 102px !important;
+    .qr-container-box img,
+    .qr-container-box .zatca-qr-container svg {
+      width: 120px !important;
+      height: 120px !important;
+      max-width: 120px !important;
+      max-height: 120px !important;
       display: block;
+      margin: 0 auto;
     }
 
     /* الصندوق الأيمن: بيانات العميل */
@@ -242,7 +272,7 @@
     table.meta-table-right td {
       border: 1px solid #000;
       padding: 3px 6px;
-      height: 31px;
+      height: 36px;
     }
 
     table.meta-table-right td.val {
@@ -538,9 +568,9 @@
       <!-- ─── 1. ترويسة مؤسسة الأربش: الشعار على اليسار، الاسم والبيانات على اليمين ─── -->
       <header class="header-container">
         <div class="header-logo-box">
-          <img class="arbash-logo-img"
-            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAK0AAACnCAYAAABjNNwlAAAQAElEQVR4AexdCYzWRBR+RTAiuiLeiooi8VhFBCOiBDwTAh4YA2IUEySKBg0xyK24q4IKSggaTZQIIooKKAoqXhGvqODB4S3qolEET8QI4XS/7pb0mP/fdmba/tN5m+228zpvjm++bV/neNNsJ/8wAoYh0Iz4hxEwDAEmrWENxsUlYtIyC4xDgElrXJNxgZm0zIEcEFDLkkmrhh9r54AAkzYH0DlLNQSYtGr4sXYOCDBpcwCds1RDgEmrhh9r54AAkzYH0IuQZZ51YNLmiT7nLYUAk1YKNlbKEwEmbZ7oc95SCDBppWBjpTwRYNLmiT7nLYUAk1YKtiIomVsHJq25bWdtyZm01ja9uRVn0prbdtaWnElrbdObW3EmrbltZ23JmbQGN72tRWfS2tryBtebSWtw49ladCatrS1vcL2ZtAY3nq1FZ9La2vIG15tJm2vjceYyCDBpZVBjnVwRYNLmCj9nLoMAk1YGNdbJFQEmba7wc+YyCDBpZVBjnVwRYNIqws/q2SPApM0ec85REYHCkfaPP/6gGTNm0NVXX01du3alI488kg499FA+NGPQvn17Ouuss2jYsGG0YMECRRomUy8Mab/44gsaPHgw7b///i5hQdylS5fSjz/+SGvXruVDMwbff/89vfXWWzRt2jS65JJLXNxvueUW2rhxYzIGSsQuBGnvuOMOqq6upkcffVQCAlbRgQDecBMmTKAOHTrQE088oSPJkmkYTdqdO3dSv379aPz48SUryDeyRWDdunV05ZVX0rhx41LL2GjSXnDBBTRv3ryS4Jx88snuq+vyyy+n0gffk8GmT58+BLu2FPgTJ06kkSNHlrqtJDeWtEOGDKGXXnopUvn99tuP7r77bvrll19o+fLl9Oyzz9KTTz7Jh2YMFi1aRKtXr6aVK1e6H2ORhqgXTJ48mR588MH6K72/RpL26aefpocffjiCxGWXXUbffPMNjRo1ig455JDIfRboR+Ckk06iqVOn0kcffUSdO3eOZHDjjTfSt99+Szp/jCRtbW1tBINrrrmGnnrqKWrTpk3kHgvSR6BLly705ptvUrdu3QKZ7dixg/ChHBAqBowj7ezZs+nLL78MVLt79+7CJ28gEgdSR6CqqopmzZpFrVq1CuT1+OOPu2/AgFAhYBxp58yZE6kuuloiQhbkgsAxxxxDt99+eyRvmHQRoaTAKNJu2bKFFi9eHKjqueeeSz169AjIOJAvAjfccEPkafvKK69oK5RRpP3kk08INpK/9uj28of5On8Edt99d0KXmL8ky5Yt8weVro0ibV1dXaSy+ACICFmQOwKnnHJKoAx4S/70008BmWzAKNL+888/kXoeeOCBERkL8kfggAMOiBRC1H6RSDEERpEWw7bhOjmOExZxuAIQcJxou4jaT6aoRpFWpoKsUzwEKoS0xQOWa5QeAkza9LDllFNCgEmbErCcbHoIMGnTw9aIlD/44AN3JtbYsWPp5ptvJowuzp07113pUakVYNJWasukWC4sibntttvoiCOOcCe4DB06lO666y667777CEtm+vfv766p6927N2EKYopFkUq6mZQWKxmLAJbCePMDmursf/nll+nCCy+kAQMG0J9//lkxddZG2oqpERekJAKYyIKlMOvXry8ZR3QDk13OOOMMwuJR0f2sZUzarBHPKb97772XYBLIZv/1119T3759CWvAZNPQpcek1YVkBaeDpd4jRowQlhD2LO5jiHX79u30ww8/0PTp012fEWEFrEC4/vrrw+LMw0zazCHPPkPRauWOHTvSxx9/TA888ABhaufee+9NzZo1o3bt2rn+I9CrcOedd0YK+9xzzxHMhciNDAVM2jJgw8nH8OHD6dprr9V+jB49mv7++29K+wfzj99+++1ANug1ePHFF4VruvwRsQwcvQp+Ga7vv/9+nHI7mLRloMcc0ClTptAjjzyi/Zg0aZK7GLBM9lpuoc81nBDq1LZt27BYGMY/1znnnBO499577+X6UeYjbaBc1gcwIwmvwrSAQPovvPBCWsnvSheLDXcF6i+wevbSSy+tv4r/K7Jjw0/v+Kmpx2TSlsAQfhPCDV4iqrT4/fffp7/++ktavynFf//91/2w8sfD8iR/OM51r169ItHCi0sjEVIUMGlLgIuPlDVr1pS4q0e8fPly+vzzz/UkJkhFNCAAL5KCqGVFe+21F4Un28N3V1mlFG8yaQXg4tWdpmngZblt2zbCqJMX1n1u3rx5JEkse4kIYwjCeqK0YySjJQqTVgAjRozQ5SO4pV306quvpmYiwMsOurH8hZZ5smNtXrinAz5//elmec2kFaD96aefEkaABLe0i9I0ERzHiXRr4eMP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"
-            alt="شعار الأربش" style="max-height: 75px; max-width: 80px; object-fit: contain; display: block;" />
+          <div class="arbash-logo-shell">
+            {{logo}}
+          </div>
         </div>
 
         <div class="header-titles-box">
@@ -842,10 +872,16 @@
         return words.join(" ");
       }
 
-      // باركود QR
+      // شعار الأربش
+      var logoShell = document.querySelector('.arbash-logo-shell');
+      if (logoShell && (logoShell.innerHTML.indexOf('{{') !== -1 || !logoShell.querySelector('img, svg'))) {
+        logoShell.innerHTML = '<svg viewBox="0 0 100 100" width="70" height="70" xmlns="http://www.w3.org/2000/svg"><path d="M26 80 L50 20 L74 80 M34 58 L66 58" fill="none" stroke="#000" stroke-width="9" stroke-linecap="square" stroke-linejoin="miter"/><circle cx="76" cy="22" r="11" fill="none" stroke="#000" stroke-width="4.5"/></svg>';
+      }
+
+      // باركود QR موسع مطابق للصورة
       var qrBox = document.querySelector('.qr-container-box');
       if (qrBox && (qrBox.innerHTML.indexOf('{{') !== -1 || !qrBox.children.length)) {
-        qrBox.innerHTML = '<svg viewBox="0 0 100 100" width="102" height="102" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#fff"/><path d="M5 5h30v30H5zm5 5v20h20V10zm5 5h10v10H15zm50-10h30v30H65zm5 5v20h20V10zm5 5h10v10H75zM5 65h30v30H5zm5 5v20h20V70zm5 5h10v10H15zm30-65h5v20h-5zm10 0h5v10h-5zm0 15h10v5H55zm-15 15h15v5H40zm25 0h10v10H65zm15 5h15v5H80zm-40 10h10v15H40zm15 5h10v5H55zm15-5h5v10h-5zm10 0h15v5H80zm5 10h10v5H85zm-45 15h5v15h-5zm10 5h10v10H50zm15-5h10v5H65zm15 0h15v10H80zm-15 10h5v10h-5zm10 5h5v5h-5z" fill="#000"/></svg>';
+        qrBox.innerHTML = '<svg viewBox="0 0 100 100" width="120" height="120" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#fff"/><path d="M5 5h30v30H5zm5 5v20h20V10zm5 5h10v10H15zm50-10h30v30H65zm5 5v20h20V10zm5 5h10v10H75zM5 65h30v30H5zm5 5v20h20V70zm5 5h10v10H15zm30-65h5v20h-5zm10 0h5v10h-5zm0 15h10v5H55zm-15 15h15v5H40zm25 0h10v10H65zm15 5h15v5H80zm-40 10h10v15H40zm15 5h10v5H55zm15-5h5v10h-5zm10 0h15v5H80zm5 10h10v5H85zm-45 15h5v15h-5zm10 5h10v10H50zm15-5h10v5H65zm15 0h15v10H80zm-15 10h5v10h-5zm10 5h5v5h-5z" fill="#000"/></svg>';
       }
 
       // 2. قراءة وتحليل جدول الأصناف الرئيسي

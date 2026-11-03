@@ -311,7 +311,7 @@ table.items-grid-table {
   direction: rtl;
 }
 table.items-grid-table th {
-  background: #d4d9de !important;
+  background: #cbd3da !important;
   border: 1px solid #333;
   padding: 4.5px 2px;
   font-weight: bold;
@@ -329,7 +329,7 @@ table.items-grid-table th small {
 /* تلوين الجدول: أول صف فضي ثم أبيض ثم فضي وهكذا */
 table.items-grid-table tbody tr:nth-child(odd),
 table.items-grid-table tbody tr:nth-child(odd) td {
-  background: #e9ecef !important;
+  background: #d8dee4 !important;
 }
 table.items-grid-table tbody tr:nth-child(even),
 table.items-grid-table tbody tr:nth-child(even) td {
@@ -347,7 +347,7 @@ table.items-grid-table tfoot td {
   border: 1px solid #333;
   padding: 4px 3px;
   font-weight: bold;
-  background: #d4d9de !important;
+  background: #ffffff !important;
 }
 
 /* ─── 5. شريط التفقيط المزدوج (ريال وذهب) ─── */
@@ -471,7 +471,7 @@ table.payment-mini-table {
   font-size: 10.5px;
 }
 table.payment-mini-table th {
-  background: #e2e6ea;
+  background: #cbd3da !important;
   border: 1px solid #333;
   padding: 4px 3px;
   font-weight: bold;
@@ -900,11 +900,48 @@ table.payment-mini-table td {
 
   if (table) {
     var rows = table.querySelectorAll('tbody tr');
+    // التحقق هل يحتوي الجدول على صفوف حقيقية أم أنه في وضع معاينة القالب
+    var hasRealRows = false;
+    rows.forEach(function(r) {
+      if (r.querySelectorAll('td').length >= 3 && r.textContent.indexOf('{{') === -1) {
+        hasRealRows = true;
+      }
+    });
+
+    // عند فتح القالب للمعاينة بدون بيانات فاتورة، يتم عرض الصفوف الـ 7 النموذجية المتناوبة (فضي، أبيض، فضي...) طبق الأصل
+    if (!hasRealRows) {
+      var sampleData = [
+        { no: '1', desc: 'نواعم ومشغولات عيار 21', karat: '21', w: '86.00', prev: '86.00', wage: '8.50', tot: '731.00' },
+        { no: '2', desc: 'نواعم ومشغولات عيار 21', karat: '21', w: '33.90', prev: '33.90', wage: '9.00', tot: '305.10' },
+        { no: '3', desc: 'نواعم ومشغولات عيار 21', karat: '21', w: '20.40', prev: '20.40', wage: '9.50', tot: '193.80' },
+        { no: '4', desc: 'نواعم ومشغولات عيار 21', karat: '21', w: '34.70', prev: '34.70', wage: '12.00', tot: '416.40' },
+        { no: '5', desc: 'نواعم ومشغولات عيار 21', karat: '21', w: '18.70', prev: '18.70', wage: '16.00', tot: '299.20' },
+        { no: '6', desc: 'نواعم ومشغولات عيار 21', karat: '21', w: '13.10', prev: '13.10', wage: '18.00', tot: '235.80' },
+        { no: '7', desc: 'نواعم ومشغولات عيار 21', karat: '21', w: '15.08', prev: '15.08', wage: '25.00', tot: '377.00' }
+      ];
+      var tbody = table.querySelector('tbody');
+      if (tbody) {
+        tbody.innerHTML = '';
+        sampleData.forEach(function(item) {
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td>' + item.no + '</td>' +
+            '<td style="text-align: right; padding-right: 6px;">' + item.desc + '</td>' +
+            '<td>' + item.karat + '</td>' +
+            '<td>' + item.w + '</td>' +
+            '<td>' + item.prev + '</td>' +
+            '<td>' + item.wage + '</td>' +
+            '<td>' + item.tot + '</td>';
+          tbody.appendChild(tr);
+        });
+        rows = table.querySelectorAll('tbody tr');
+      }
+    }
+
     var rowIndex = 1;
     rows.forEach(function(row, rIdx) {
-      // تلوين الصفوف: أول صف فضي ثم أبيض ثم فضي وهكذا
+      // تلوين الصفوف: الأول فضي ثم الثاني أبيض ثم الثالث فضي وهكذا بوضوح تام
       var isSilver = (rIdx % 2 === 0);
-      var rowBg = isSilver ? '#e9ecef' : '#ffffff';
+      var rowBg = isSilver ? '#d8dee4' : '#ffffff';
       row.style.setProperty('background', rowBg, 'important');
       row.querySelectorAll('td').forEach(function(td) {
         td.style.setProperty('background', rowBg, 'important');
