@@ -1502,12 +1502,21 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 
 		// ─── المبالغ والإجماليات والعملة ───
 		"{{subtotal}}", fmt.Sprintf("%.2f", inv.SubtotalMajor),
+		"{{taxable_amount}}", func() string {
+			if inv.TaxableAmountMajor > 0 {
+				return fmt.Sprintf("%.2f", inv.TaxableAmountMajor)
+			}
+			return fmt.Sprintf("%.2f", inv.SubtotalMajor)
+		}(),
 		"{{discount}}", fmt.Sprintf("%.2f", inv.DiscountAmountMajor),
 		"{{tax_amount}}", fmt.Sprintf("%.2f", inv.TaxAmountMajor),
 		"{{grand_total}}", fmt.Sprintf("%.2f", inv.GrandTotalMajor),
 		"{{paid_amount}}", fmt.Sprintf("%.2f", paidAmount),
 		"{{remaining_amount}}", fmt.Sprintf("%.2f", remainingAmount),
 		"{{amount_in_words}}", amountInWords,
+		"{{total_in_words}}", amountInWords,
+		"{{total_words}}", amountInWords,
+		"{{grand_total_words}}", amountInWords,
 		"{{tafqeet}}", amountInWords,
 		"{{total_qty}}", func() string {
 			if totalQty == float64(int64(totalQty)) {
@@ -1572,6 +1581,11 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 		"{{weight_21}}", fmt.Sprintf("%.2f", weightsByKarat["21"]),
 		"{{weight_22}}", fmt.Sprintf("%.2f", weightsByKarat["22"]),
 		"{{weight_24}}", fmt.Sprintf("%.2f", weightsByKarat["24"]),
+		"{{weight_other}}", fmt.Sprintf("%.2f", weightsByKarat["other"]),
+		"{{credit_days}}", "0",
+		"{{seller_branch}}", "فرع الذهب والمجوهرات",
+		"{{seller_license}}", "11/40301936",
+		"{{gold_amount_in_words}}", "",
 
 		// ─── سندات القبض والصرف والمستندات ───
 		"{{voucher_number}}", inv.InvoiceNumber,
@@ -1637,6 +1651,9 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 	dupFaqatRegex := regexp.MustCompile(`(فقط\s*)+فقط`)
 	result = dupFaqatRegex.ReplaceAllString(result, "فقط")
 	result = strings.ReplaceAll(result, "فقط مبلغ وقدره فقط", "فقط مبلغ وقدره")
+
+	cleanRemainingTags := regexp.MustCompile(`\{\{\s*[a-zA-Z0-9_]+\s*\}\}`)
+	result = cleanRemainingTags.ReplaceAllString(result, "")
 
 	return injectLtrIconsStyle(result)
 }

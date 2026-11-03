@@ -145,17 +145,17 @@ body {
 }
 
 .header-titles-area .title-ar {
-  font-size: 19px;
-  font-weight: 900;
+  font-size: 16.5px;
+  font-weight: 800;
   margin: 0 0 1px 0;
   color: #ffffff;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   line-height: 1.25;
   text-shadow: 0 1px 2px rgba(0,0,0,0.25);
 }
 
 .header-titles-area .title-en {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   direction: ltr;
   text-align: right;
@@ -168,16 +168,16 @@ body {
 .header-meta-grid {
   display: flex;
   flex-direction: column;
-  gap: 2.5px;
-  width: 440px;
+  gap: 2px;
   max-width: 100%;
 }
 
 .header-meta-grid .meta-row {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: 32px;
   font-size: 10.5px;
   font-weight: 700;
   color: #ffffff;
@@ -185,14 +185,13 @@ body {
 }
 
 .header-meta-grid .meta-col-right {
-  width: 52%;
+  min-width: 160px;
   text-align: right;
   white-space: nowrap;
 }
 
 .header-meta-grid .meta-col-left {
-  width: 48%;
-  text-align: left;
+  text-align: right;
   direction: rtl;
   white-space: nowrap;
 }
