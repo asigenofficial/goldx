@@ -1559,6 +1559,10 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 			}
 		}(),
 		"{{total_weight}}", fmt.Sprintf("%.2f", totalQty),
+		"{{bags_weight}}", "0.00",
+		"{{bag_weight}}", "0.00",
+		"{{gross_weight}}", fmt.Sprintf("%.2f", totalQty),
+		"{{total_weight_with_bags}}", fmt.Sprintf("%.2f", totalQty),
 		"{{total_wage}}", wageAmountStr,
 		"{{total_wages}}", wageAmountStr,
 		"{{wage_total}}", wageAmountStr,
@@ -1889,19 +1893,7 @@ func (s *TemplateService) generateSmartRowsSlice(tpl string, lines []InvoiceItem
 					value = "21"
 				}
 			case colPrevalent875:
-				karatVal := 21.0
-				switch strings.TrimSpace(item.Karat) {
-				case "18", "750":
-					karatVal = 18.0
-				case "22", "916":
-					karatVal = 22.0
-				case "24", "999", "999.9":
-					karatVal = 24.0
-				default:
-					karatVal = 21.0
-				}
-				prev := (item.Quantity * karatVal) / 21.0
-				value = fmt.Sprintf("%.2f", prev)
+				value = fmt.Sprintf("%.2f", item.Quantity)
 			case colGramPrice:
 				value = fmt.Sprintf("%.2f", item.GramPriceMajor)
 			case colWage:

@@ -240,10 +240,11 @@ body {
   flex: 1;
 }
 .invoice-title-area h2 {
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
   margin: 0 0 2px 0;
-  color: #111;
+  padding-right: 12px;
+  color: #222;
   letter-spacing: 0;
   text-align: right;
 }
@@ -676,7 +677,7 @@ table.payment-mini-table td {
             <td style="font-weight: 900;">إجماليات</td>
             <td></td>
             <td id="foot-total-weight">{{total_weight}}</td>
-            <td id="foot-total-prevalent">{{weight_21}}</td>
+            <td id="foot-total-prevalent">{{total_weight}}</td>
             <td></td>
             <td id="foot-total-subtotal">{{subtotal}}</td>
           </tr>
@@ -701,7 +702,7 @@ table.payment-mini-table td {
       <!-- الصندوق الأيمن: وزن الأكياس والملاحظات -->
       <div class="settle-box-right">
         <div>وزن الأكياس ( <span id="bags-weight">{{bags_weight}}</span> ) جرام</div>
-        <div>إجمالي الوزن مع الأكياس ( <span id="gross-weight">{{total_weight}}</span> ) جرام</div>
+        <div>إجمالي الوزن مع الأكياس ( <span id="gross-weight">{{gross_weight}}</span> ) جرام</div>
         <div style="margin-top: 4px;">ملاحظات : <span id="notes-content">{{notes}}</span></div>
       </div>
 
@@ -925,12 +926,12 @@ table.payment-mini-table td {
         else if (karatText.indexOf('22') !== -1 || karatText.indexOf('916') !== -1) karatNum = 22;
         else if (karatText.indexOf('24') !== -1 || karatText.indexOf('999') !== -1) karatNum = 24;
 
-        var prev875 = (weight * karatNum) / 21;
-        totalPrevalent875 += prev875;
+        // المعدل 875 مطابق للوزن القائم
+        totalPrevalent875 += weight;
 
-        // إذا كانت خلية المعدل 875 فارغة يتم تعبئتها آلياً
+        // إذا كانت خلية المعدل 875 فارغة يتم تعبئتها آلياً بالوزن القائم
         if (cells[4] && (!cells[4].textContent.trim() || cells[4].textContent.indexOf('{{') !== -1)) {
-          cells[4].textContent = fmtNum(prev875, 2);
+          cells[4].textContent = fmtNum(weight, 2);
         }
 
         if (karatNum === 18) weights['18'] += weight;

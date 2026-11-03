@@ -1047,15 +1047,8 @@ function generateSmartRowsJS(htmlSnippet, rawLines, offset = 0) {
         }
         case 'unit':
           return `<td class="c" style="padding:6px 8px;text-align:center;">${esc(unit)}</td>`;
-        case 'prevalent875': {
-          let karatVal = 21.0;
-          const kStr = String(l.karat || '21').trim();
-          if (kStr === '18' || kStr === '750') karatVal = 18.0;
-          else if (kStr === '22' || kStr === '916') karatVal = 22.0;
-          else if (kStr === '24' || kStr === '999' || kStr === '999.9') karatVal = 24.0;
-          const prev = (qtyNum * karatVal) / 21.0;
-          return `<td class="c num">${prev.toFixed(2)}</td>`;
-        }
+        case 'prevalent875':
+          return `<td class="c num">${qtyNum.toFixed(2)}</td>`;
         case 'karat':
           return `<td class="c">${esc(l.karat || '21')}</td>`;
         case 'gram_price':
@@ -1307,6 +1300,12 @@ export function fillDynamicTemplateHtml(rawHtml, { issuer = {}, client = {}, vou
     if (k === 'gold_invoice_type') return invoice?.gold_invoice_type || 'PRICE_AND_WAGE';
     if (k === 'gold_type_label') return ({PRICE_ONLY:'سعر فقط (ذهب فقط)',WAGE_ONLY:'أجور فقط (مصنعية فقط)',PRICE_AND_WAGE:'سعر وأجور (ذهب ومصنعية)'})[invoice?.gold_invoice_type || 'PRICE_AND_WAGE'];
     if (k === 'total_weight') return (invoice?.lines || invoice?.items || []).reduce((sum,line) => sum + Number(line.quantity || 0),0).toFixed(2);
+    if (k === 'bags_weight' || k === 'bag_weight') return Number(invoice?.bags_weight || invoice?.bag_weight || 0).toFixed(2);
+    if (k === 'gross_weight' || k === 'total_weight_with_bags') {
+      const tot = (invoice?.lines || invoice?.items || []).reduce((sum,line) => sum + Number(line.quantity || 0),0);
+      const bags = Number(invoice?.bags_weight || invoice?.bag_weight || 0);
+      return (tot + bags).toFixed(2);
+    }
     if (/^weight_(18|21|22|24)$/.test(k)) return (invoice?.lines || invoice?.items || []).filter(line => String(line.karat || '21').trim() === k.slice(7)).reduce((sum,line) => sum + Number(line.quantity || 0),0).toFixed(2);
     if (k === 'total_wage' || k === 'total_wages' || k === 'wage_total' || k === 'wage_amount' || k === 'total_wage_amount') {
       const tw = (invoice?.lines || invoice?.items || []).reduce((sum, line) => {
