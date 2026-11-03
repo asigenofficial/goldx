@@ -311,7 +311,7 @@ table.items-grid-table {
   direction: rtl;
 }
 table.items-grid-table th {
-  background: #cbd3da !important;
+  background: #808f9e !important;
   border: 1px solid #333;
   padding: 4.5px 2px;
   font-weight: bold;
@@ -322,11 +322,11 @@ table.items-grid-table th {
 table.items-grid-table th small {
   display: block;
   font-size: 8.5px;
-  color: #222;
+  color: #1a1a1a;
   font-family: Arial, sans-serif;
   font-weight: normal;
 }
-/* تلوين الجدول: أول صف أبيض ثم فضي ثم أبيض وهكذا */
+/* تلوين الجدول: أول صف أبيض ثم فضي ثم أبيض وهكذا وذيل الجدول إجماليات فضي مطابق للأصل */
 table.items-grid-table tbody tr:nth-child(odd),
 table.items-grid-table tbody tr:nth-child(odd) td {
   background: #ffffff !important;
@@ -347,7 +347,7 @@ table.items-grid-table tfoot td {
   border: 1px solid #333;
   padding: 4px 3px;
   font-weight: bold;
-  background: #ffffff !important;
+  background: #cbd5de !important;
 }
 
 /* ─── 5. شريط التفقيط المزدوج (ريال وذهب) ─── */
@@ -471,7 +471,7 @@ table.payment-mini-table {
   font-size: 10.5px;
 }
 table.payment-mini-table th {
-  background: #cbd3da !important;
+  background: #808f9e !important;
   border: 1px solid #333;
   padding: 4px 3px;
   font-weight: bold;
@@ -482,7 +482,7 @@ table.payment-mini-table td {
   border: 1px solid #333;
   padding: 4px;
   font-weight: bold;
-  background: #fff;
+  background: #ffffff !important;
 }
 
 /* التوقيعات الثلاثة على اليسار */
@@ -996,6 +996,12 @@ table.payment-mini-table td {
 
         totalSub += (rowTotal > 0 ? rowTotal : (weight * wage));
       }
+    });
+
+    // تلوين سطر الإجماليات (ذيل الجدول) باللون الفضي كما في النموذج المرجعي
+    var tfootTds = table.querySelectorAll('tfoot td');
+    tfootTds.forEach(function(td) {
+      td.style.setProperty('background', '#cbd5de', 'important');
     });
   }
 
