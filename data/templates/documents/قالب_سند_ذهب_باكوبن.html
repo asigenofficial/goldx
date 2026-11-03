@@ -244,6 +244,7 @@
       border: 1.5px solid #000;
       font-size: 10.5px;
       text-align: center;
+      margin-bottom: 24px;
     }
 
     table.bakoban-receipt-table thead tr.th-en-row td {
@@ -276,14 +277,13 @@
       height: 23px;
     }
 
-    /* ─── 5. شريط ملخص الأوزان والتسوية تحت جدول الأصناف ─── */
+    /* ─── 5. شريط ملخص الأوزان والتسوية المستقل في المنتصف ─── */
     table.table-summary-strip {
       width: 100%;
       border-collapse: collapse;
       border: 1.5px solid #000;
-      border-top: 0;
       font-size: 10.5px;
-      margin-bottom: 15px;
+      margin-bottom: 8px;
     }
 
     table.table-summary-strip td {
@@ -295,14 +295,15 @@
       text-align: center;
     }
 
-    /* ─── 6. التواقيع المعتمدة الثلاثية (أمين الصندوق، المدقق، العميل) ─── */
+    /* ─── 6. التواقيع المعتمدة الثلاثية (مباشرة أسفل جدول الملخص) ─── */
     .signatures-row {
       display: flex;
       flex-direction: row;
       justify-content: space-between;
       align-items: flex-start;
       padding: 0 20px;
-      margin-bottom: 20px;
+      margin-top: 6px;
+      margin-bottom: 25px;
     }
 
     .sign-col {
@@ -328,6 +329,24 @@
     .sign-col .accountant-lbl {
       font-size: 9.5px;
       margin-top: 2px;
+    }
+
+    /* علامة الرعاة / حقوق البرنامج الرأسية على الحافة اليمنى */
+    .sidebar-brand-vertical {
+      position: absolute;
+      right: 2.5mm;
+      top: 52%;
+      transform: translateY(-50%) rotate(90deg);
+      transform-origin: center right;
+      font-size: 8px;
+      font-family: Arial, Tahoma, sans-serif;
+      color: #3b5998;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      direction: ltr;
+      pointer-events: none;
+      opacity: 0.85;
     }
 
     /* ─── 7. القسم السفلي: الإجماليات والتفقيط على اليمين ─── */
@@ -436,6 +455,9 @@
 
   <div class="receipt-container" data-receipt-design="قالب_سند_ذهب_باكوبن"
     data-voucher-type="GOLD_RECEIPT">
+
+    <!-- علامة الرعاة / حقوق البرنامج الرأسية على الحافة اليمنى -->
+    <div class="sidebar-brand-vertical">الرواد للبرمجة المتقدمة www.AlrowadTeam.com</div>
 
     <!-- ═══════════════ القسم العلوي ═══════════════ -->
     <div class="top-content">
@@ -591,30 +613,30 @@
             </td>
           </tr>
         </table>
+
+        <!-- ─── 6. التواقيع المعتمدة الثلاثية (مباشرة أسفل جدول الملخص) ─── -->
+        <section class="signatures-row">
+          <div class="sign-col">
+            <div class="en-sign">AUTHORISED SIGNATURE</div>
+            <div class="ar-sign">توقيع أمين الصندوق</div>
+          </div>
+
+          <div class="sign-col">
+            <div class="en-sign">CHECKED BY</div>
+            <div class="ar-sign">توقيع المدقق</div>
+          </div>
+
+          <div class="sign-col">
+            <div class="en-sign">CUSTOMER'S SIGNATURE</div>
+            <div class="ar-sign">توقيع العميل</div>
+            <div class="accountant-lbl">المحاسب</div>
+          </div>
+        </section>
       </main>
     </div>
 
     <!-- ═══════════════ القسم السفلي (مثبت في أسفل الصفحة تماماً) ═══════════════ -->
     <div class="bottom-content">
-      <!-- ─── 6. التواقيع المعتمدة الثلاثية (أمين الصندوق، المدقق، العميل) ─── -->
-      <section class="signatures-row">
-        <div class="sign-col">
-          <div class="en-sign">AUTHORISED SIGNATURE</div>
-          <div class="ar-sign">توقيع أمين الصندوق</div>
-        </div>
-
-        <div class="sign-col">
-          <div class="en-sign">CHECKED BY</div>
-          <div class="ar-sign">توقيع المدقق</div>
-        </div>
-
-        <div class="sign-col">
-          <div class="en-sign">CUSTOMER'S SIGNATURE</div>
-          <div class="ar-sign">توقيع العميل</div>
-          <div class="accountant-lbl">المحاسب</div>
-        </div>
-      </section>
-
       <!-- ─── 7. الإجماليات والتفقيط في الركن الأيمن ─── -->
       <section class="bottom-totals-section">
         <div class="totals-tafqeet-stack">

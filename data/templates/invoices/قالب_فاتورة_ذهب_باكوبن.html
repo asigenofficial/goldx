@@ -243,6 +243,7 @@
       border: 1.5px solid #000;
       font-size: 10.5px;
       text-align: center;
+      margin-bottom: 24px;
     }
 
     table.bakoban-items-table thead tr.th-en-row td {
@@ -275,14 +276,13 @@
       height: 24px;
     }
 
-    /* ─── 5. شريط ملخص الأوزان والتفصيل تحت جدول الأصناف مباشرة ─── */
+    /* ─── 5. شريط ملخص الأوزان والتفصيل المستقل تماماً في المنتصف ─── */
     table.table-summary-strip {
       width: 100%;
       border-collapse: collapse;
       border: 1.5px solid #000;
-      border-top: 0;
       font-size: 10.5px;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     table.table-summary-strip td {
@@ -294,14 +294,15 @@
       text-align: center;
     }
 
-    /* ─── 6. التواقيع المعتمدة (العميل والبائع) ─── */
+    /* ─── 6. التواقيع المعتمدة (مباشرة أسفل جدول الملخص) ─── */
     .signatures-row {
       display: flex;
       flex-direction: row;
       justify-content: space-between;
       align-items: flex-start;
-      padding: 0 40px;
-      margin-bottom: 12px;
+      padding: 0 45px;
+      margin-top: 6px;
+      margin-bottom: 25px;
     }
 
     .sign-col-customer {
@@ -345,6 +346,24 @@
     .sign-col-seller .accountant-lbl {
       font-size: 9.5px;
       margin-top: 2px;
+    }
+
+    /* علامة الرعاة / حقوق البرنامج الرأسية على الحافة اليمنى */
+    .sidebar-brand-vertical {
+      position: absolute;
+      right: 2.5mm;
+      top: 52%;
+      transform: translateY(-50%) rotate(90deg);
+      transform-origin: center right;
+      font-size: 8px;
+      font-family: Arial, Tahoma, sans-serif;
+      color: #3b5998;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      direction: ltr;
+      pointer-events: none;
+      opacity: 0.85;
     }
 
     /* ─── 7. القسم السفلي: باركود QR على اليسار والإجماليات والتفقيط على اليمين ─── */
@@ -476,6 +495,9 @@
 
   <div class="invoice-container" data-gold-design="قالب_فاتورة_ذهب_باكوبن"
     data-gold-invoice-type="{{gold_invoice_type}}">
+
+    <!-- علامة الرعاة / حقوق البرنامج الرأسية على الحافة اليمنى كما في النموذج الأصلي -->
+    <div class="sidebar-brand-vertical">الرواد للبرمجة المتقدمة www.AlrowadTeam.com</div>
 
     <!-- ═══════════════ القسم العلوي ═══════════════ -->
     <div class="top-content">
@@ -619,25 +641,25 @@
             </td>
           </tr>
         </table>
+
+        <!-- ─── 6. التواقيع المعتمدة (مباشرة أسفل جدول الملخص في منتصف الصفحة) ─── -->
+        <section class="signatures-row">
+          <div class="sign-col-customer">
+            <div class="en-sign">CUSTOMER</div>
+            <div class="ar-sign">توقيع العميل</div>
+          </div>
+
+          <div class="sign-col-seller">
+            <div class="en-sign">AUTHORISED'S SIGNATURE</div>
+            <div class="ar-sign">توقيع البائع</div>
+            <div class="accountant-lbl">المحاسب</div>
+          </div>
+        </section>
       </main>
     </div>
 
     <!-- ═══════════════ القسم السفلي (تثبيت كامل في أسفل A4) ═══════════════ -->
     <div class="bottom-content">
-      <!-- ─── 6. التواقيع المعتمدة ─── -->
-      <section class="signatures-row">
-        <div class="sign-col-customer">
-          <div class="en-sign">CUSTOMER</div>
-          <div class="ar-sign">توقيع العميل</div>
-        </div>
-
-        <div class="sign-col-seller">
-          <div class="en-sign">AUTHORISED'S SIGNATURE</div>
-          <div class="ar-sign">توقيع البائع</div>
-          <div class="accountant-lbl">المحاسب</div>
-        </div>
-      </section>
-
       <!-- ─── 7. شبكة الباركود الموسع والإجماليات والتفقيط ─── -->
       <section class="bottom-totals-qr-grid">
         <!-- باركود الزكاة والضريبة QR الموسع والواضح -->
