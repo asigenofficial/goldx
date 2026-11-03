@@ -1336,14 +1336,24 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 	}
 
 	totalQty := 0.0
+	totalWage := 0.0
 	weightsByKarat := map[string]float64{}
 	for _, it := range inv.Lines {
 		totalQty += it.Quantity
+		w := it.WageMajor
+		if w == 0 && it.GramPriceMajor == 0 && it.UnitPriceMajor > 0 {
+			w = it.UnitPriceMajor
+		}
+		totalWage += it.Quantity * w
 		karat := strings.TrimSpace(it.Karat)
 		if karat == "" {
 			karat = "21"
 		}
 		weightsByKarat[karat] += it.Quantity
+	}
+	wageAmountStr := fmt.Sprintf("%.2f", totalWage)
+	if totalWage == 0 && (inv.GoldInvoiceType == "WAGE_ONLY" || inv.SubtotalMajor > 0) {
+		wageAmountStr = fmt.Sprintf("%.2f", inv.SubtotalMajor)
 	}
 
 	paidAmount := inv.PaidAmountMajor
@@ -1549,6 +1559,11 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 			}
 		}(),
 		"{{total_weight}}", fmt.Sprintf("%.2f", totalQty),
+		"{{total_wage}}", wageAmountStr,
+		"{{total_wages}}", wageAmountStr,
+		"{{wage_total}}", wageAmountStr,
+		"{{wage_amount}}", wageAmountStr,
+		"{{total_wage_amount}}", wageAmountStr,
 		"{{weight_18}}", fmt.Sprintf("%.2f", weightsByKarat["18"]),
 		"{{weight_21}}", fmt.Sprintf("%.2f", weightsByKarat["21"]),
 		"{{weight_22}}", fmt.Sprintf("%.2f", weightsByKarat["22"]),
@@ -1653,7 +1668,7 @@ func detectColumnType(th string) colType {
 	if strings.Contains(clean, "عيار") || strings.Contains(clean, "karat") || strings.Contains(clean, "carat") {
 		return colKarat
 	}
-	if strings.Contains(clean, "أجور") || strings.Contains(clean, "اجور") || strings.Contains(clean, "مصنعية") || strings.Contains(clean, "صياغة") || strings.Contains(clean, "wage") || strings.Contains(clean, "making") {
+	if strings.Contains(clean, "أجور") || strings.Contains(clean, "اجور") || strings.Contains(clean, "أجرة") || strings.Contains(clean, "اجرة") || strings.Contains(clean, "مصنعية") || strings.Contains(clean, "صياغة") || strings.Contains(clean, "wage") || strings.Contains(clean, "making") {
 		return colWage
 	}
 	if strings.Contains(clean, "سعر الجرام") || strings.Contains(clean, "سعر الذهب") || strings.Contains(clean, "gram price") || strings.Contains(clean, "gold price") {
@@ -1890,7 +1905,11 @@ func (s *TemplateService) generateSmartRowsSlice(tpl string, lines []InvoiceItem
 			case colGramPrice:
 				value = fmt.Sprintf("%.2f", item.GramPriceMajor)
 			case colWage:
-				value = fmt.Sprintf("%.2f", item.WageMajor)
+				w := item.WageMajor
+				if w == 0 && item.GramPriceMajor == 0 && item.UnitPriceMajor > 0 {
+					w = item.UnitPriceMajor
+				}
+				value = fmt.Sprintf("%.2f", w)
 			case colPrice:
 				value = fmt.Sprintf("%.2f", item.UnitPriceMajor)
 			case colQty:

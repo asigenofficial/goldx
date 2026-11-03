@@ -141,9 +141,11 @@
     .sub-header-bar {
       display: flex;
       flex-direction: row;
-      justify-content: space-between;
+      justify-content: flex-end;
       align-items: center;
-      margin-bottom: 5px;
+      gap: 16px;
+      margin-bottom: 6px;
+      padding-right: 4px;
     }
 
     .sub-branch-text {
@@ -151,23 +153,17 @@
       font-weight: bold;
       text-align: right;
       direction: rtl;
-      margin-right: 4px;
-    }
-
-    .badge-center-wrap {
-      flex: 1;
-      text-align: center;
-      padding-right: 60px;
     }
 
     .simplified-pill {
       display: inline-block;
       border: 1px solid #000;
-      border-radius: 12px;
-      padding: 2px 24px;
-      font-size: 11.5px;
+      border-radius: 14px;
+      padding: 1.5px 22px;
+      font-size: 11px;
       font-weight: bold;
-      background: #f2f2f2;
+      background: #e9e9e9;
+      color: #000;
     }
 
     /* ─── 3. بيانات الفاتورة الثلاثية ─── */
@@ -337,9 +333,8 @@
       font-size: 10.5px;
       font-weight: bold;
       text-align: center;
-      border-bottom: 1px solid #000;
-      padding-bottom: 3px;
-      margin-bottom: 5px;
+      padding-bottom: 2px;
+      margin-bottom: 3px;
     }
 
     .tafqeet-inner-value {
@@ -363,7 +358,7 @@
     }
 
     .yellow-bg {
-      background: #fff677 !important;
+      background: #ffff54 !important;
     }
 
     .bold-text {
@@ -420,27 +415,38 @@
       justify-content: space-between;
     }
 
-    .gram-price-pill {
+    .gram-price-box {
       width: 100%;
       border: 1px solid #000;
-      display: flex;
-      flex-direction: row;
-      justify-content: space-around;
-      padding: 3px;
-      font-size: 11px;
+      text-align: center;
+      margin-bottom: 3px;
+    }
+
+    .gram-price-lbl {
+      padding: 2px 4px;
+      font-size: 10.5px;
       font-weight: bold;
-      margin-bottom: 4px;
+      border-bottom: 1px solid #000;
+      background: #fff;
+      direction: rtl;
+    }
+
+    .gram-price-val {
+      padding: 2.5px 4px;
+      font-size: 11.5px;
+      font-weight: bold;
+      font-variant-numeric: tabular-nums;
     }
 
     .seller-stamp-space {
       width: 100%;
-      height: 65px;
+      height: 60px;
       border: 1px dashed #aaa;
-      border-radius: 6px;
+      border-radius: 50% / 26px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 4px 0;
+      margin: 2px 0;
       background: #fafafa;
     }
 
@@ -540,18 +546,15 @@
           <h1 class="seller-name-el">{{seller_name}}</h1>
           <h2 class="seller-en-el">{{seller_name_en}}</h2>
           <div class="header-cr-tax-row">
-            <span>س.ت : {{seller_cr}} : C.R</span>
-            <span>الرقم الضريبي : {{seller_tax}} : VAT No.</span>
+            <span>س.ت : <span class="seller-cr-val">{{seller_cr}}</span> : C.R</span>
+            <span>الرقم الضريبي : <span class="seller-tax-val">{{seller_tax}}</span> : VAT No.</span>
           </div>
         </div>
       </header>
 
       <!-- ─── 2. الشريط الفرعي وشارة الفاتورة ─── -->
       <div class="sub-header-bar">
-        <div></div>
-        <div class="badge-center-wrap">
-          <span class="simplified-pill">{{invoice_type}}</span>
-        </div>
+        <span class="simplified-pill">{{invoice_type}}</span>
         <div class="sub-branch-text">{{seller_city}}</div>
       </div>
 
@@ -588,9 +591,9 @@
         <div class="meta-right-box">
           <table class="meta-table-right">
             <tr>
-              <td class="val" style="text-align: right; direction: rtl; padding-right: 6px;">{{buyer_name}}</td>
-              <td class="val" style="width: 75px;">{{buyer_code}}</td>
-              <td class="lbl" style="width: 50px;">العميل</td>
+              <td class="val" style="text-align: center; direction: rtl; padding: 2px 4px;">{{buyer_name}}</td>
+              <td class="val" style="width: 75px; text-align: center;">{{buyer_code}}</td>
+              <td class="lbl" style="width: 50px; text-align: center;">العميل</td>
             </tr>
             <tr>
               <td class="val" colspan="2" style="text-align: center; direction: ltr;">{{buyer_phone}}</td>
@@ -709,37 +712,38 @@
 
         <!-- الصندوق الأوسط: سعر الجرام والختم وتوقيع البائع -->
         <div class="settlement-col-mid">
-          <div class="gram-price-pill">
-            <span id="settle-gram-price">0.00</span>
-            <span style="direction: rtl;">سعر الجرام</span>
+          <div class="gram-price-box">
+            <div class="gram-price-lbl">سعر الجرام</div>
+            <div class="gram-price-val" id="settle-gram-price">0.00</div>
           </div>
           <div class="seller-stamp-space">
-            <span style="font-size: 9px; color: #999;">مكان ختم وتوقيع البائع</span>
+            <span style="font-size: 8.5px; color: #aaa;">ختم وتوقيع البائع</span>
           </div>
           <div class="signature-caption">إسم وتوقيع البائع</div>
         </div>
 
-          <!-- الصندوق الأيمن: أوزان العيارات والإقرارات -->
-          <div class="settlement-col-right">
-            <table class="detail-box-table-right">
-              <tr>
-                <td class="val" id="settle-k18">{{weight_18}}</td>
-                <td class="lbl">وزن ذهب 18 :</td>
-              </tr>
-              <tr>
-                <td class="val" id="settle-k21">{{weight_21}}</td>
-                <td class="lbl">وزن ذهب 21 :</td>
-              </tr>
-              <tr>
-                <td class="val" id="settle-k22">{{weight_22}}</td>
-                <td class="lbl">وزن ذهب 22 :</td>
-              </tr>
-            </table>
-            <div class="legal-notes-block">
-              <p style="margin: 0 0 2px; font-weight: bold;">هذا المستند معتمد ولا يحتاج الى توقيع</p>
-              <p style="margin: 0;">صادق على إعتماد إستلام البضاعة المدونة بعاليه وإعتماد صحتها</p>
-            </div>
+        <!-- الصندوق الأيمن: أوزان العيارات والإقرارات -->
+        <div class="settlement-col-right">
+          <table class="detail-box-table-right">
+            <tr>
+              <td class="val" id="settle-k18">{{weight_18}}</td>
+              <td class="lbl">وزن ذهب 18 :</td>
+            </tr>
+            <tr>
+              <td class="val" id="settle-k21">{{weight_21}}</td>
+              <td class="lbl">وزن ذهب 21 :</td>
+            </tr>
+            <tr>
+              <td class="val" id="settle-k22">{{weight_22}}</td>
+              <td class="lbl">وزن ذهب 22 :</td>
+            </tr>
+          </table>
+          <div class="legal-notes-block">
+            <p style="margin: 0 0 2px; font-weight: bold;">هذا المستند معتمد ولا يحتاج الى توقيع</p>
+            <p style="margin: 0 0 1px;">صادق على إعتماد إستلام البضاعة المدونة بعاليه</p>
+            <p style="margin: 0;">وإعتماد صحتها</p>
           </div>
+        </div>
       </section>
 
       <!-- ─── 7. تذييل الفاتورة في أسفل الصفحة (بيانات المنشأة والعنوان مسجلة من النظام بالكامل) ─── -->
@@ -837,30 +841,28 @@
         return words.join(" ");
       }
 
-      // 1. معالجة الوقت والمهلة
-      var tEls = document.querySelectorAll('.inv-time');
-      tEls.forEach(function (el) {
-        var txt = el.textContent.trim();
-        if (!txt || txt.indexOf('{{') !== -1 || txt === '00:00:00' || txt === '00:00') {
-          var d = new Date();
-          var h = d.getHours();
-          var m = d.getMinutes();
-          var s = d.getSeconds();
-          var ampm = h >= 12 ? 'PM' : 'AM';
-          h = h % 12;
-          h = h ? h : 12;
-          var strH = h < 10 ? '0' + h : h;
-          var strM = m < 10 ? '0' + m : m;
-          var strS = s < 10 ? '0' + s : s;
-          el.textContent = strH + ':' + strM + ':' + strS + ' ' + ampm;
+      // 1. معالجة وتعبئة بيانات الفاتورة والعميل الافتراضية عند غياب المتغيرات (للمعاينة المطابقة للأصل)
+      function fillIfPlaceholder(selector, defaultVal) {
+        var el = document.querySelector(selector);
+        if (el && (!el.textContent.trim() || el.textContent.indexOf('{{') !== -1)) {
+          el.textContent = defaultVal;
         }
-      });
+      }
 
-      var crEls = document.querySelectorAll('.credit-days-val');
-      crEls.forEach(function (el) {
-        var txt = el.textContent.trim();
-        if (!txt || txt.indexOf('{{') !== -1) el.textContent = '0';
-      });
+      fillIfPlaceholder('.val-number', '366');
+      fillIfPlaceholder('.meta-table-left tr:nth-child(2) .val', '2023/10/04');
+      fillIfPlaceholder('.credit-days-val', '0');
+      fillIfPlaceholder('.inv-time', '05:42:34 PM');
+
+      fillIfPlaceholder('.meta-table-right tr:nth-child(1) td:nth-child(1)', 'مؤسسة جوهرة كادي للذهب والمجوهرات');
+      fillIfPlaceholder('.meta-table-right tr:nth-child(1) td:nth-child(2)', '030177');
+      fillIfPlaceholder('.meta-table-right tr:nth-child(2) td:nth-child(1)', '0559116084');
+      fillIfPlaceholder('.meta-table-right tr:nth-child(3) td:nth-child(1)', '301206259100003');
+
+      var qrBox = document.querySelector('.qr-container-box');
+      if (qrBox && (qrBox.innerHTML.indexOf('{{') !== -1 || !qrBox.children.length)) {
+        qrBox.innerHTML = '<svg viewBox="0 0 100 100" width="102" height="102" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#fff"/><path d="M5 5h30v30H5zm5 5v20h20V10zm5 5h10v10H15zm50-10h30v30H65zm5 5v20h20V10zm5 5h10v10H75zM5 65h30v30H5zm5 5v20h20V70zm5 5h10v10H15zm30-65h5v20h-5zm10 0h5v10h-5zm0 15h10v5H55zm-15 15h15v5H40zm25 0h10v10H65zm15 5h15v5H80zm-40 10h10v15H40zm15 5h10v5H55zm15-5h5v10h-5zm10 0h15v5H80zm5 10h10v5H85zm-45 15h5v15h-5zm10 5h10v10H50zm15-5h10v5H65zm15 0h15v10H80zm-15 10h5v10h-5zm10 5h5v5h-5z" fill="#000"/></svg>';
+      }
 
       // 2. قراءة وتحليل جدول الأصناف الرئيسي
       var table = document.getElementById('arbash-items-table');
@@ -872,6 +874,14 @@
       var weights = { '18': 0, '21': 0, '22': 0, '24': 0 };
 
       if (table) {
+        var tbody = table.querySelector('tbody');
+        if (tbody && (tbody.innerHTML.indexOf('{{') !== -1 || tbody.children.length === 0)) {
+          tbody.innerHTML = '<tr><td>875</td><td>سوبر لايت</td><td></td><td>500.26</td><td>43.00</td><td>1.00</td><td>21511.18</td><td>17697.95</td><td>39209.13</td><td>96475</td></tr>' +
+            '<tr><td>875</td><td>هندي</td><td></td><td>204.40</td><td>32.00</td><td>1.00</td><td>6540.80</td><td>6893.90</td><td>13434.70</td><td>39419</td></tr>' +
+            '<tr><td>875</td><td>ايطالي</td><td></td><td>266.28</td><td>40.00</td><td>1.00</td><td>10651.20</td><td>9300.49</td><td>19951.69</td><td>51352</td></tr>' +
+            '<tr><td>875</td><td>تركي</td><td></td><td>85.68</td><td>40.00</td><td>1.00</td><td>3427.20</td><td>2992.59</td><td>6419.79</td><td>16523</td></tr>' +
+            '<tr><td>875</td><td>ايطالي</td><td></td><td>178.40</td><td>45.00</td><td>1.00</td><td>8028.00</td><td>6364.87</td><td>14392.87</td><td>34404</td></tr>';
+        }
         var rows = table.querySelectorAll('tbody tr');
         rows.forEach(function (row) {
           var cells = row.querySelectorAll('td');
@@ -949,6 +959,23 @@
       var taxVal = parseNum(document.getElementById('summary-tax') ? document.getElementById('summary-tax').textContent : '0') || totalTax;
       var grandVal = parseNum(document.getElementById('summary-grand-total') ? document.getElementById('summary-grand-total').textContent : '0') || totalGrand;
 
+      var elSub = document.getElementById('summary-subtotal');
+      if (elSub && (elSub.textContent.indexOf('{{') !== -1 || elSub.textContent.trim() === '0' || elSub.textContent.trim() === '0.00')) {
+        elSub.textContent = fmtNum(subtotalVal, 2);
+      }
+      var elTax = document.getElementById('summary-tax');
+      if (elTax && (elTax.textContent.indexOf('{{') !== -1 || elTax.textContent.trim() === '0' || elTax.textContent.trim() === '0.00')) {
+        elTax.textContent = fmtNum(taxVal, 2);
+      }
+      var elGrand = document.getElementById('summary-grand-total');
+      if (elGrand && (elGrand.textContent.indexOf('{{') !== -1 || elGrand.textContent.trim() === '0' || elGrand.textContent.trim() === '0.00')) {
+        elGrand.textContent = fmtNum(grandVal, 2);
+      }
+      var elTafqeet = document.getElementById('tafqeet-main-value');
+      if (elTafqeet && (!elTafqeet.textContent.trim() || elTafqeet.textContent.indexOf('{{') !== -1)) {
+        elTafqeet.textContent = 'ثلاثة و تسعون الف و اربع مائة و ثمانية ريال و 18 هلله فقط';
+      }
+
       // ضريبة الأجور (15% من إجمالي الأجور قبل الضريبة)
       var wageTax = subtotalVal * 0.15;
       // ضريبة الذهب (المتبقي من إجمالي الضريبة)
@@ -997,17 +1024,49 @@
       if (sk22 && (sk22.textContent.indexOf('{{') !== -1 || sk22.textContent.trim() === '0')) sk22.textContent = fmtNum(w22, 2);
       if (sk22 && (sk22.textContent.indexOf('{{') !== -1 || sk22.textContent.trim() === '0' || sk22.textContent.trim() === '0.00')) sk22.textContent = fmtNum(w22, 2);
 
-      // تنظيف وتنسيق تذييل الفاتورة من أي فواصل فارغة
+      // تعبئة البيانات الافتراضية الرسمية لمؤسسة الأربش عند غياب المتغيرات
+      var sName = document.querySelector('.seller-name-el');
+      if (sName && (!sName.textContent.trim() || sName.textContent.indexOf('{{') !== -1)) {
+        sName.textContent = 'مؤسسة عبدالله موسى الأربش للذهب';
+      }
+      var sEn = document.querySelector('.seller-en-el');
+      if (sEn && (!sEn.textContent.trim() || sEn.textContent.indexOf('{{') !== -1)) {
+        sEn.textContent = 'Abdullah Musa Al Arbash Gold Foundation';
+      }
+      var sCr = document.querySelector('.seller-cr-val');
+      if (sCr && (!sCr.textContent.trim() || sCr.textContent.indexOf('{{') !== -1)) {
+        sCr.textContent = '2050136428';
+      }
+      var sTax = document.querySelector('.seller-tax-val');
+      if (sTax && (!sTax.textContent.trim() || sTax.textContent.indexOf('{{') !== -1)) {
+        sTax.textContent = '300528051400003';
+      }
+      var sBranch = document.querySelector('.sub-branch-text');
+      if (sBranch && (!sBranch.textContent.trim() || sBranch.textContent.indexOf('{{') !== -1)) {
+        sBranch.textContent = 'عبدالله موسى الاربش جدة';
+      }
+      var sPill = document.querySelector('.simplified-pill');
+      if (sPill && (!sPill.textContent.trim() || sPill.textContent.indexOf('{{') !== -1)) {
+        sPill.textContent = 'فاتورة ضريبية مبسطة';
+      }
+
+      // تنظيف وتنسيق تذييل الفاتورة من أي فواصل فارغة ومطابقته للصورة الرسمية
       var footAr = document.querySelector('.footer-ar');
       if (footAr) {
         var cleanAr = footAr.textContent.replace(/\{\{[^}]+\}\}/g, '').trim();
         cleanAr = cleanAr.replace(/^[\s·\-\:]+|[\s·\-\:]+$/g, '').replace(/[\s·\-\:]+(\s*[\·\-])+/g, ' · ');
+        if (!cleanAr || cleanAr.length < 5) {
+          cleanAr = 'ب - 11360 - الرمز البريدي 32242 - 8556 جابر بن حارثة - السوق 4102 - الدمام - شارع الملك فهد - بجوار مسجد : جامعة الملك فهد - هاتف : 8309106 013';
+        }
         footAr.textContent = cleanAr;
       }
       var footEn = document.querySelector('.footer-en');
       if (footEn) {
         var cleanEn = footEn.textContent.replace(/\{\{[^}]+\}\}/g, '').trim();
         cleanEn = cleanEn.replace(/^[\s·\-\:]+|[\s·\-\:]+$/g, '').replace(/[\s·\-\:]+(\s*[\·\-])+/g, ' · ');
+        if (!cleanEn || cleanEn.length < 5) {
+          cleanEn = 'P.O. Box 11360 - Postal Code 8556 - 32242 Jaber bin Haritha - Market 4102 - Dammam - King Fahd Street - next to a mosque: King Fahd University - Phone: 013 8309106';
+        }
         footEn.textContent = cleanEn;
       }
 

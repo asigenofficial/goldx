@@ -897,9 +897,10 @@ export function translateCityArToEn(cityAr) {
 function detectColumnTypeJS(th) {
   const clean = (th || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
 
-  if (/عيار|karat/.test(clean)) return 'karat';
-  if (/أجور|اجور|مصنعية|wage/.test(clean)) return 'wage';
-  if (/سعر الجرام|سعر الذهب|gram price/.test(clean)) return 'gram_price';
+  if (clean.includes('معدل') || clean.includes('prevalent') || clean.includes('875')) return 'prevalent875';
+  if (/عيار|karat|carat/.test(clean)) return 'karat';
+  if (/أجور|اجور|أجرة|اجرة|مصنعية|صياغة|wage|making/.test(clean)) return 'wage';
+  if (/سعر الجرام|سعر الذهب|gram price|gold price/.test(clean)) return 'gram_price';
   if (/وزن|weight/.test(clean)) return 'qty';
 
   if (clean.includes('شامل') || clean.includes('مع الضريبة') || clean.includes('صافي') || clean.includes('with vat') || clean.includes('total with') || clean.includes('gross') || clean.includes('total line')) {
@@ -1046,12 +1047,26 @@ function generateSmartRowsJS(htmlSnippet, rawLines, offset = 0) {
         }
         case 'unit':
           return `<td class="c" style="padding:6px 8px;text-align:center;">${esc(unit)}</td>`;
+        case 'prevalent875': {
+          let karatVal = 21.0;
+          const kStr = String(l.karat || '21').trim();
+          if (kStr === '18' || kStr === '750') karatVal = 18.0;
+          else if (kStr === '22' || kStr === '916') karatVal = 22.0;
+          else if (kStr === '24' || kStr === '999' || kStr === '999.9') karatVal = 24.0;
+          const prev = (qtyNum * karatVal) / 21.0;
+          return `<td class="c num">${prev.toFixed(2)}</td>`;
+        }
         case 'karat':
           return `<td class="c">${esc(l.karat || '21')}</td>`;
         case 'gram_price':
           return `<td class="c num">${Number(l.gram_price || 0).toFixed(2)}</td>`;
-        case 'wage':
-          return `<td class="c num">${Number(l.wage || 0).toFixed(2)}</td>`;
+        case 'wage': {
+          let w = Number(l.wage || 0);
+          if (w === 0 && !l.gram_price && Number(l.unit_price || 0) > 0) {
+            w = Number(l.unit_price);
+          }
+          return `<td class="c num">${w.toFixed(2)}</td>`;
+        }
         case 'price':
           return `<td class="c num" style="padding:6px 8px;text-align:center;font-family:Tahoma,sans-serif;">${priceStr}</td>`;
         case 'qty':
@@ -1293,6 +1308,18 @@ export function fillDynamicTemplateHtml(rawHtml, { issuer = {}, client = {}, vou
     if (k === 'gold_type_label') return ({PRICE_ONLY:'سعر فقط (ذهب فقط)',WAGE_ONLY:'أجور فقط (مصنعية فقط)',PRICE_AND_WAGE:'سعر وأجور (ذهب ومصنعية)'})[invoice?.gold_invoice_type || 'PRICE_AND_WAGE'];
     if (k === 'total_weight') return (invoice?.lines || invoice?.items || []).reduce((sum,line) => sum + Number(line.quantity || 0),0).toFixed(2);
     if (/^weight_(18|21|22|24)$/.test(k)) return (invoice?.lines || invoice?.items || []).filter(line => String(line.karat || '21').trim() === k.slice(7)).reduce((sum,line) => sum + Number(line.quantity || 0),0).toFixed(2);
+    if (k === 'total_wage' || k === 'total_wages' || k === 'wage_total' || k === 'wage_amount' || k === 'total_wage_amount') {
+      const tw = (invoice?.lines || invoice?.items || []).reduce((sum, line) => {
+        const qty = Number(line.quantity || 0);
+        let w = Number(line.wage || 0);
+        if (w === 0 && !line.gram_price && Number(line.unit_price || 0) > 0) {
+          w = Number(line.unit_price);
+        }
+        return sum + (qty * w);
+      }, 0);
+      const finalTw = tw > 0 ? tw : (Number(invoice?.subtotal ?? 0));
+      return finalTw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
 
     // 2. بيانات المنشأة المصدرة
     if (k === 'seller_name' || k === 'issuer_name' || k === 'company_name' || k === 'seller' || k === 'receiver_name') {
