@@ -35,7 +35,7 @@ body {
   min-height: 297mm;
   max-height: 297mm;
   margin: 0 auto;
-  padding: 0 0 4mm 0;
+  padding: 0;
   background: #fff;
   display: flex !important;
   flex-direction: column !important;
@@ -66,12 +66,36 @@ body {
     height: 297mm !important;
     max-height: 297mm !important;
     margin: 0 !important;
-    padding: 0 0 4mm 0 !important;
+    padding: 0 !important;
     page-break-after: avoid !important;
     page-break-inside: avoid !important;
     break-after: avoid !important;
     break-inside: avoid !important;
   }
+}
+
+/* ─── الأقسام العلوية والسفلية لضمان تثبيت التذييل في أسفل الصفحة تماماً ─── */
+.top-content {
+  flex: 0 0 auto !important;
+  width: 100%;
+}
+
+.bottom-content {
+  flex-shrink: 0 !important;
+  margin-top: auto !important;
+  width: 100%;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.invoice-body-bottom-wrap {
+  padding: 0 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.invoice-page-label {
+  display: none !important;
 }
 
 /* ─── 1. الترويسة الذهبية الفاخرة ذات المنحنى الانسيابي (مطابقة للشماسي بالملي) ─── */
@@ -539,8 +563,10 @@ table.payment-mini-table td {
     </svg>
   </div>
 
-  <!-- ═══════════════ 1. الترويسة الذهبية الشماسي ذات المنحنى الانسيابي ═══════════════ -->
-  <header class="header-shamasi-banner">
+  <!-- ═══════════════ القسم العلوي ═══════════════ -->
+  <div class="top-content">
+    <!-- ─── 1. الترويسة الذهبية الشماسي ذات المنحنى الانسيابي ─── -->
+    <header class="header-shamasi-banner">
     <!-- خلفية الفيكتور ذات المنحنيات الذهبية والرمادية المطابقة للأصل بالملي -->
     <svg class="header-bg-svg" viewBox="0 0 1000 85" preserveAspectRatio="none">
       <defs>
@@ -694,7 +720,12 @@ table.payment-mini-table td {
         </tfoot>
       </table>
     </main>
+  </div>
+</div>
 
+<!-- ═══════════════ القسم السفلي (مثبت في أسفل الصفحة تماماً) ═══════════════ -->
+<div class="bottom-content">
+  <div class="invoice-body-bottom-wrap">
     <!-- ─── 5. شريط التفقيط المزدوج: تفقيط الريال + تفقيط الذهب ─── -->
     <section class="tafqeet-double-box">
       <div class="tafqeet-line">
@@ -790,15 +821,15 @@ table.payment-mini-table td {
         <div class="sig-item">توقيع أمين الصندوق ..</div>
       </div>
     </section>
-
   </div>
 
-  <!-- ═══════════════ 8. تذييل الفاتورة في أسفل الصفحة تماماً ═══════════════ -->
+  <!-- ─── 8. تذييل الفاتورة في أسفل الصفحة تماماً ─── -->
   <footer class="footer-bottom-bar">
     <div id="footer-dynamic-text">
       {{seller_name}} · {{seller_address}} · هاتف: {{seller_phone}}
     </div>
   </footer>
+</div>
 
 </div>
 
