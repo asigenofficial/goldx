@@ -1640,12 +1640,16 @@ const (
 	colTaxAmount
 	colTotal
 	colNotes
+	colPrevalent875
 )
 
 func detectColumnType(th string) colType {
 	clean := strings.ToLower(stripHtmlTags(th))
 	clean = strings.Join(strings.Fields(clean), " ")
 
+	if strings.Contains(clean, "معدل") || strings.Contains(clean, "prevalent") || strings.Contains(clean, "875") {
+		return colPrevalent875
+	}
 	if strings.Contains(clean, "عيار") || strings.Contains(clean, "karat") || strings.Contains(clean, "carat") {
 		return colKarat
 	}
@@ -1869,6 +1873,20 @@ func (s *TemplateService) generateSmartRowsSlice(tpl string, lines []InvoiceItem
 				if value == "" {
 					value = "21"
 				}
+			case colPrevalent875:
+				karatVal := 21.0
+				switch strings.TrimSpace(item.Karat) {
+				case "18", "750":
+					karatVal = 18.0
+				case "22", "916":
+					karatVal = 22.0
+				case "24", "999", "999.9":
+					karatVal = 24.0
+				default:
+					karatVal = 21.0
+				}
+				prev := (item.Quantity * karatVal) / 21.0
+				value = fmt.Sprintf("%.2f", prev)
 			case colGramPrice:
 				value = fmt.Sprintf("%.2f", item.GramPriceMajor)
 			case colWage:

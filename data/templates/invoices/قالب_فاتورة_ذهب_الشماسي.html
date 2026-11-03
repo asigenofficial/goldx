@@ -1,0 +1,959 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>مؤسسة الشماسي للذهب — فاتورة ضريبية</title>
+<style>
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+* {
+  box-sizing: border-box;
+}
+html, body {
+  width: 210mm;
+  height: 297mm;
+  margin: 0;
+  padding: 0;
+}
+body {
+  direction: rtl;
+  background: white;
+  color: #111;
+  font-family: 'goldx Document', 'Noto Sans Arabic', Tahoma, Arial, sans-serif;
+  font-size: 11px;
+  line-height: 1.3;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ─── الحاوية الرئيسية A4 ─── */
+.invoice-container {
+  width: 210mm;
+  height: 297mm;
+  min-height: 297mm;
+  max-height: 297mm;
+  margin: 0 auto;
+  padding: 0 0 4mm 0;
+  background: #fff;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  position: relative;
+  box-sizing: border-box;
+  overflow: hidden;
+  page-break-after: avoid;
+  page-break-inside: avoid;
+  break-after: avoid;
+  break-inside: avoid;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+  html, body {
+    width: 210mm;
+    height: 297mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+  }
+  .invoice-container {
+    width: 210mm !important;
+    height: 297mm !important;
+    max-height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 0 4mm 0 !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-after: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+
+/* ─── 1. الترويسة الذهبية الفاخرة ذات المنحنى الانسيابي (مطابقة للشماسي بالملي) ─── */
+.header-shamasi-banner {
+  position: relative;
+  width: 100%;
+  height: 85px;
+  background: #ffffff;
+  overflow: hidden;
+  border-bottom: 1.5px solid #bd9b53;
+  direction: ltr; /* لضمان بقاء الشعار على اليسار والنصوص داخل المنحنى الذهبي على اليمين */
+}
+
+.header-bg-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.header-content-wrap {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px 0 20px;
+}
+
+/* الشعار على اليسار: مربع مخصص يضع فيه النظام الشعار بدقة أثناء الطباعة */
+.header-logo-area {
+  flex: 0 0 110px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+}
+
+.header-logo-box {
+  width: 75px;
+  height: 75px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: transparent;
+}
+
+.header-logo-box img,
+.header-logo-box svg {
+  max-width: 75px;
+  max-height: 75px;
+  object-fit: contain;
+  display: block;
+}
+
+/* كتلة النصوص على اليمين داخل المنحنى الذهبي */
+.header-titles-area {
+  flex: 0 1 auto;
+  text-align: right;
+  direction: rtl;
+  color: #ffffff;
+  padding-right: 6px;
+  padding-left: 20px;
+}
+
+.header-titles-area .title-ar {
+  font-size: 19px;
+  font-weight: 900;
+  margin: 0 0 1px 0;
+  color: #ffffff;
+  letter-spacing: 0.3px;
+  line-height: 1.25;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+}
+
+.header-titles-area .title-en {
+  font-size: 12px;
+  font-weight: 700;
+  direction: ltr;
+  text-align: right;
+  margin: 0 0 4px 0;
+  color: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.2;
+}
+
+.header-meta-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5px;
+  width: 440px;
+  max-width: 100%;
+}
+
+.header-meta-grid .meta-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.35;
+}
+
+.header-meta-grid .meta-col-right {
+  width: 52%;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.header-meta-grid .meta-col-left {
+  width: 48%;
+  text-align: left;
+  direction: rtl;
+  white-space: nowrap;
+}
+
+/* ─── الحاوية الداخلية للورقة ─── */
+.invoice-body-wrap {
+  padding: 8px 16px 0 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+/* العلامة المائية في الخلفية */
+.invoice-watermark {
+  position: absolute;
+  top: 48%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.04;
+  font-size: 70px;
+  font-weight: 900;
+  color: #b89548;
+  pointer-events: none;
+  z-index: 0;
+  white-space: nowrap;
+}
+
+/* ─── 2. شريط عنوان الفاتورة ورمز QR ─── */
+.title-qr-row {
+  position: relative;
+  width: 100%;
+  min-height: 85px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+.invoice-center-title {
+  text-align: center;
+}
+.invoice-center-title h2 {
+  font-size: 20px;
+  font-weight: 900;
+  margin: 0;
+  color: #111;
+  letter-spacing: 0.5px;
+}
+.qr-box-left {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 85px;
+  height: 85px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.qr-box-left svg, .qr-box-left img {
+  width: 85px !important;
+  height: 85px !important;
+  display: block;
+}
+
+/* ─── 3. بيانات الفاتورة والعميل (عمودان متوازيان بدقة) ─── */
+.meta-two-columns {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 25px;
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+.meta-col {
+  flex: 1;
+}
+table.meta-compact-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+table.meta-compact-table td {
+  padding: 2px 4px;
+  line-height: 1.35;
+}
+table.meta-compact-table td.lbl {
+  font-weight: bold;
+  color: #333;
+  width: 36%;
+  white-space: nowrap;
+}
+table.meta-compact-table td.val {
+  color: #000;
+  font-weight: 700;
+  width: 64%;
+}
+
+/* ─── 4. جدول الأصناف الرئيسي مع ترويسة رمادية ─── */
+.items-table-container {
+  width: 100%;
+  margin-bottom: 6px;
+}
+table.items-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #222;
+  font-size: 10.5px;
+  text-align: center;
+  direction: rtl;
+}
+table.items-grid-table th {
+  background: #dbdbdb;
+  border: 1px solid #222;
+  padding: 4px 2px;
+  font-weight: bold;
+  color: #111;
+  font-size: 10px;
+  line-height: 1.25;
+}
+table.items-grid-table th small {
+  display: block;
+  font-size: 8.5px;
+  color: #333;
+  font-family: Arial, sans-serif;
+  font-weight: normal;
+}
+table.items-grid-table tbody td {
+  border: 1px solid #222;
+  padding: 5px 3px;
+  height: 24px;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+table.items-grid-table tfoot td {
+  border: 1px solid #222;
+  padding: 4px 3px;
+  font-weight: bold;
+  background: #f7f7f7;
+}
+
+/* ─── 5. شريط التفقيط المزدوج (ريال وذهب) ─── */
+.tafqeet-double-box {
+  border: 1px solid #222;
+  padding: 4px 8px;
+  margin-bottom: 6px;
+  font-size: 10.5px;
+  font-weight: bold;
+  background: #fff;
+  line-height: 1.45;
+}
+.tafqeet-line {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+/* ─── 6. تسوية الأوزان والمبالغ والأكياس (3 صناديق متجاورة) ─── */
+.settlement-triple-grid {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+/* الصندوق الأيمن: الأكياس والملاحظات */
+.settle-box-right {
+  flex: 1.35;
+  border: 1px solid #222;
+  padding: 6px 8px;
+  font-size: 10.5px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 4px;
+  background: #fff;
+}
+
+/* الصندوق الأوسط: كسر العيارات بالجرام */
+.settle-box-mid {
+  flex: 1;
+  border: 1px solid #222;
+  padding: 4px;
+  background: #fff;
+}
+table.karat-mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5px;
+}
+table.karat-mini-table td {
+  padding: 2.5px 4px;
+  white-space: nowrap;
+}
+table.karat-mini-table td.lbl {
+  font-weight: bold;
+  width: 55%;
+}
+table.karat-mini-table td.val {
+  font-weight: bold;
+  text-align: left;
+  direction: ltr;
+  width: 45%;
+}
+
+/* الصندوق الأيسر: الإجماليات المالية */
+.settle-box-left {
+  flex: 1;
+  border: 1px solid #222;
+  padding: 4px;
+  background: #fff;
+}
+table.totals-mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5px;
+}
+table.totals-mini-table td {
+  padding: 2.5px 4px;
+}
+table.totals-mini-table td.lbl {
+  font-weight: bold;
+  width: 55%;
+}
+table.totals-mini-table td.val {
+  font-weight: bold;
+  text-align: left;
+  direction: ltr;
+  width: 45%;
+}
+.grand-row td {
+  font-weight: 900 !important;
+  font-size: 11px !important;
+  border-top: 1px solid #222;
+  padding-top: 3px !important;
+}
+
+/* ─── 7. جدول طريقة السداد وشريط التوقيعات ─── */
+.payment-signatures-wrap {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 15px;
+  margin-bottom: 6px;
+}
+
+/* جدول السداد على اليمين */
+.payment-method-box {
+  flex: 0 0 250px;
+}
+table.payment-mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #222;
+  text-align: center;
+  font-size: 10.5px;
+}
+table.payment-mini-table th {
+  background: #dbdbdb;
+  border: 1px solid #222;
+  padding: 3px;
+  font-weight: bold;
+}
+table.payment-mini-table td {
+  border: 1px solid #222;
+  padding: 4px;
+  font-weight: bold;
+}
+
+/* التوقيعات الثلاثة على اليسار */
+.signatures-three-col {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  font-size: 11px;
+  font-weight: bold;
+  padding-bottom: 6px;
+}
+
+/* ─── 8. تذييل الفاتورة في أسفل الصفحة تماماً ─── */
+.footer-bottom-bar {
+  background: linear-gradient(135deg, #caa965 0%, #b89548 50%, #a88335 100%);
+  color: #fff;
+  padding: 5px 14px;
+  font-size: 9.5px;
+  text-align: center;
+  font-weight: bold;
+  line-height: 1.35;
+  border-top: 1.5px solid #8e6d28;
+}
+</style>
+</head>
+<body>
+
+<div class="invoice-container" data-gold-design="قالب_فاتورة_ذهب_الشماسي" data-gold-invoice-type="{{gold_invoice_type}}">
+
+  <!-- العلامة المائية الشفافة في الخلفية -->
+  <div class="invoice-watermark">الـشـمـاسـي</div>
+
+  <!-- ═══════════════ 1. الترويسة الذهبية الشماسي ذات المنحنى الانسيابي ═══════════════ -->
+  <header class="header-shamasi-banner">
+    <!-- خلفية الفيكتور ذات المنحنيات الذهبية والرمادية المطابقة للأصل بالملي -->
+    <svg class="header-bg-svg" viewBox="0 0 1000 85" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="goldBannerGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#c4a154"/>
+          <stop offset="50%" stop-color="#b69245"/>
+          <stop offset="100%" stop-color="#a47e33"/>
+        </linearGradient>
+      </defs>
+      <!-- طبقة منحنى الظل الرمادي الأنيق -->
+      <path d="M 200,0 C 215,35 235,65 285,85 L 302,85 C 252,65 232,35 217,0 Z" fill="#6d737b" opacity="0.9"/>
+      <!-- طبقة الكتلة الذهبية الفاخرة ذات المنحنى الانسيابي -->
+      <path d="M 222,0 C 237,35 257,65 305,85 L 1000,85 L 1000,0 Z" fill="url(#goldBannerGrad)"/>
+      <!-- خط سفلي دقيق للمستند -->
+      <line x1="0" y1="84" x2="1000" y2="84" stroke="#c0a05a" stroke-width="1.5"/>
+    </svg>
+
+    <!-- محتوى الترويسة العائم فوق الخلفية -->
+    <div class="header-content-wrap">
+      <!-- الشعار على اليسار: مربع مخصص يضع فيه النظام الشعار بدقة أثناء طباعة الفواتير -->
+      <div class="header-logo-area">
+        <div class="header-logo-box">
+          {{seller_logo}}
+        </div>
+      </div>
+
+      <!-- كتلة النصوص والبيانات على اليمين داخل المنحنى الذهبي -->
+      <div class="header-titles-area">
+        <div class="title-ar" id="hdr-seller-name">{{seller_name}}</div>
+        <div class="title-en" id="hdr-seller-en">{{seller_name_en}}</div>
+        <div class="header-meta-grid">
+          <div class="meta-row">
+            <div class="meta-col-right"><span id="hdr-branch">{{seller_branch}}</span></div>
+            <div class="meta-col-left"><span>رخصة المعادن : </span><span id="hdr-license">{{seller_license}}</span></div>
+          </div>
+          <div class="meta-row">
+            <div class="meta-col-right"><span>السجل التجاري : </span><span id="hdr-cr">{{seller_cr}}</span></div>
+            <div class="meta-col-left"><span dir="ltr">VAT : <span id="hdr-tax">{{seller_tax}}</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════ الحاوية الداخلية للفاتورة ═══════════════ -->
+  <div class="invoice-body-wrap">
+
+    <!-- ─── 2. شريط عنوان الفاتورة ورمز QR ─── -->
+    <section class="title-qr-row">
+      <div class="invoice-center-title">
+        <h2>فاتورة ضريبية ( بيع مشغول عاجل )</h2>
+      </div>
+      <div class="qr-box-left">
+        {{qr_code}}
+      </div>
+    </section>
+
+    <!-- ─── 3. بيانات الفاتورة والعميل (عمودان منسقان بدقة) ─── -->
+    <section class="meta-two-columns">
+      <!-- العمود الأيمن: بيانات العميل والمشتري -->
+      <div class="meta-col">
+        <table class="meta-compact-table">
+          <tr>
+            <td class="lbl">رقم حساب العميل :</td>
+            <td class="val">{{buyer_code}}</td>
+          </tr>
+          <tr>
+            <td class="lbl">اسم العميل والمناولة :</td>
+            <td class="val">{{buyer_name}}</td>
+          </tr>
+          <tr>
+            <td class="lbl">الرقم الضريبي للعميل :</td>
+            <td class="val">{{buyer_tax}}</td>
+          </tr>
+          <tr>
+            <td class="lbl">رقم جوال العميل :</td>
+            <td class="val" style="direction: ltr; text-align: right;">{{buyer_phone}}</td>
+          </tr>
+          <tr>
+            <td class="lbl">عنوان العميل :</td>
+            <td class="val">{{buyer_address}}</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- العمود الأيسر: بيانات ورقم المستند والتاريخ -->
+      <div class="meta-col">
+        <table class="meta-compact-table">
+          <tr>
+            <td class="lbl">الرقم الضريبي للمنشأة :</td>
+            <td class="val">{{seller_tax}}</td>
+          </tr>
+          <tr>
+            <td class="lbl">رقم تسلسل المستند :</td>
+            <td class="val">{{invoice_number}}</td>
+          </tr>
+          <tr>
+            <td class="lbl">التاريخ والوقت :</td>
+            <td class="val"><span class="inv-time">{{issue_time}}</span> {{issue_date}}</td>
+          </tr>
+          <tr>
+            <td class="lbl">الموافق :</td>
+            <td class="val">{{gregorian_date}}</td>
+          </tr>
+          <tr>
+            <td class="lbl">نسخة الطباعة :</td>
+            <td class="val">1</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─── 4. جدول الأصناف الرئيسي (7 أعمدة مطابقة لنموذج الشماسي) ─── -->
+    <main class="items-table-container">
+      <table class="items-grid-table" id="shamasi-items-table">
+        <thead>
+          <tr>
+            <th style="width: 5%;">No</th>
+            <th style="width: 33%;">الوصف<small>Description</small></th>
+            <th style="width: 8%;">العيار<small>Purity</small></th>
+            <th style="width: 13%;">الوزن القائم<small>Weight</small></th>
+            <th style="width: 14%;">المعدل 875<small>Prevalent 875</small></th>
+            <th style="width: 13%;">أجرة الجرام<small>Gram Price</small></th>
+            <th style="width: 14%;">المجموع<small>Total</small></th>
+          </tr>
+        </thead>
+        <tbody>
+          {{items_rows}}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td></td>
+            <td style="font-weight: 900;">إجماليات</td>
+            <td></td>
+            <td id="foot-total-weight">{{total_weight}}</td>
+            <td id="foot-total-prevalent">{{weight_21}}</td>
+            <td></td>
+            <td id="foot-total-subtotal">{{subtotal}}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </main>
+
+    <!-- ─── 5. شريط التفقيط المزدوج: تفقيط الريال + تفقيط الذهب ─── -->
+    <section class="tafqeet-double-box">
+      <div class="tafqeet-line">
+        <span>تفقيط الريال :</span>
+        <span id="tafqeet-money">{{amount_in_words}}</span>
+      </div>
+      <div class="tafqeet-line" style="margin-top: 2px;">
+        <span>تفقيط الذهب :</span>
+        <span id="tafqeet-gold">{{gold_amount_in_words}}</span>
+      </div>
+    </section>
+
+    <!-- ─── 6. تسوية الأوزان والمبالغ والأكياس (3 صناديق) ─── -->
+    <section class="settlement-triple-grid">
+      <!-- الصندوق الأيمن: وزن الأكياس والملاحظات -->
+      <div class="settle-box-right">
+        <div>وزن الأكياس ( <span id="bags-weight">{{bags_weight}}</span> ) جرام</div>
+        <div>إجمالي الوزن مع الأكياس ( <span id="gross-weight">{{total_weight}}</span> ) جرام</div>
+        <div style="margin-top: 4px;">ملاحظات : <span id="notes-content">{{notes}}</span></div>
+      </div>
+
+      <!-- الصندوق الأوسط: كسر العيارات بالجرام -->
+      <div class="settle-box-mid">
+        <table class="karat-mini-table">
+          <tr>
+            <td class="lbl">مجموع عيار 18 :</td>
+            <td class="val"><span id="sum-k18">{{weight_18}}</span> جرام</td>
+          </tr>
+          <tr>
+            <td class="lbl">مجموع عيار 21 :</td>
+            <td class="val"><span id="sum-k21">{{weight_21}}</span> جرام</td>
+          </tr>
+          <tr>
+            <td class="lbl">مجموع عيار 24 :</td>
+            <td class="val"><span id="sum-k24">{{weight_24}}</span> جرام</td>
+          </tr>
+          <tr>
+            <td class="lbl">مجموع عيار أخر :</td>
+            <td class="val"><span id="sum-kother">{{weight_other}}</span> جرام</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- الصندوق الأيسر: الإجماليات المالية -->
+      <div class="settle-box-left">
+        <table class="totals-mini-table">
+          <tr>
+            <td class="lbl">المجموع الفرعي :</td>
+            <td class="val" id="mini-subtotal">{{subtotal}}</td>
+          </tr>
+          <tr>
+            <td class="lbl">الخصم :</td>
+            <td class="val" id="mini-discount">{{discount}}</td>
+          </tr>
+          <tr>
+            <td class="lbl">الضريبة (15%) :</td>
+            <td class="val" id="mini-tax">{{tax_amount}}</td>
+          </tr>
+          <tr class="grand-row">
+            <td class="lbl">المستحق :</td>
+            <td class="val" id="mini-grand">{{grand_total}}</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─── 7. جدول طريقة السداد وشريط التوقيعات ─── -->
+    <section class="payment-signatures-wrap">
+      <!-- جدول السداد على اليمين -->
+      <div class="payment-method-box">
+        <table class="payment-mini-table">
+          <thead>
+            <tr>
+              <th style="width: 25%;">تسلسل</th>
+              <th style="width: 45%;">طريقة السداد</th>
+              <th style="width: 30%;">المبلغ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td id="pay-method-name">{{payment_method}}</td>
+              <td id="pay-method-amount">{{grand_total}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- التوقيعات الثلاثة على اليسار -->
+      <div class="signatures-three-col">
+        <div>.. توقيع العميل</div>
+        <div>.. توقيع المدقق</div>
+        <div>.. توقيع أمين الصندوق</div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ═══════════════ 8. تذييل الفاتورة في أسفل الصفحة تماماً ═══════════════ -->
+  <footer class="footer-bottom-bar">
+    <div id="footer-dynamic-text">
+      {{seller_name}} · {{seller_address}} · هاتف: {{seller_phone}}
+    </div>
+  </footer>
+
+</div>
+
+<!-- ═══════════════ محرك الحسابات الذكي الديناميكي ═══════════════ -->
+<script>
+(function() {
+  function parseNum(str) {
+    if (!str) return 0;
+    var clean = ('' + str).replace(/[^\d.-]/g, '');
+    var v = parseFloat(clean);
+    return isNaN(v) ? 0 : v;
+  }
+
+  function fmtNum(n, d) {
+    if (d === undefined) d = 2;
+    return Number(n || 0).toLocaleString('en-US', {
+      minimumFractionDigits: d,
+      maximumFractionDigits: d
+    });
+  }
+
+  // تفقيط الأوزان إلى جرام ومليجرام بالعربية
+  var ones = ["", "واحد", "اثنان", "ثلاثة", "أربعة", "خمسة", "ستة", "سبعة", "ثمانية", "تسعة"];
+  var tens = ["", "عشرة", "عشرون", "ثلاثون", "أربعون", "خمسون", "ستون", "سبعون", "ثمانون", "تسعون"];
+  var teens = ["عشرة", "أحد عشر", "اثنا عشر", "ثلاثة عشر", "أربعة عشر", "خمسة عشر", "ستة عشر", "سبعة عشر", "ثمانية عشر", "تسعة عشر"];
+  var hundreds = ["", "مائة", "مائتان", "ثلاثمائة", "أربعمائة", "خمسمائة", "ستمائة", "سبعمائة", "ثمانمائة", "تسعمائة"];
+
+  function tafqeetHundreds(n) {
+    n = Math.floor(n);
+    if (n === 0) return "";
+    var res = [];
+    var h = Math.floor(n / 100);
+    var rem = n % 100;
+    if (h > 0) res.push(hundreds[h]);
+    if (rem > 0) {
+      if (rem < 10) {
+        res.push(ones[rem]);
+      } else if (rem >= 10 && rem < 20) {
+        res.push(teens[rem - 10]);
+      } else {
+        var o = rem % 10;
+        var t = Math.floor(rem / 10);
+        if (o > 0) {
+          res.push(ones[o] + " و " + tens[t]);
+        } else {
+          res.push(tens[t]);
+        }
+      }
+    }
+    return res.join(" و ");
+  }
+
+  function tafqeetGold(num, karatLabel) {
+    var val = parseFloat(num);
+    if (isNaN(val) || val <= 0) return "فقط صفر جرام لا غير.";
+
+    var intPart = Math.floor(val);
+    var decPart = Math.round((val - intPart) * 1000);
+    var words = ["فقط"];
+
+    if (intPart > 0) {
+      var thousands = Math.floor(intPart / 1000);
+      var rem1000 = intPart % 1000;
+      var thWords = "";
+      if (thousands === 1) thWords = "الف";
+      else if (thousands === 2) thWords = "الفان";
+      else if (thousands >= 3 && thousands <= 10) thWords = tafqeetHundreds(thousands) + " آلاف";
+      else if (thousands > 10) thWords = tafqeetHundreds(thousands) + " الف";
+
+      if (thWords) words.push(thWords);
+      if (rem1000 > 0) words.push(tafqeetHundreds(rem1000));
+      words.push("جراماً");
+    }
+
+    if (decPart > 0) {
+      var mg = decPart;
+      if (mg % 10 === 0 && mg < 100) mg = mg / 10;
+      words.push("و " + tafqeetHundreds(mg) + " مليجراماً");
+    }
+
+    words.push("لا غير.");
+    if (karatLabel) words.push(karatLabel);
+    return words.join(" ");
+  }
+
+  // 1. معالجة وتدقيق جدول الأصناف
+  var table = document.getElementById('shamasi-items-table');
+  var totalGrams = 0;
+  var totalPrevalent875 = 0;
+  var totalSub = 0;
+  var weights = { '18': 0, '21': 0, '24': 0, 'other': 0 };
+
+  if (table) {
+    var rows = table.querySelectorAll('tbody tr');
+    var rowIndex = 1;
+    rows.forEach(function(row) {
+      var cells = row.querySelectorAll('td');
+      if (cells.length >= 5) {
+        // تسلسل الصنف
+        if (!cells[0].textContent.trim() || cells[0].textContent.trim() === '—') {
+          cells[0].textContent = rowIndex++;
+        }
+
+        var karatText = cells[2].textContent.trim();
+        var weight = parseNum(cells[3].textContent);
+        var wage = parseNum(cells[5] ? cells[5].textContent : '0');
+        var rowTotal = parseNum(cells[6] ? cells[6].textContent : '0');
+
+        totalGrams += weight;
+
+        // حساب المعدل 875 (تحويل لعيار 21)
+        var karatNum = 21;
+        if (karatText.indexOf('18') !== -1 || karatText.indexOf('750') !== -1) karatNum = 18;
+        else if (karatText.indexOf('22') !== -1 || karatText.indexOf('916') !== -1) karatNum = 22;
+        else if (karatText.indexOf('24') !== -1 || karatText.indexOf('999') !== -1) karatNum = 24;
+
+        var prev875 = (weight * karatNum) / 21;
+        totalPrevalent875 += prev875;
+
+        // إذا كانت خلية المعدل 875 فارغة يتم تعبئتها آلياً
+        if (cells[4] && (!cells[4].textContent.trim() || cells[4].textContent.indexOf('{{') !== -1)) {
+          cells[4].textContent = fmtNum(prev875, 2);
+        }
+
+        if (karatNum === 18) weights['18'] += weight;
+        else if (karatNum === 21) weights['21'] += weight;
+        else if (karatNum === 24) weights['24'] += weight;
+        else weights['other'] += weight;
+
+        totalSub += (rowTotal > 0 ? rowTotal : (weight * wage));
+      }
+    });
+  }
+
+  // 2. تحديث إجماليات ذيل جدول الأصناف
+  var ftWeight = document.getElementById('foot-total-weight');
+  if (ftWeight && (ftWeight.textContent.indexOf('{{') !== -1 || ftWeight.textContent.trim() === '0.00')) {
+    ftWeight.textContent = fmtNum(totalGrams, 2);
+  }
+
+  var ftPrev = document.getElementById('foot-total-prevalent');
+  if (ftPrev && (ftPrev.textContent.indexOf('{{') !== -1 || ftPrev.textContent.trim() === '0.00')) {
+    ftPrev.textContent = fmtNum(totalPrevalent875, 2);
+  }
+
+  // 3. تحديث تفقيط الذهب التلقائي إن لم يُمرر مسبقاً
+  var goldTafEl = document.getElementById('tafqeet-gold');
+  if (goldTafEl && (!goldTafEl.textContent.trim() || goldTafEl.textContent.indexOf('{{') !== -1)) {
+    var goldW = parseNum(ftPrev ? ftPrev.textContent : totalPrevalent875);
+    goldTafEl.textContent = tafqeetGold(goldW, 'عيار 875');
+  }
+
+  // 4. تحديث الأوزان في الصندوق الأوسط
+  function setVal(id, v) {
+    var el = document.getElementById(id);
+    if (el && (!el.textContent.trim() || el.textContent.indexOf('{{') !== -1 || el.textContent.trim() === '0' || el.textContent.trim() === '0.00')) {
+      el.textContent = fmtNum(v, 2);
+    }
+  }
+  setVal('sum-k18', weights['18']);
+  setVal('sum-k21', weights['21']);
+  setVal('sum-k24', weights['24']);
+  setVal('sum-kother', weights['other']);
+
+  // 5. وزن الأكياس والوزن الإجمالي القائم
+  var bagsEl = document.getElementById('bags-weight');
+  if (bagsEl && (!bagsEl.textContent.trim() || bagsEl.textContent.indexOf('{{') !== -1)) {
+    bagsEl.textContent = '0.00';
+  }
+
+  var grossEl = document.getElementById('gross-weight');
+  if (grossEl && (!grossEl.textContent.trim() || grossEl.textContent.indexOf('{{') !== -1 || grossEl.textContent.trim() === '0.00')) {
+    var bagsW = parseNum(bagsEl ? bagsEl.textContent : '0');
+    grossEl.textContent = fmtNum(totalGrams + bagsW, 2);
+  }
+
+  // 6. تدقيق نصوص الترويسة الذهبية الانسيابية
+  var branchEl = document.getElementById('hdr-branch');
+  if (branchEl && (!branchEl.textContent.trim() || branchEl.textContent.indexOf('{{') !== -1)) {
+    branchEl.textContent = 'فرع الذهب والمجوهرات';
+  }
+  var licenseEl = document.getElementById('hdr-license');
+  if (licenseEl && (!licenseEl.textContent.trim() || licenseEl.textContent.indexOf('{{') !== -1)) {
+    licenseEl.textContent = '11/40301936';
+  }
+  var crEl = document.getElementById('hdr-cr');
+  if (crEl && (!crEl.textContent.trim() || crEl.textContent.indexOf('{{') !== -1)) {
+    crEl.textContent = '4030181123';
+  }
+  var taxEl = document.getElementById('hdr-tax');
+  if (taxEl && (!taxEl.textContent.trim() || taxEl.textContent.indexOf('{{') !== -1)) {
+    taxEl.textContent = '300834097800003';
+  }
+  var sellerNameEl = document.getElementById('hdr-seller-name');
+  if (sellerNameEl && (!sellerNameEl.textContent.trim() || sellerNameEl.textContent.indexOf('{{') !== -1)) {
+    sellerNameEl.textContent = 'مؤسسة خالد أحمد الشماسي للأحجار الكريمة';
+  }
+  var sellerEnEl = document.getElementById('hdr-seller-en');
+  if (sellerEnEl && (!sellerEnEl.textContent.trim() || sellerEnEl.textContent.indexOf('{{') !== -1)) {
+    sellerEnEl.textContent = 'Khalid A. Al-Shamasi for Gemstones Est.';
+  }
+
+  // تنظيف أي وسم placeholder متبقي في الصفحة
+  document.body.innerHTML = document.body.innerHTML.replace(/\{\{[^}]+\}\}/g, '');
+})();
+</script>
+
+</body>
+</html>

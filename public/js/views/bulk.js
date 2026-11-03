@@ -611,13 +611,15 @@ export async function render(view) {
           <div class="field">
             <label>نوع الفواتير</label>
             <div class="segmented-control" role="group" aria-label="أجور الفاتورة">
-              ${[['PRICE_AND_WAGE', 'بأجور'], ['PRICE_ONLY', 'بدون أجور'], ['WAGE_ONLY', 'أجور فقط']].map(([mode, label]) => `<button type="button" class="btn ${state.gold_invoice_type === mode ? 'btn-primary' : ''}" data-gold-mode="${mode}" aria-pressed="${state.gold_invoice_type === mode}">${label}</button>`).join('')}
+              ${raw([['PRICE_AND_WAGE', 'بأجور'], ['PRICE_ONLY', 'بدون أجور'], ['WAGE_ONLY', 'أجور فقط']].map(([mode, label]) => `<button type="button" class="segmented-option ${state.gold_invoice_type === mode ? 'is-active' : ''}" data-gold-mode="${mode}" aria-pressed="${state.gold_invoice_type === mode}">${label}</button>`).join(''))}
             </div>
             <select id="gold_invoice_type" hidden>
               <option value="PRICE_AND_WAGE" ${state.gold_invoice_type === 'PRICE_AND_WAGE' ? 'selected' : ''}>سعر وأجور</option>
               <option value="PRICE_ONLY" ${state.gold_invoice_type === 'PRICE_ONLY' ? 'selected' : ''}>سعر فقط</option>
               <option value="WAGE_ONLY" ${state.gold_invoice_type === 'WAGE_ONLY' ? 'selected' : ''}>أجور فقط</option>
-            </select><label>التصنيف الضريبي</label><select id="invoice_type">
+            </select>
+            <label style="margin-top:.4rem">التصنيف الضريبي</label>
+            <select id="invoice_type">
               <option value="STANDARD" ${raw(state.invoice_type === 'STANDARD' ? 'selected' : '')}>فاتورة ضريبية (B2B)</option>
               <option value="SIMPLIFIED" ${raw(state.invoice_type === 'SIMPLIFIED' ? 'selected' : '')}>فاتورة مبسطة (B2C)</option>
             </select>
@@ -723,7 +725,11 @@ export async function render(view) {
             </div>
             <div class="field" style="flex:1.1;min-width:115px">
               <label class="tiny">سعر الجرام (${esc(cur)})</label>
-              <input type="number" step="0.01" min="0" id="quick-catalog-item-price" placeholder="سعر الجرام" /><label>الأجور للجرام</label><input type="number" min="0" step="0.01" id="quick-gold-wage" value="0" />
+              <input type="number" step="0.01" min="0" id="quick-catalog-item-price" placeholder="سعر الجرام" />
+            </div>
+            <div class="field" style="flex:1;min-width:105px">
+              <label class="tiny">الأجور للجرام</label>
+              <input type="number" min="0" step="0.01" id="quick-gold-wage" value="0" />
             </div>
           </div>
           <div class="bulk-items-actions mt-sm">
@@ -892,6 +898,7 @@ export async function render(view) {
         view.querySelectorAll('[data-gold-mode]').forEach((option) => {
           const active = option === button;
           option.classList.toggle('btn-primary', active);
+          option.classList.toggle('is-active', active);
           option.setAttribute('aria-pressed', String(active));
         });
       });

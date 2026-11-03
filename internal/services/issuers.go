@@ -177,6 +177,12 @@ func (s *IssuerService) CreateIssuer(iss *models.Issuer) error {
 }
 
 func (s *IssuerService) UpdateIssuer(id string, iss *models.Issuer) error {
+	previous, err := s.GetIssuer(id)
+	if err != nil {
+		return err
+	}
+	iss.ID, iss.CreatedAt = id, previous.CreatedAt
+	iss.Code, iss.InvoiceNextNo, iss.VoucherNextNo = previous.Code, previous.InvoiceNextNo, previous.VoucherNextNo
 	now := db.NowIso()
 	iss.UpdatedAt = now
 
@@ -189,7 +195,12 @@ func (s *IssuerService) UpdateIssuer(id string, iss *models.Issuer) error {
 		printJSON = "{}"
 	}
 
-	_, err := s.db.Exec(`
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	_, err = tx.Exec(`
 		UPDATE issuers SET
 			name_ar = ?, name_en = ?, tax_number = ?, commercial_register = ?,
 			street = ?, street_en = ?, building_no = ?, district = ?, district_en = ?,
@@ -208,7 +219,45 @@ func (s *IssuerService) UpdateIssuer(id string, iss *models.Issuer) error {
 		iss.ZatcaPhase, qrJSON, printJSON, iss.BankName,
 		iss.BankIban, iss.FooterNotes, iss.LegalTerms, iss.IsActive, now, id,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	address := formatNationalAddress(iss.City, iss.District, iss.Street, iss.BuildingNo, iss.PostalCode)
+	addressEn := iss.AddressEn
+	if addressEn == "" {
+		addressEn = formatNationalAddressEn(iss.CityEn, iss.DistrictEn, iss.StreetEn, iss.BuildingNo, iss.PostalCode)
+	}
+	if _, err = tx.Exec(`UPDATE invoices SET seller_name=?,seller_tax_number=?,seller_cr=?,seller_address=?,seller_address_en=?,updated_at=? WHERE issuer_id=?`, iss.NameAr, iss.TaxNumber, iss.CommercialRegister, address, addressEn, now, id); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(`UPDATE invoice_documents SET issuer_json=? WHERE invoice_id IN (SELECT id FROM invoices WHERE issuer_id=?)`, mustJSON(iss), id); err != nil {
+		return err
+	}
+	rows, err := tx.Query(`SELECT id,issue_date,issue_time,grand_total,tax_amount FROM invoices WHERE issuer_id=? AND zatca_phase='PHASE1' AND signature_mode='NONE'`, id)
+	if err != nil {
+		return err
+	}
+	qrUpdates := map[string]string{}
+	for rows.Next() {
+		var invoiceID, date, clock string
+		var total, tax int64
+		if err = rows.Scan(&invoiceID, &date, &clock, &total, &tax); err != nil {
+			rows.Close()
+			return err
+		}
+		qrUpdates[invoiceID] = zatca.BuildQrPayload(zatca.QrParams{SellerName: iss.NameAr, VatNumber: iss.TaxNumber, Timestamp: date + "T" + clock + "Z", Total: models.FmtMoney(total), VatTotal: models.FmtMoney(tax)})
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return err
+	}
+	for invoiceID, payload := range qrUpdates {
+		if _, err = tx.Exec(`UPDATE invoices SET qr_payload=? WHERE id=?`, payload, invoiceID); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 func (s *IssuerService) DeleteIssuer(id string) error {

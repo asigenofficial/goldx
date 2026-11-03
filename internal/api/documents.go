@@ -43,6 +43,17 @@ func (s *Server) dirtyIssuerDocuments(issuerID string) error {
 	return nil
 }
 
+func (s *Server) dirtyClientDocuments(clientID string) {
+	for _, item := range []struct{ kind, table string }{{"invoice", "invoices"}, {"voucher", "receipt_vouchers"}} {
+		query := fmt.Sprintf(`INSERT INTO document_pdfs(kind,document_id,issuer_id,updated_at)
+			SELECT ?,id,issuer_id,? FROM %s WHERE client_id=?
+			ON CONFLICT(kind,document_id) DO UPDATE SET revision=revision+1,pdf=NULL,
+			status='PENDING',error='',updated_at=excluded.updated_at`, item.table)
+		_, _ = s.db.Exec(query, item.kind, db.NowIso(), clientID)
+	}
+	s.wakePDFWorker()
+}
+
 func (s *Server) enqueueMissingPDFs() {
 	for _, item := range []struct{ kind, table string }{{"invoice", "invoices"}, {"voucher", "receipt_vouchers"}} {
 		query := fmt.Sprintf(`INSERT OR IGNORE INTO document_pdfs(kind,document_id,issuer_id,updated_at)

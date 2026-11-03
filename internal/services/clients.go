@@ -228,6 +228,11 @@ func (s *ClientService) CreateClient(c *models.Client) error {
 }
 
 func (s *ClientService) UpdateClient(id string, c *models.Client) error {
+	previous, err := s.GetClient(id)
+	if err != nil {
+		return err
+	}
+	c.ID, c.ClientCode, c.CreatedAt = id, previous.ClientCode, previous.CreatedAt
 	now := db.NowIso()
 	c.UpdatedAt = now
 
@@ -253,6 +258,13 @@ func (s *ClientService) UpdateClient(id string, c *models.Client) error {
 		c.OpeningBalance, c.CreditLimit, c.Notes, c.IsActive, now, id,
 	)
 	if err != nil {
+		return err
+	}
+
+	if _, err = tx.Exec(`UPDATE invoices SET buyer_name=?,buyer_tax_number=?,buyer_cr=?,buyer_address=?,updated_at=? WHERE client_id=?`, c.Name, c.TaxNumber, c.CommercialRegister, invoiceBuyerAddress(*c), now, id); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(`UPDATE invoice_documents SET client_json=? WHERE invoice_id IN (SELECT id FROM invoices WHERE client_id=?)`, mustJSON(c), id); err != nil {
 		return err
 	}
 

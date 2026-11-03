@@ -1,0 +1,1021 @@
+<!doctype html>
+<html lang="ar">
+
+<head>
+  <meta charset="utf-8">
+  <title>مؤسسة عبدالله موسى الأربش للذهب — فاتورة ضريبية مبسطة</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 210mm;
+      height: 297mm;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      direction: ltr;
+      background: white;
+      color: #000;
+      font-family: 'goldx Document', Tahoma, 'Noto Sans Arabic', Arial, sans-serif;
+      font-size: 11px;
+      line-height: 1.3;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* ─── الحاوية الرئيسية لكامل الصفحة A4 بدقة متناهية ─── */
+    .invoice-container {
+      width: 210mm;
+      height: 297mm;
+      min-height: 297mm;
+      max-height: 297mm;
+      margin: 0 auto;
+      padding: 8mm 10mm 6mm 10mm;
+      background: #fff;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: space-between !important;
+      position: relative;
+      box-sizing: border-box;
+      overflow: hidden;
+      page-break-after: avoid;
+      page-break-inside: avoid;
+      break-after: avoid;
+      break-inside: avoid;
+    }
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+      html, body {
+        width: 210mm;
+        height: 297mm;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden;
+      }
+      .invoice-container {
+        width: 210mm !important;
+        height: 297mm !important;
+        max-height: 297mm !important;
+        margin: 0 !important;
+        padding: 8mm 10mm 6mm 10mm !important;
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
+        break-after: avoid !important;
+        break-inside: avoid !important;
+      }
+    }
+
+    /* ─── القسم العلوي ─── */
+    .top-content {
+      flex: 0 0 auto !important;
+    }
+
+    /* ─── القسم السفلي (مثبت في أسفل الصفحة دائماً) ─── */
+    .bottom-content {
+      flex-shrink: 0 !important;
+      margin-top: auto !important;
+    }
+
+    /* ─── 1. ترويسة مؤسسة الأربش والشعار على اليسار ─── */
+    .header-container {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1.5px solid #000;
+      padding-bottom: 5px;
+      margin-bottom: 5px;
+    }
+
+    .header-logo-box {
+      flex: 0 0 85px;
+    }
+
+    .header-titles-box {
+      flex: 1;
+      text-align: right;
+      direction: rtl;
+    }
+
+    .header-titles-box h1 {
+      margin: 0 0 2px;
+      font-size: 26px;
+      font-weight: 900;
+      color: #000;
+      letter-spacing: 0.5px;
+    }
+
+    .header-titles-box h2 {
+      margin: 0 0 4px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #000;
+      direction: ltr;
+      text-align: right;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .header-cr-tax-row {
+      display: flex;
+      flex-direction: row-reverse;
+      justify-content: space-between;
+      font-size: 11.5px;
+      font-weight: bold;
+      color: #000;
+    }
+
+    /* ─── 2. الشريط الفرعي وشارة الفاتورة ─── */
+    .sub-header-bar {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+
+    .sub-branch-text {
+      font-size: 11.5px;
+      font-weight: bold;
+      text-align: right;
+      direction: rtl;
+      margin-right: 4px;
+    }
+
+    .badge-center-wrap {
+      flex: 1;
+      text-align: center;
+      padding-right: 60px;
+    }
+
+    .simplified-pill {
+      display: inline-block;
+      border: 1px solid #000;
+      border-radius: 12px;
+      padding: 2px 24px;
+      font-size: 11.5px;
+      font-weight: bold;
+      background: #f2f2f2;
+    }
+
+    /* ─── 3. بيانات الفاتورة الثلاثية ─── */
+    .meta-triple-grid {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: stretch;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    /* الصندوق الأيسر: رقم الفاتورة والوقت والتاريخ */
+    .meta-left-box {
+      flex: 0 0 195px;
+    }
+
+    table.meta-table-left {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #000;
+      font-size: 11px;
+    }
+
+    table.meta-table-left td {
+      border: 1px solid #000;
+      padding: 3px 6px;
+      height: 23px;
+    }
+
+    table.meta-table-left td.val {
+      text-align: center;
+      font-weight: bold;
+    }
+
+    table.meta-table-left td.lbl {
+      text-align: center;
+      direction: rtl;
+      width: 70px;
+      white-space: nowrap;
+    }
+
+    .val-number {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    /* الوسط: الباركود */
+    .qr-container-box {
+      flex: 0 0 115px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qr-container-box svg,
+    .qr-container-box img {
+      width: 102px !important;
+      height: 102px !important;
+      display: block;
+    }
+
+    /* الصندوق الأيمن: بيانات العميل */
+    .meta-right-box {
+      flex: 1;
+    }
+
+    table.meta-table-right {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #000;
+      font-size: 11px;
+    }
+
+    table.meta-table-right td {
+      border: 1px solid #000;
+      padding: 3px 6px;
+      height: 31px;
+    }
+
+    table.meta-table-right td.val {
+      text-align: center;
+      font-weight: bold;
+    }
+
+    table.meta-table-right td.lbl {
+      text-align: center;
+      direction: rtl;
+      width: 115px;
+      white-space: nowrap;
+    }
+
+    /* ─── 4. جدول الأصناف الرئيسي ─── */
+    .items-table-wrap {
+      width: 100%;
+      margin-bottom: 0;
+    }
+
+    table.items-main-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #000;
+      font-size: 10.5px;
+      text-align: center;
+      direction: ltr;
+    }
+
+    table.items-main-table thead tr.super-th-row td {
+      border: 1px solid #000;
+      padding: 3px;
+      font-weight: bold;
+      font-size: 10px;
+      background: #fff;
+      text-align: center;
+    }
+
+    table.items-main-table thead tr.main-th-row th {
+      border: 1px solid #000;
+      padding: 4px 2px;
+      font-weight: bold;
+      font-size: 10px;
+      background: #fff;
+      text-align: center;
+    }
+
+    table.items-main-table tbody td {
+      border: 1px solid #000;
+      padding: 4.5px 3px;
+      font-size: 10.5px;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+      height: 22px;
+    }
+
+    /* ─── 5. شبكة ملخص العيارات والإجماليات والتفقيط ─── */
+    table.summary-grid-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #000;
+      font-size: 11px;
+      direction: ltr;
+      margin-bottom: 6px;
+    }
+
+    table.summary-grid-table td {
+      border: 1px solid #000;
+      padding: 3.5px 8px;
+      height: 22px;
+    }
+
+    table.summary-grid-table td.col-words {
+      width: 50%;
+      text-align: center;
+      direction: rtl;
+      font-size: 10px;
+    }
+
+    table.summary-grid-table td.col-tafqeet-box {
+      width: 50%;
+      text-align: center;
+      direction: rtl;
+      padding: 5px;
+      vertical-align: middle;
+    }
+
+    .tafqeet-inner-title {
+      font-size: 10.5px;
+      font-weight: bold;
+      text-align: center;
+      border-bottom: 1px solid #000;
+      padding-bottom: 3px;
+      margin-bottom: 5px;
+    }
+
+    .tafqeet-inner-value {
+      font-size: 11px;
+      font-weight: bold;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    table.summary-grid-table td.col-lbl {
+      width: 25%;
+      text-align: center;
+      direction: rtl;
+    }
+
+    table.summary-grid-table td.col-val {
+      width: 25%;
+      text-align: center;
+      font-weight: bold;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .yellow-bg {
+      background: #fff677 !important;
+    }
+
+    .bold-text {
+      font-weight: 900 !important;
+    }
+
+    /* ─── 6. تسوية سوق الجملة والأختام (3 مربعات سفلية) ─── */
+    .bottom-settlement-row {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: stretch;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    /* الصندوق الأيسر: تفصيل الضريبة والوعاء الضريبي */
+    .settlement-col-left {
+      flex: 1.15;
+    }
+
+    table.detail-box-table-left {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #000;
+      font-size: 10px;
+    }
+
+    table.detail-box-table-left td {
+      border: 1px solid #000;
+      padding: 2.5px 6px;
+      height: 20px;
+    }
+
+    table.detail-box-table-left td.val {
+      text-align: center;
+      font-weight: bold;
+      font-variant-numeric: tabular-nums;
+      direction: ltr;
+      width: 45%;
+    }
+
+    table.detail-box-table-left td.lbl {
+      text-align: center;
+      direction: rtl;
+    }
+
+    /* الصندوق الأوسط: سعر الجرام والختم البيضاوي */
+    .settlement-col-mid {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .gram-price-pill {
+      width: 100%;
+      border: 1px solid #000;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-around;
+      padding: 3px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .seller-stamp-space {
+      width: 100%;
+      height: 65px;
+      border: 1px dashed #aaa;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 4px 0;
+      background: #fafafa;
+    }
+
+    .signature-caption {
+      font-size: 10.5px;
+      font-weight: bold;
+      text-align: center;
+      direction: rtl;
+      margin-top: 3px;
+    }
+
+    /* الصندوق الأيمن: أوزان العيارات والإقرارات */
+    .settlement-col-right {
+      flex: 1.15;
+    }
+
+    table.detail-box-table-right {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #000;
+      font-size: 10px;
+    }
+
+    table.detail-box-table-right td {
+      border: 1px solid #000;
+      padding: 2.5px 6px;
+      height: 20px;
+    }
+
+    table.detail-box-table-right td.val {
+      text-align: center;
+      font-weight: bold;
+      font-variant-numeric: tabular-nums;
+      width: 40%;
+    }
+
+    table.detail-box-table-right td.lbl {
+      text-align: center;
+      direction: rtl;
+    }
+
+    .legal-notes-block {
+      text-align: center;
+      font-size: 9px;
+      margin-top: 5px;
+      line-height: 1.4;
+      direction: rtl;
+    }
+
+    /* ─── 7. تذييل الفاتورة في أسفل الصفحة تماماً ─── */
+    .invoice-footer-wrap {
+      border-top: 1.5px solid #000;
+      padding-top: 4px;
+      font-size: 9px;
+      text-align: center;
+      line-height: 1.4;
+      position: relative;
+    }
+
+    .invoice-footer-wrap .footer-ar {
+      font-weight: bold;
+      direction: rtl;
+    }
+
+    .invoice-footer-wrap .footer-en {
+      direction: ltr;
+      font-family: Arial, sans-serif;
+      font-size: 8px;
+    }
+
+    .page-count-marker {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      font-size: 9.5px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="invoice-container" data-gold-design="قالب_فاتورة_ذهب_الأربش"
+    data-gold-invoice-type="{{gold_invoice_type}}">
+
+    <!-- ═══════════════ القسم العلوي ═══════════════ -->
+    <div class="top-content">
+      <!-- ─── 1. ترويسة مؤسسة الأربش: الشعار على اليسار، الاسم والبيانات على اليمين ─── -->
+      <header class="header-container">
+        <div class="header-logo-box">
+          <img class="arbash-logo-img"
+            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAK0AAACnCAYAAABjNNwlAAAQAElEQVR4AexdCYzWRBR+RTAiuiLeiooi8VhFBCOiBDwTAh4YA2IUEySKBg0xyK24q4IKSggaTZQIIooKKAoqXhGvqODB4S3qolEET8QI4XS/7pb0mP/fdmba/tN5m+228zpvjm++bV/neNNsJ/8wAoYh0Iz4hxEwDAEmrWENxsUlYtIyC4xDgElrXJNxgZm0zIEcEFDLkkmrhh9r54AAkzYH0DlLNQSYtGr4sXYOCDBpcwCds1RDgEmrhh9r54AAkzYH0IuQZZ51YNLmiT7nLYUAk1YKNlbKEwEmbZ7oc95SCDBppWBjpTwRYNLmiT7nLYUAk1YKtiIomVsHJq25bWdtyZm01ja9uRVn0prbdtaWnElrbdObW3EmrbltZ23JmbQGN72tRWfS2tryBtebSWtw49ladCatrS1vcL2ZtAY3nq1FZ9La2vIG15tJm2vjceYyCDBpZVBjnVwRYNLmCj9nLoMAk1YGNdbJFQEmba7wc+YyCDBpZVBjnVwRYNIqws/q2SPApM0ec85REYHCkfaPP/6gGTNm0NVXX01du3alI488kg499FA+NGPQvn17Ouuss2jYsGG0YMECRRomUy8Mab/44gsaPHgw7b///i5hQdylS5fSjz/+SGvXruVDMwbff/89vfXWWzRt2jS65JJLXNxvueUW2rhxYzIGSsQuBGnvuOMOqq6upkcffVQCAlbRgQDecBMmTKAOHTrQE088oSPJkmkYTdqdO3dSv379aPz48SUryDeyRWDdunV05ZVX0rhx41LL2GjSXnDBBTRv3ryS4Jx88snuq+vyyy+n0gffk8GmT58+BLu2FPgTJ06kkSNHlrqtJDeWtEOGDKGXXnopUvn99tuP7r77bvrll19o+fLl9Oyzz9KTTz7Jh2YMFi1aRKtXr6aVK1e6H2ORhqgXTJ48mR588MH6K72/RpL26aefpocffjiCxGWXXUbffPMNjRo1ig455JDIfRboR+Ckk06iqVOn0kcffUSdO3eOZHDjjTfSt99+Szp/jCRtbW1tBINrrrmGnnrqKWrTpk3kHgvSR6BLly705ptvUrdu3QKZ7dixg/ChHBAqBowj7ezZs+nLL78MVLt79+7CJ28gEgdSR6CqqopmzZpFrVq1CuT1+OOPu2/AgFAhYBxp58yZE6kuuloiQhbkgsAxxxxDt99+eyRvmHQRoaTAKNJu2bKFFi9eHKjqueeeSz169AjIOJAvAjfccEPkafvKK69oK5RRpP3kk08INpK/9uj28of5On8Edt99d0KXmL8ky5Yt8weVro0ibV1dXaSy+ACICFmQOwKnnHJKoAx4S/70008BmWzAKNL+888/kXoeeOCBERkL8kfggAMOiBRC1H6RSDEERpEWw7bhOjmOExZxuAIQcJxou4jaT6aoRpFWpoKsUzwEKoS0xQOWa5QeAkza9LDllFNCgEmbErCcbHoIMGnTw9aIlD/44AN3JtbYsWPp5ptvJowuzp07113pUakVYNJWasukWC4sibntttvoiCOOcCe4DB06lO666y667777CEtm+vfv766p6927N2EKYopFkUq6mZQWKxmLAJbCePMDmursf/nll+nCCy+kAQMG0J9//lkxddZG2oqpERekJAKYyIKlMOvXry8ZR3QDk13OOOMMwuJR0f2sZUzarBHPKb97772XYBLIZv/1119T3759CWvAZNPQpcek1YVkBaeDpd4jRowQlhD2LO5jiHX79u30ww8/0PTp012fEWEFrEC4/vrrw+LMw0zazCHPPkPRauWOHTvSxx9/TA888ABhaufee+9NzZo1o3bt2rn+I9CrcOedd0YK+9xzzxHMhciNDAVM2jJgw8nH8OHD6dprr9V+jB49mv7++29K+wfzj99+++1ANug1ePHFF4VruvwRsQwcvQp+Ga7vv/9+nHI7mLRloMcc0ClTptAjjzyi/Zg0aZK7GLBM9lpuoc81nBDq1LZt27BYGMY/1znnnBO499577+X6UeYjbaBc1gcwIwmvwrSAQPovvPBCWsnvSheLDXcF6i+wevbSSy+tv4r/K7Jjw0/v+Kmpx2TSlsAQfhPCDV4iqrT4/fffp7/++ktavynFf//91/2w8sfD8iR/OM51r169ItHCi0sjEVIUMGlLgIuPlDVr1pS4q0e8fPly+vzzz/UkJkhFNCAAL5KCqGVFe+21F4Un28N3V1mlFG8yaQXg4tWdpmngZblt2zbCqJMX1n1u3rx5JEkse4kIYwjCeqK0YySjJQqTVgAjRozQ5SO4pV306quvpmYiwMsOurH8hZZ5smNtXrinAz5//elmec2kFaD96aefEkaABLe0i9I0ERzHiXRr4eMP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"
+            alt="شعار الأربش" style="max-height: 75px; max-width: 80px; object-fit: contain; display: block;" />
+        </div>
+
+        <div class="header-titles-box">
+          <h1 class="seller-name-el">{{seller_name}}</h1>
+          <h2 class="seller-en-el">{{seller_name_en}}</h2>
+          <div class="header-cr-tax-row">
+            <span>س.ت : {{seller_cr}} : C.R</span>
+            <span>الرقم الضريبي : {{seller_tax}} : VAT No.</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- ─── 2. الشريط الفرعي وشارة الفاتورة ─── -->
+      <div class="sub-header-bar">
+        <div></div>
+        <div class="badge-center-wrap">
+          <span class="simplified-pill">{{invoice_type}}</span>
+        </div>
+        <div class="sub-branch-text">{{seller_city}}</div>
+      </div>
+
+      <!-- ─── 3. بيانات الفاتورة الثلاثية: اليسار: الفاتورة، الوسط: QR، اليمين: العميل ─── -->
+      <section class="meta-triple-grid">
+        <!-- الصندوق الأيسر: رقم الفاتورة والوقت والتاريخ -->
+        <div class="meta-left-box">
+          <table class="meta-table-left">
+            <tr>
+              <td class="val val-number">{{invoice_number}}</td>
+              <td class="lbl">الرقم</td>
+            </tr>
+            <tr>
+              <td class="val">{{issue_date}}</td>
+              <td class="lbl">التاريخ</td>
+            </tr>
+            <tr>
+              <td class="val"><span class="credit-days-val">{{credit_days}}</span></td>
+              <td class="lbl">المهلة باليوم</td>
+            </tr>
+            <tr>
+              <td class="val"><span class="inv-time">{{issue_time}}</span></td>
+              <td class="lbl">الوقت</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- الوسط: باركود الزكاة والضريبة QR -->
+        <div class="qr-container-box">
+          {{qr_code}}
+        </div>
+
+        <!-- الصندوق الأيمن: بيانات العميل -->
+        <div class="meta-right-box">
+          <table class="meta-table-right">
+            <tr>
+              <td class="val" style="text-align: right; direction: rtl; padding-right: 6px;">{{buyer_name}}</td>
+              <td class="val" style="width: 75px;">{{buyer_code}}</td>
+              <td class="lbl" style="width: 50px;">العميل</td>
+            </tr>
+            <tr>
+              <td class="val" colspan="2" style="text-align: center; direction: ltr;">{{buyer_phone}}</td>
+              <td class="lbl">جوال</td>
+            </tr>
+            <tr>
+              <td class="val" colspan="2" style="text-align: center; direction: ltr;">{{buyer_tax}}</td>
+              <td class="lbl">الرقم الضريبي للعميل</td>
+            </tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ─── 4. جدول الأصناف الرئيسي: من اليسار (العيار) إلى اليمين (سعر الذهب) ─── -->
+      <main class="items-table-wrap">
+        <table class="items-main-table" id="arbash-items-table">
+          <thead>
+            <tr class="super-th-row">
+              <td colspan="3">الصنف</td>
+              <td>الذهب</td>
+              <td colspan="2"></td>
+              <td colspan="2">نسبة الضريبة 15%<br><span style="font-weight:normal; font-size: 8.5px;">السعر</span></td>
+              <td colspan="2">السعر بعد الضريبة</td>
+            </tr>
+            <tr class="main-th-row">
+              <th style="width: 6%;">العيار</th>
+              <th style="width: 14%;">الوصف</th>
+              <th style="width: 8%;">نسبة الحجر<span style="font-size:0;line-height:0;opacity:0;"> ملاحظة</span></th>
+              <th style="width: 10%;">الجرام<span style="font-size:0;line-height:0;opacity:0;"> وزن</span></th>
+              <th style="width: 9%;">سعر الاجرة</th>
+              <th style="width: 7%;">عدد القطع</th>
+              <th style="width: 12%;">اجمالي قبل الضريبة</th>
+              <th style="width: 11%;">مبلغ الضريبة</th>
+              <th style="width: 12%;">المبلغ بعد الضريبة<span style="font-size:0;line-height:0;opacity:0;"> شامل</span>
+              </th>
+              <th style="width: 11%;">سعر الذهب</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{items_rows}}
+          </tbody>
+        </table>
+      </main>
+    </div>
+
+    <!-- ═══════════════ القسم السفلي (مثبت في أسفل الصفحة A4 تماماً) ═══════════════ -->
+    <div class="bottom-content">
+      <!-- ─── 5. ملخص العيارات والإجماليات والتفقيط (مطابق للصورة تماماً) ─── -->
+      <table class="summary-grid-table">
+        <tr>
+          <td class="col-words" id="words-karat-18">جرام فقط 0</td>
+          <td class="col-lbl">ذهب 18</td>
+          <td class="col-val" id="val-karat-18">{{weight_18}}</td>
+        </tr>
+        <tr>
+          <td class="col-words" id="words-karat-21">جرام فقط 0</td>
+          <td class="col-lbl">ذهب 21</td>
+          <td class="col-val" id="val-karat-21">{{weight_21}}</td>
+        </tr>
+        <tr>
+          <td class="col-words" id="words-karat-22">جرام فقط 0</td>
+          <td class="col-lbl">ذهب 22</td>
+          <td class="col-val" id="val-karat-22">{{weight_22}}</td>
+        </tr>
+        <tr>
+          <td class="col-words" id="words-karat-24">جرام فقط 0</td>
+          <td class="col-lbl">ذهب 24</td>
+          <td class="col-val" id="val-karat-24">{{weight_24}}</td>
+        </tr>
+        <tr>
+          <td class="col-tafqeet-box" rowspan="3">
+            <div class="tafqeet-inner-title">تفقيط الإجمالي</div>
+            <div class="tafqeet-inner-value" id="tafqeet-main-value">{{amount_in_words}}</div>
+          </td>
+          <td class="col-lbl">الإجمالي قبل الضريبة</td>
+          <td class="col-val yellow-bg" id="summary-subtotal">{{subtotal}}</td>
+        </tr>
+        <tr>
+          <td class="col-lbl">اجمالي الضريبة</td>
+          <td class="col-val" id="summary-tax">{{tax_amount}}</td>
+        </tr>
+        <tr>
+          <td class="col-lbl bold-text">الإجمالي بعد الضريبة</td>
+          <td class="col-val bold-text" id="summary-grand-total">{{grand_total}}</td>
+        </tr>
+      </table>
+
+      <!-- ─── 6. تسوية سوق الجملة والأختام: اليسار: الضريبة، الوسط: الختم وسعر الجرام، اليمين: الأوزان ─── -->
+      <section class="bottom-settlement-row">
+        <!-- الصندوق الأيسر: تفصيل الضريبة والوعاء الضريبي وتوقيع المشتري -->
+        <div class="settlement-col-left">
+          <table class="detail-box-table-left">
+            <tr>
+              <td class="val" id="settle-wage-tax">0.00</td>
+              <td class="lbl">: ضريبة الأجور</td>
+            </tr>
+            <tr>
+              <td class="val" id="settle-gold-tax">0.00</td>
+              <td class="lbl">: ضريبة الذهب</td>
+            </tr>
+            <tr>
+              <td class="val" id="settle-net-gram-price">0.00</td>
+              <td class="lbl">سعر جرام - الصافي</td>
+            </tr>
+            <tr>
+              <td class="val" id="settle-total-gold-val">0.00</td>
+              <td class="lbl">اجمالي قيمة الذهب</td>
+            </tr>
+            <tr>
+              <td class="val" id="settle-taxable-pool">0.00</td>
+              <td class="lbl">اجمالي المبلغ/الوعاء الضريبي</td>
+            </tr>
+          </table>
+          <div class="signature-caption">إسم وتوقيع المشتري</div>
+        </div>
+
+        <!-- الصندوق الأوسط: سعر الجرام والختم وتوقيع البائع -->
+        <div class="settlement-col-mid">
+          <div class="gram-price-pill">
+            <span id="settle-gram-price">0.00</span>
+            <span style="direction: rtl;">سعر الجرام</span>
+          </div>
+          <div class="seller-stamp-space">
+            <span style="font-size: 9px; color: #999;">مكان ختم وتوقيع البائع</span>
+          </div>
+          <div class="signature-caption">إسم وتوقيع البائع</div>
+        </div>
+
+          <!-- الصندوق الأيمن: أوزان العيارات والإقرارات -->
+          <div class="settlement-col-right">
+            <table class="detail-box-table-right">
+              <tr>
+                <td class="val" id="settle-k18">{{weight_18}}</td>
+                <td class="lbl">وزن ذهب 18 :</td>
+              </tr>
+              <tr>
+                <td class="val" id="settle-k21">{{weight_21}}</td>
+                <td class="lbl">وزن ذهب 21 :</td>
+              </tr>
+              <tr>
+                <td class="val" id="settle-k22">{{weight_22}}</td>
+                <td class="lbl">وزن ذهب 22 :</td>
+              </tr>
+            </table>
+            <div class="legal-notes-block">
+              <p style="margin: 0 0 2px; font-weight: bold;">هذا المستند معتمد ولا يحتاج الى توقيع</p>
+              <p style="margin: 0;">صادق على إعتماد إستلام البضاعة المدونة بعاليه وإعتماد صحتها</p>
+            </div>
+          </div>
+      </section>
+
+      <!-- ─── 7. تذييل الفاتورة في أسفل الصفحة (بيانات المنشأة والعنوان مسجلة من النظام بالكامل) ─── -->
+      <footer class="invoice-footer-wrap">
+        <div class="footer-ar">
+          {{seller_name}} · {{seller_address}} · هاتف: {{seller_phone}}
+        </div>
+        <div class="footer-en">
+          {{seller_name_en}} · {{seller_address_en}} · Tel: {{seller_phone}}
+        </div>
+        <div class="page-count-marker">1/1</div>
+      </footer>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ معالجة ديناميكية ذاتية كاملة بدون أي بيانات ثابتة ═══════════════ -->
+  <script>
+    (function () {
+      function parseNum(str) {
+        if (!str) return 0;
+        var clean = ('' + str).replace(/[^\d.-]/g, '');
+        var v = parseFloat(clean);
+        return isNaN(v) ? 0 : v;
+      }
+
+      function fmtNum(n, d) {
+        if (d === undefined) d = 2;
+        return Number(n || 0).toLocaleString('en-US', {
+          minimumFractionDigits: d,
+          maximumFractionDigits: d
+        });
+      }
+
+      // تفقيط الأوزان إلى جرام ومليجرام بالعربية
+      var ones = ["", "واحد", "اثنان", "ثلاثة", "أربعة", "خمسة", "ستة", "سبعة", "ثمانية", "تسعة"];
+      var tens = ["", "عشرة", "عشرون", "ثلاثون", "أربعون", "خمسون", "ستون", "سبعون", "ثمانون", "تسعون"];
+      var teens = ["عشرة", "أحد عشر", "اثنا عشر", "ثلاثة عشر", "أربعة عشر", "خمسة عشر", "ستة عشر", "سبعة عشر", "ثمانية عشر", "تسعة عشر"];
+      var hundreds = ["", "مائة", "مائتان", "ثلاثمائة", "أربعمائة", "خمسمائة", "ستمائة", "سبعمائة", "ثمانمائة", "تسعمائة"];
+
+      function tafqeetHundreds(n) {
+        n = Math.floor(n);
+        if (n === 0) return "";
+        var res = [];
+        var h = Math.floor(n / 100);
+        var rem = n % 100;
+        if (h > 0) res.push(hundreds[h]);
+        if (rem > 0) {
+          if (rem < 10) {
+            res.push(ones[rem]);
+          } else if (rem >= 10 && rem < 20) {
+            res.push(teens[rem - 10]);
+          } else {
+            var o = rem % 10;
+            var t = Math.floor(rem / 10);
+            if (o > 0) {
+              res.push(ones[o] + " و " + tens[t]);
+            } else {
+              res.push(tens[t]);
+            }
+          }
+        }
+        return res.join(" و ");
+      }
+
+      function tafqeetGrams(num) {
+        var val = parseFloat(num);
+        if (isNaN(val) || val <= 0) return "جرام فقط 0";
+
+        var intPart = Math.floor(val);
+        var decPart = Math.round((val - intPart) * 1000); // مليجرام
+        var words = [];
+
+        if (intPart > 0) {
+          var thousands = Math.floor(intPart / 1000);
+          var rem1000 = intPart % 1000;
+          var thWords = "";
+          if (thousands === 1) thWords = "الف";
+          else if (thousands === 2) thWords = "الفان";
+          else if (thousands >= 3 && thousands <= 10) thWords = tafqeetHundreds(thousands) + " آلاف";
+          else if (thousands > 10) thWords = tafqeetHundreds(thousands) + " الف";
+
+          if (thWords) words.push(thWords);
+          if (rem1000 > 0) words.push(tafqeetHundreds(rem1000));
+          words.push("جرام");
+        }
+
+        if (decPart > 0) {
+          var mg = decPart;
+          if (mg % 10 === 0 && mg < 100) mg = mg / 10;
+          words.push("و " + mg + " مليجرام");
+        }
+
+        words.push("فقط");
+        return words.join(" ");
+      }
+
+      // 1. معالجة الوقت والمهلة
+      var tEls = document.querySelectorAll('.inv-time');
+      tEls.forEach(function (el) {
+        var txt = el.textContent.trim();
+        if (!txt || txt.indexOf('{{') !== -1 || txt === '00:00:00' || txt === '00:00') {
+          var d = new Date();
+          var h = d.getHours();
+          var m = d.getMinutes();
+          var s = d.getSeconds();
+          var ampm = h >= 12 ? 'PM' : 'AM';
+          h = h % 12;
+          h = h ? h : 12;
+          var strH = h < 10 ? '0' + h : h;
+          var strM = m < 10 ? '0' + m : m;
+          var strS = s < 10 ? '0' + s : s;
+          el.textContent = strH + ':' + strM + ':' + strS + ' ' + ampm;
+        }
+      });
+
+      var crEls = document.querySelectorAll('.credit-days-val');
+      crEls.forEach(function (el) {
+        var txt = el.textContent.trim();
+        if (!txt || txt.indexOf('{{') !== -1) el.textContent = '0';
+      });
+
+      // 2. قراءة وتحليل جدول الأصناف الرئيسي
+      var table = document.getElementById('arbash-items-table');
+      var totalGrams = 0;
+      var totalWage = 0;
+      var totalSubtotal = 0;
+      var totalTax = 0;
+      var totalGrand = 0;
+      var weights = { '18': 0, '21': 0, '22': 0, '24': 0 };
+
+      if (table) {
+        var rows = table.querySelectorAll('tbody tr');
+        rows.forEach(function (row) {
+          var cells = row.querySelectorAll('td');
+          if (cells.length >= 7) {
+            // إذا كان عمود عدد القطع مكرر فيه الوزن بدلاً من عدد القطع
+            if (cells[5] && cells[3] && cells[5].textContent.trim() === cells[3].textContent.trim()) {
+              cells[5].textContent = '1.00';
+            }
+
+            var karatText = cells[0].textContent.trim();
+            var descText = cells[1].textContent.trim();
+            var grams = parseNum(cells[3].textContent);
+            var wage = parseNum(cells[4].textContent);
+            var sub = parseNum(cells[6].textContent);
+            var tax = parseNum(cells[7].textContent);
+            var total = parseNum(cells[8].textContent);
+
+            totalGrams += grams;
+            totalWage += (wage * grams);
+            totalSubtotal += sub;
+            totalTax += tax;
+            totalGrand += total;
+
+            // مطابقة العيار (875 = 21, 750 = 18, etc.)
+            if (karatText.indexOf('18') !== -1 || karatText.indexOf('750') !== -1) {
+              weights['18'] += grams;
+            } else if (karatText.indexOf('22') !== -1 || karatText.indexOf('916') !== -1) {
+              weights['22'] += grams;
+            } else if (karatText.indexOf('24') !== -1 || karatText.indexOf('999') !== -1) {
+              weights['24'] += grams;
+            } else {
+              // الافتراضي في سوق الذهب بالمملكة عيار 21 (875)
+              weights['21'] += grams;
+            }
+          }
+        });
+      }
+
+      // 3. تحديث ملخص العيارات
+      function updateKaratSummary(k, elId, wordsId) {
+        var el = document.getElementById(elId);
+        var wEl = document.getElementById(wordsId);
+        var val = parseNum(el ? el.textContent : '0');
+        if (val === 0 && weights[k] > 0) {
+          val = weights[k];
+          if (el) el.textContent = fmtNum(val, 2);
+        }
+        if (wEl) {
+          wEl.textContent = tafqeetGrams(val);
+        }
+        return val;
+      }
+
+      var w18 = updateKaratSummary('18', 'val-karat-18', 'words-karat-18');
+      var w21 = updateKaratSummary('21', 'val-karat-21', 'words-karat-21');
+      var w22 = updateKaratSummary('22', 'val-karat-22', 'words-karat-22');
+      var w24 = updateKaratSummary('24', 'val-karat-24', 'words-karat-24');
+
+      // حساب وزن 24 الصافي إذا لم يكن موجوداً من مجموع كسر الذهب
+      if (w24 === 0 && (w21 > 0 || w18 > 0 || w22 > 0)) {
+        var pureFrom21 = (w21 * 21) / 24;
+        var pureFrom18 = (w18 * 18) / 24;
+        var pureFrom22 = (w22 * 22) / 24;
+        w24 = pureFrom21 + pureFrom18 + pureFrom22;
+        var el24 = document.getElementById('val-karat-24');
+        var wel24 = document.getElementById('words-karat-24');
+        if (el24 && (el24.textContent.trim() === '0.00' || el24.textContent.indexOf('{{') !== -1)) {
+          el24.textContent = fmtNum(w24, 2);
+          if (wel24) wel24.textContent = tafqeetGrams(w24);
+        }
+      }
+
+      // 4. تسوية سوق الجملة (القسم 6)
+      var subtotalVal = parseNum(document.getElementById('summary-subtotal') ? document.getElementById('summary-subtotal').textContent : '0') || totalSubtotal;
+      var taxVal = parseNum(document.getElementById('summary-tax') ? document.getElementById('summary-tax').textContent : '0') || totalTax;
+      var grandVal = parseNum(document.getElementById('summary-grand-total') ? document.getElementById('summary-grand-total').textContent : '0') || totalGrand;
+
+      // ضريبة الأجور (15% من إجمالي الأجور قبل الضريبة)
+      var wageTax = subtotalVal * 0.15;
+      // ضريبة الذهب (المتبقي من إجمالي الضريبة)
+      var goldTax = taxVal - wageTax;
+      if (goldTax < 0) goldTax = 0;
+
+      // القيمة الإجمالية للذهب بدون الضريبة
+      var goldTotalVal = goldTax > 0 ? (goldTax / 0.15) : 0;
+      // سعر جرام الصافي = إجمالي قيمة الذهب / وزن 24
+      var netGramPrice = (w24 > 0 && goldTotalVal > 0) ? (goldTotalVal / w24) : 0;
+      // إجمالي الوعاء الضريبي
+      var taxablePool = subtotalVal + goldTotalVal;
+      // إجمالي المبلغ / الوعاء الضريبي الشامل = الأجور + الذهب + إجمالي الضريبة
+      var taxablePool = subtotalVal + goldTotalVal + taxVal;
+      // سعر الجرام في السوق = (سعر جرام الصافي * 21) / 24
+      var marketGramPrice = netGramPrice > 0 ? ((netGramPrice * 21) / 24) : 0;
+
+      var elWageTax = document.getElementById('settle-wage-tax');
+      if (elWageTax) elWageTax.textContent = fmtNum(wageTax, 2);
+
+      var elGoldTax = document.getElementById('settle-gold-tax');
+      if (elGoldTax) elGoldTax.textContent = fmtNum(goldTax, 2);
+
+      var elNetPrice = document.getElementById('settle-net-gram-price');
+      if (elNetPrice) elNetPrice.textContent = fmtNum(netGramPrice, 2);
+
+      var elTotalGold = document.getElementById('settle-total-gold-val');
+      if (elTotalGold) elTotalGold.textContent = fmtNum(goldTotalVal, 2);
+
+      var elTaxablePool = document.getElementById('settle-taxable-pool');
+      if (elTaxablePool) elTaxablePool.textContent = fmtNum(taxablePool, 2);
+
+      var elGramPrice = document.getElementById('settle-gram-price');
+      if (elGramPrice) elGramPrice.textContent = fmtNum(marketGramPrice > 0 ? marketGramPrice : netGramPrice, 2);
+
+      // تحديث أوزان التسوية في الصندوق الأيمن
+      var sk18 = document.getElementById('settle-k18');
+      if (sk18 && (sk18.textContent.indexOf('{{') !== -1 || sk18.textContent.trim() === '0')) sk18.textContent = fmtNum(w18, 2);
+      if (sk18 && (sk18.textContent.indexOf('{{') !== -1 || sk18.textContent.trim() === '0' || sk18.textContent.trim() === '0.00')) sk18.textContent = fmtNum(w18, 2);
+
+      var sk21 = document.getElementById('settle-k21');
+      if (sk21 && (sk21.textContent.indexOf('{{') !== -1 || sk21.textContent.trim() === '0')) sk21.textContent = fmtNum(w21, 2);
+      if (sk21 && (sk21.textContent.indexOf('{{') !== -1 || sk21.textContent.trim() === '0' || sk21.textContent.trim() === '0.00')) sk21.textContent = fmtNum(w21, 2);
+
+      var sk22 = document.getElementById('settle-k22');
+      if (sk22 && (sk22.textContent.indexOf('{{') !== -1 || sk22.textContent.trim() === '0')) sk22.textContent = fmtNum(w22, 2);
+      if (sk22 && (sk22.textContent.indexOf('{{') !== -1 || sk22.textContent.trim() === '0' || sk22.textContent.trim() === '0.00')) sk22.textContent = fmtNum(w22, 2);
+
+      // تنظيف وتنسيق تذييل الفاتورة من أي فواصل فارغة
+      var footAr = document.querySelector('.footer-ar');
+      if (footAr) {
+        var cleanAr = footAr.textContent.replace(/\{\{[^}]+\}\}/g, '').trim();
+        cleanAr = cleanAr.replace(/^[\s·\-\:]+|[\s·\-\:]+$/g, '').replace(/[\s·\-\:]+(\s*[\·\-])+/g, ' · ');
+        footAr.textContent = cleanAr;
+      }
+      var footEn = document.querySelector('.footer-en');
+      if (footEn) {
+        var cleanEn = footEn.textContent.replace(/\{\{[^}]+\}\}/g, '').trim();
+        cleanEn = cleanEn.replace(/^[\s·\-\:]+|[\s·\-\:]+$/g, '').replace(/[\s·\-\:]+(\s*[\·\-])+/g, ' · ');
+        footEn.textContent = cleanEn;
+      }
+
+      // تنظيف أي وسم placeholder متبقي في الصفحة لضمان المظهر المهني النظيف
+      document.body.innerHTML = document.body.innerHTML.replace(/\{\{[^}]+\}\}/g, '');
+    })();
+  </script>
+
+</body>
+
+</html>

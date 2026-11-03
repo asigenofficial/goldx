@@ -889,6 +889,7 @@ func (s *Server) Handler() http.Handler {
 			s.err(w, 400, err.Error())
 			return
 		}
+		s.dirtyClientDocuments(id)
 		s.sync.Broadcast(services.SyncEvent{
 			Type:      "client:updated",
 			Entity:    "client",
