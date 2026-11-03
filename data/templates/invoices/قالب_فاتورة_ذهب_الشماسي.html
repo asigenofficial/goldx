@@ -74,24 +74,10 @@ body {
   }
 }
 
-/* ─── الأقسام العلوية والسفلية لضمان تثبيت التذييل في أسفل الصفحة تماماً ─── */
+/* ─── الحاوية العلوية لضمان بقاء جدول الأصناف وملخصاتها في الأعلى ─── */
 .top-content {
   flex: 0 0 auto !important;
   width: 100%;
-}
-
-.bottom-content {
-  flex-shrink: 0 !important;
-  margin-top: auto !important;
-  width: 100%;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-.invoice-body-bottom-wrap {
-  padding: 0 16px;
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .invoice-page-label {
@@ -223,10 +209,9 @@ body {
 /* ─── الحاوية الداخلية للورقة ─── */
 .invoice-body-wrap {
   padding: 8px 16px 0 16px;
-  flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   position: relative;
   z-index: 1;
 }
@@ -538,6 +523,9 @@ table.payment-mini-table td {
   line-height: 1.35;
   border-top: 1.5px solid #8e6d28;
   text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+  margin-top: auto !important;
+  flex-shrink: 0 !important;
+  width: 100%;
 }
 </style>
 </head>
@@ -720,12 +708,7 @@ table.payment-mini-table td {
         </tfoot>
       </table>
     </main>
-  </div>
-</div>
 
-<!-- ═══════════════ القسم السفلي (مثبت في أسفل الصفحة تماماً) ═══════════════ -->
-<div class="bottom-content">
-  <div class="invoice-body-bottom-wrap">
     <!-- ─── 5. شريط التفقيط المزدوج: تفقيط الريال + تفقيط الذهب ─── -->
     <section class="tafqeet-double-box">
       <div class="tafqeet-line">
@@ -822,14 +805,14 @@ table.payment-mini-table td {
       </div>
     </section>
   </div>
-
-  <!-- ─── 8. تذييل الفاتورة في أسفل الصفحة تماماً ─── -->
-  <footer class="footer-bottom-bar">
-    <div id="footer-dynamic-text">
-      {{seller_name}} · {{seller_address}} · هاتف: {{seller_phone}}
-    </div>
-  </footer>
 </div>
+
+<!-- ─── 8. تذييل الفاتورة في أسفل الصفحة تماماً ─── -->
+<footer class="footer-bottom-bar">
+  <div id="footer-dynamic-text">
+    {{seller_name}} · {{seller_address}} · هاتف: {{seller_phone}}
+  </div>
+</footer>
 
 </div>
 
