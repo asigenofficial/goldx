@@ -248,16 +248,18 @@ body {
   text-align: right;
 }
 .qr-box-left {
-  flex: 0 0 75px;
-  width: 75px;
-  height: 75px;
+  flex: 0 0 88px;
+  width: 88px;
+  height: 88px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.qr-box-left svg, .qr-box-left img {
-  width: 75px !important;
-  height: 75px !important;
+.qr-box-left svg, .qr-box-left img, .qr-box-left .zatca-qr-container svg {
+  width: 88px !important;
+  height: 88px !important;
+  max-width: 88px !important;
+  max-height: 88px !important;
   display: block;
 }
 
@@ -309,7 +311,7 @@ table.items-grid-table {
   direction: rtl;
 }
 table.items-grid-table th {
-  background: #e2e6ea;
+  background: #d4d9de !important;
   border: 1px solid #333;
   padding: 4.5px 2px;
   font-weight: bold;
@@ -324,19 +326,28 @@ table.items-grid-table th small {
   font-family: Arial, sans-serif;
   font-weight: normal;
 }
+/* تلوين الجدول: أول صف فضي ثم أبيض ثم فضي وهكذا */
+table.items-grid-table tbody tr:nth-child(odd),
+table.items-grid-table tbody tr:nth-child(odd) td {
+  background: #e9ecef !important;
+}
+table.items-grid-table tbody tr:nth-child(even),
+table.items-grid-table tbody tr:nth-child(even) td {
+  background: #ffffff !important;
+}
 table.items-grid-table tbody td {
   border: 1px solid #333;
   padding: 5px 3px;
   height: 24px;
   font-size: 10.5px;
   font-variant-numeric: tabular-nums;
-  background: #fff;
 }
+table.items-grid-table tfoot tr,
 table.items-grid-table tfoot td {
   border: 1px solid #333;
   padding: 4px 3px;
   font-weight: bold;
-  background: #fff;
+  background: #d4d9de !important;
 }
 
 /* ─── 5. شريط التفقيط المزدوج (ريال وذهب) ─── */
@@ -890,7 +901,15 @@ table.payment-mini-table td {
   if (table) {
     var rows = table.querySelectorAll('tbody tr');
     var rowIndex = 1;
-    rows.forEach(function(row) {
+    rows.forEach(function(row, rIdx) {
+      // تلوين الصفوف: أول صف فضي ثم أبيض ثم فضي وهكذا
+      var isSilver = (rIdx % 2 === 0);
+      var rowBg = isSilver ? '#e9ecef' : '#ffffff';
+      row.style.setProperty('background', rowBg, 'important');
+      row.querySelectorAll('td').forEach(function(td) {
+        td.style.setProperty('background', rowBg, 'important');
+      });
+
       var cells = row.querySelectorAll('td');
       if (cells.length >= 5) {
         // تسلسل الصنف
