@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <title>مشغل سعيد علي باكوبن للمعادن الثمينة — قبض Receipt</title>
+  <title>{{seller_name}} — قبض Receipt</title>
   <style>
     @page {
       size: A4 portrait;
@@ -439,11 +439,11 @@
 
     <!-- ═══════════════ القسم العلوي ═══════════════ -->
     <div class="top-content">
-      <!-- ─── 1. ترويسة مشغل سعيد علي باكوبن للمعادن الثمينة ─── -->
+      <!-- ─── 1. ترويسة المتجر والمنشأة ─── -->
       <header class="header-container">
         <div class="header-side-ar">
           <h1 class="seller-name-el">{{seller_name}}</h1>
-          <p class="seller-desc-el">صناعة و بيع وشراء المعادن الثمينة والأحجار الكريمة</p>
+          <p class="seller-desc-el">{{seller_activity}}</p>
         </div>
 
         <div class="header-side-en">
@@ -478,7 +478,7 @@
             </tr>
             <tr>
               <td class="lbl">مناولة السيد</td>
-              <td class="val">0</td>
+              <td class="val">{{received_from}}</td>
             </tr>
             <tr>
               <td class="lbl">الرقم الضريبي للعميل</td>
@@ -494,7 +494,7 @@
               <td class="lbl">رقم التسلسل</td>
               <td class="val" style="font-size: 13px; font-weight: 900;">{{voucher_number}}</td>
               <td class="lbl" style="width: 25%; text-align: center;">رقم سند العميل</td>
-              <td class="val" style="width: 20%;"></td>
+              <td class="val" style="width: 20%;">{{reference_no}}</td>
             </tr>
             <tr>
               <td class="lbl">التاريخ</td>
@@ -511,7 +511,7 @@
             </tr>
             <tr>
               <td class="lbl">سعر الكيلو الصافي 21</td>
-              <td class="val" colspan="3">( <span id="val-net-kilo-price">89.00</span> ريال )</td>
+              <td class="val" colspan="3">( <span id="val-net-kilo-price">{{gold_price}}</span> )</td>
             </tr>
           </table>
         </div>
@@ -551,7 +551,7 @@
             <td style="width: 48%; text-align: right; padding-right: 10px;">
               Total الإجمالــــــــــــــــي
             </td>
-            <td style="width: 12%;" id="foot-amount-total">0.00</td>
+            <td style="width: 12%;" id="foot-amount-total">{{grand_total}}</td>
             <td style="width: 14%;" id="foot-gross-weight">{{total_weight}}</td>
             <td style="width: 16%;">
               <span>جرام الوزن مع الأكياس</span>
@@ -559,7 +559,7 @@
             </td>
             <td style="width: 10%;">
               <span style="float: right;">العدد</span>
-              <span id="foot-pieces-count">1</span>
+              <span id="foot-pieces-count">{{total_pieces}}</span>
             </td>
           </tr>
           <tr>
@@ -573,15 +573,15 @@
             </td>
             <td style="width: 20%; text-align: center;">
               <span style="margin-left: 6px;">جرام آخر</span>
-              <span id="foot-kother">0.00</span>
+              <span id="foot-kother">{{weight_other}}</span>
             </td>
             <td style="width: 15%; text-align: center;">
               <span style="margin-left: 4px;">ريال قيمة الذهب</span>
-              <span id="foot-gold-value">0.00</span>
+              <span id="foot-gold-value">{{subtotal}}</span>
             </td>
             <td style="width: 15%; text-align: center;">
               <span style="margin-left: 4px;">ريال أجور المستند</span>
-              <span id="foot-doc-wage">0.00</span>
+              <span id="foot-doc-wage">{{total_wage}}</span>
             </td>
           </tr>
           <tr>
@@ -622,27 +622,27 @@
           <table class="totals-summary-table">
             <tr>
               <td class="lbl">الإجمالي غير شامل القيمة المضافة</td>
-              <td class="val" id="sum-subtotal">0.00</td>
+              <td class="val" id="sum-subtotal">{{subtotal}}</td>
             </tr>
             <tr>
               <td class="lbl">إجمالي القيمة المضافة 15%</td>
-              <td class="val" id="sum-tax">0.00</td>
+              <td class="val" id="sum-tax">{{tax_amount}}</td>
             </tr>
             <tr>
               <td class="lbl" style="font-weight: 900;">الإجمالي شامل القيمة المضافة</td>
-              <td class="val" style="font-weight: 900;" id="sum-grand-total">0.00</td>
+              <td class="val" style="font-weight: 900;" id="sum-grand-total">{{grand_total}}</td>
             </tr>
           </table>
 
           <!-- صندوق تفقيط النقد وتفقيط كسر الذهب -->
           <table class="tafqeet-box-table">
             <tr>
-              <td class="val-col" id="tafqeet-amount-num">0.00</td>
-              <td class="words-col" id="tafqeet-amount-words">لا يوجد نقد</td>
+              <td class="val-col" id="tafqeet-amount-num">{{grand_total}}</td>
+              <td class="words-col" id="tafqeet-amount-words">{{amount_in_words}}</td>
             </tr>
             <tr>
               <td class="val-col" id="tafqeet-gold-num">{{total_weight}}</td>
-              <td class="words-col" id="tafqeet-gold-words">فقط مائتان جرام لاغير عيار 875</td>
+              <td class="words-col" id="tafqeet-gold-words">{{gold_amount_in_words}}</td>
             </tr>
           </table>
         </div>
@@ -811,55 +811,33 @@
         elKOther.textContent = fmtNum(weights['other'], 2);
       }
 
-      // حساب قيمة الذهب بسعر الكيلو الصافي (أو سعر الجرام)
-      var kiloNetPrice = parseNum(document.getElementById('val-net-kilo-price') ? document.getElementById('val-net-kilo-price').textContent : '89.00') || 89;
-      var wFinal = totalWeight > 0 ? totalWeight : 200;
-      var goldVal = wFinal * kiloNetPrice;
+      // حساب قيمة الذهب بسعر الكيلو الصافي (أو سعر الجرام) إن وجد
+      var kiloNetPrice = parseNum(document.getElementById('val-net-kilo-price') ? document.getElementById('val-net-kilo-price').textContent : '0');
+      var goldVal = (totalWeight > 0 && kiloNetPrice > 0) ? (totalWeight * kiloNetPrice) : 0;
 
       var elGoldVal = document.getElementById('foot-gold-value');
-      if (elGoldVal) elGoldVal.textContent = fmtNum(goldVal, 2);
+      if (elGoldVal && (!elGoldVal.textContent.trim() || elGoldVal.textContent.indexOf('{{') !== -1 || parseNum(elGoldVal.textContent) === 0)) {
+        if (goldVal > 0) elGoldVal.textContent = fmtNum(goldVal, 2);
+      }
 
       var elDocWage = document.getElementById('foot-doc-wage');
-      if (elDocWage) elDocWage.textContent = '-' + fmtNum(goldVal, 2);
+      if (elDocWage && (!elDocWage.textContent.trim() || elDocWage.textContent.indexOf('{{') !== -1 || parseNum(elDocWage.textContent) === 0)) {
+        if (goldVal > 0) elDocWage.textContent = '-' + fmtNum(goldVal, 2);
+      }
 
       // 4. تفقيط الذهب والمبالغ
       var elTafqeetGoldNum = document.getElementById('tafqeet-gold-num');
-      if (elTafqeetGoldNum) elTafqeetGoldNum.textContent = fmtNum(wFinal, 2);
+      if (elTafqeetGoldNum && (!elTafqeetGoldNum.textContent.trim() || elTafqeetGoldNum.textContent.indexOf('{{') !== -1)) {
+        elTafqeetGoldNum.textContent = fmtNum(totalWeight, 2);
+      }
 
       var elTafqeetGoldWords = document.getElementById('tafqeet-gold-words');
-      if (elTafqeetGoldWords) {
-        elTafqeetGoldWords.textContent = tafqeetGramsReceipt(wFinal);
-      }
-
-      // 5. تعبئة البيانات الافتراضية الرسمية لمشغل باكوبن عند غياب المتغيرات
-      var sName = document.querySelector('.seller-name-el');
-      if (sName && (!sName.textContent.trim() || sName.textContent.indexOf('{{') !== -1)) {
-        sName.textContent = 'مشغل سعيد علي باكوبن للمعادن الثمينة';
-      }
-
-      var sEn = document.querySelector('.seller-en-el');
-      if (sEn && (!sEn.textContent.trim() || sEn.textContent.indexOf('{{') !== -1)) {
-        sEn.textContent = 'Saeed Ali Bakoban Precious Metal Workshop';
-      }
-
-      var sCr = document.querySelector('.seller-cr-val');
-      if (sCr && (!sCr.textContent.trim() || sCr.textContent.indexOf('{{') !== -1)) {
-        sCr.textContent = '4030114000';
-      }
-
-      var sTax = document.querySelector('.seller-tax-val');
-      if (sTax && (!sTax.textContent.trim() || sTax.textContent.indexOf('{{') !== -1)) {
-        sTax.textContent = '300113828800003';
-      }
-
-      var fAddr = document.querySelector('.footer-address');
-      if (fAddr && (!fAddr.textContent.trim() || fAddr.textContent.indexOf('{{') !== -1)) {
-        fAddr.textContent = 'جدة - حي مشرفة - شارع الصحافة';
-      }
-
-      var fPhone = document.querySelector('.footer-phone');
-      if (fPhone && (!fPhone.textContent.trim() || fPhone.textContent.indexOf('{{') !== -1)) {
-        fPhone.textContent = '012 6172910 جوال : 0504610207';
+      if (elTafqeetGoldWords && (!elTafqeetGoldWords.textContent.trim() || elTafqeetGoldWords.textContent.indexOf('{{') !== -1)) {
+        if (totalWeight > 0) {
+          elTafqeetGoldWords.textContent = tafqeetGramsReceipt(totalWeight);
+        } else {
+          elTafqeetGoldWords.textContent = '';
+        }
       }
 
       // تنظيف أي وسم placeholder متبقي في الصفحة لضمان المظهر المهني النظيف

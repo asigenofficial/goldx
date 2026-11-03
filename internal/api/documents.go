@@ -373,7 +373,10 @@ func (s *Server) renderVoucherHTML(id, style string) (string, error) {
 		"voucher_date": v.VoucherDate, "issue_date": v.VoucherDate,
 		"payment_method": v.PaymentLabel, "reference_no": v.ReferenceNo,
 		"notes": v.Notes, "paid_for": paidFor,
-		"amount": amount, "total_amount": amount, "grand_total": amount,
+		"amount": amount, "total_amount": amount, "grand_total": amount, "subtotal": amount, "tax_amount": "0.00",
+		"buyer_code": client.ClientCode, "buyer_phone": client.Phone,
+		"total_weight": "0.00", "weight_18": "0.00", "weight_21": "0.00", "weight_22": "0.00", "weight_24": "0.00", "weight_other": "0.00",
+		"bags_weight": "0.00", "gross_weight": "0.00", "total_pieces": "0", "gold_price": "0.00", "gold_amount_in_words": "", "seller_activity": "",
 		"qr_code": "", "amount_in_words": services.TafqeetArabic(v.TotalAmount), "tafqeet": services.TafqeetArabic(v.TotalAmount), "receiver_name": issuer.NameAr,
 	}
 	for key, value := range cashReceiptLabels() {
@@ -518,6 +521,22 @@ func (s *Server) renderGoldReceiptHTML(id, style string) (string, error) {
 		replacements["buyer_address"] = strings.Join([]string{client.City, client.District, client.Street}, " ")
 	}
 	replacements["buyer_tax"] = client.TaxNumber
+	replacements["buyer_code"] = client.ClientCode
+	replacements["buyer_phone"] = client.Phone
+	replacements["subtotal"] = fmt.Sprintf("%.2f", v.InvoiceTotal)
+	replacements["tax_amount"] = "0.00"
+	replacements["grand_total"] = fmt.Sprintf("%.2f", v.InvoiceTotal)
+	replacements["amount"] = fmt.Sprintf("%.2f", v.InvoiceTotal)
+	replacements["total_amount"] = fmt.Sprintf("%.2f", v.InvoiceTotal)
+	replacements["total_weight"] = fmt.Sprintf("%.3f", v.TotalWeight)
+	replacements["gross_weight"] = fmt.Sprintf("%.3f", v.TotalWeight)
+	replacements["bags_weight"] = "0.00"
+	replacements["total_pieces"] = fmt.Sprintf("%d", len(v.Lines))
+	replacements["gold_price"] = fmt.Sprintf("%.2f", v.GoldPrice)
+	replacements["amount_in_words"] = services.TafqeetArabic(v.InvoiceTotal)
+	replacements["gold_amount_in_words"] = services.TafqeetGoldArabic(v.TotalWeight, "عيار 875")
+	replacements["seller_activity"] = "صناعة و بيع وشراء المعادن الثمينة والأحجار الكريمة"
+
 	weights := map[string]float64{}
 	var rows strings.Builder
 	for i, line := range v.Lines {
@@ -528,6 +547,12 @@ func (s *Server) renderGoldReceiptHTML(id, style string) (string, error) {
 		}
 		fmt.Fprintf(&rows, `<tr><td>%d</td><td>%s</td><td dir="ltr">%.3f</td><td dir="ltr">%sK</td></tr>`, i+1, html.EscapeString(stockName), line.Weight, html.EscapeString(line.Karat))
 	}
+	replacements["weight_18"] = fmt.Sprintf("%.3f", weights["18"])
+	replacements["weight_21"] = fmt.Sprintf("%.3f", weights["21"])
+	replacements["weight_22"] = fmt.Sprintf("%.3f", weights["22"])
+	replacements["weight_24"] = fmt.Sprintf("%.3f", weights["24"])
+	replacements["weight_other"] = fmt.Sprintf("%.3f", weights["other"])
+
 	items := `<table class="receipt-items"><thead><tr><th>#</th><th>الصنف / Stock Name</th><th>الوزن بالجرام / Weight</th><th>العيار / Purity</th></tr></thead><tbody>` + rows.String() + `</tbody></table>`
 	summary := `<table class="receipt-weight-summary"><caption>ملخص القبض حسب العيار</caption><tr><th>18K</th><th>21K</th><th>22K</th><th>24K</th></tr><tr>`
 	for _, k := range []string{"18", "21", "22", "24"} {
@@ -538,7 +563,13 @@ func (s *Server) renderGoldReceiptHTML(id, style string) (string, error) {
 	if v.Kind == "WAGES" {
 		conversion = fmt.Sprintf(`<div class="receipt-conversion">إجمالي الفاتورة شامل الضريبة: <b dir="ltr">%.2f</b> ريال سعودي ÷ سعر جرام عيار 24 بتاريخ %s: <b dir="ltr">%.2f</b> ريال سعودي = <b dir="ltr">%.3f</b> جرام ذهب عيار 24</div>`, v.InvoiceTotal, html.EscapeString(v.VoucherDate), v.GoldPrice, v.TotalWeight)
 	}
-	return s.fillReceiptTemplate(tpl, issuer, replacements, map[string]string{"receipt_value": fmt.Sprintf(`<bdi dir="ltr">%.3f</bdi>`, v.TotalWeight), "receipt_items": items, "receipt_conversion": conversion, "receipt_weight_summary": summary}), nil
+	return s.fillReceiptTemplate(tpl, issuer, replacements, map[string]string{
+		"receipt_value":          fmt.Sprintf(`<bdi dir="ltr">%.3f</bdi>`, v.TotalWeight),
+		"receipt_items":          items,
+		"receipt_conversion":     conversion,
+		"receipt_weight_summary": summary,
+		"items_rows":             rows.String(),
+	}), nil
 }
 
 func cashReceiptLabels() map[string]string {

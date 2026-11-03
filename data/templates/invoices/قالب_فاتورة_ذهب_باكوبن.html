@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <title>مشغل سعيد علي باكوبن للمعادن الثمينة — فاتورة مبيعات ضريبية</title>
+  <title>{{seller_name}} — فاتورة مبيعات ضريبية</title>
   <style>
     @page {
       size: A4 portrait;
@@ -479,11 +479,11 @@
 
     <!-- ═══════════════ القسم العلوي ═══════════════ -->
     <div class="top-content">
-      <!-- ─── 1. ترويسة مشغل سعيد علي باكوبن للمعادن الثمينة ─── -->
+      <!-- ─── 1. ترويسة المتجر والمنشأة ─── -->
       <header class="header-container">
         <div class="header-side-ar">
           <h1 class="seller-name-el">{{seller_name}}</h1>
-          <p class="seller-desc-el">صناعة و بيع وشراء المعادن الثمينة والأحجار الكريمة</p>
+          <p class="seller-desc-el">{{seller_activity}}</p>
         </div>
 
         <div class="header-side-en">
@@ -518,7 +518,7 @@
             </tr>
             <tr>
               <td class="lbl">مناولة السيد</td>
-              <td class="val">0</td>
+              <td class="val">{{received_from}}</td>
             </tr>
             <tr>
               <td class="lbl">الرقم الضريبي للعميل</td>
@@ -534,7 +534,7 @@
               <td class="lbl" style="width: 25%;">رقم التسلسل</td>
               <td class="val" style="width: 25%; font-size: 13px; font-weight: 900;">{{invoice_number}}</td>
               <td class="lbl" style="width: 25%; text-align: center;">رقم سند العميل</td>
-              <td class="val" style="width: 25%;"></td>
+              <td class="val" style="width: 25%;">{{reference_no}}</td>
             </tr>
             <tr>
               <td class="lbl">الوقت والتاريخ</td>
@@ -550,7 +550,7 @@
             </tr>
             <tr>
               <td class="lbl">سعر الكيلو الصافي 21</td>
-              <td class="val" colspan="3">( 0.00 ريال )</td>
+              <td class="val" colspan="3">( <span id="val-net-kilo-price">{{gold_price}}</span> ريال )</td>
             </tr>
           </table>
         </div>
@@ -594,12 +594,12 @@
             <td style="width: 14%;" id="foot-bags-weight">{{bags_weight}}</td>
             <td style="width: 8%;">
               <span style="float: right;">العدد</span>
-              <span id="foot-pieces-count">1</span>
+              <span id="foot-pieces-count">{{total_pieces}}</span>
             </td>
           </tr>
           <tr>
             <td style="width: 18%; text-align: center;">
-              <span style="margin-left: 6px;">0.00</span>
+              <span style="margin-left: 6px;" id="foot-k18">{{weight_18}}</span>
               <span>جرام عيار 18</span>
             </td>
             <td style="width: 28%; text-align: center;">
@@ -607,7 +607,7 @@
               <span>جرام عيار 21</span>
             </td>
             <td style="width: 14%; text-align: center;">
-              <span style="margin-left: 6px;" id="foot-kother">0.00</span>
+              <span style="margin-left: 6px;" id="foot-kother">{{weight_other}}</span>
               <span>جرام عيار آخر</span>
             </td>
             <td colspan="3" style="background: #fff;"></td>
@@ -670,7 +670,7 @@
               <td class="val-col" id="tafqeet-amount-num">{{grand_total}}</td>
             </tr>
             <tr>
-              <td class="words-col" id="tafqeet-gold-words">فقط ثلاثمائة وثلاثة وخمسون جرام وعشرة مليجرام لاغير عيار 875</td>
+              <td class="words-col" id="tafqeet-gold-words">{{gold_amount_in_words}}</td>
               <td class="val-col" id="tafqeet-gold-num">{{total_weight}}</td>
             </tr>
           </table>
@@ -869,51 +869,23 @@
 
       // تفقيط المبالغ
       var elTafqeetAmtNum = document.getElementById('tafqeet-amount-num');
-      if (elTafqeetAmtNum) elTafqeetAmtNum.textContent = fmtNum(grandVal, 2);
-
-      var elTafqeetWords = document.getElementById('tafqeet-amount-words');
-      if (elTafqeetWords && (!elTafqeetWords.textContent.trim() || elTafqeetWords.textContent.indexOf('{{') !== -1)) {
-        elTafqeetWords.textContent = 'فقط ستة آلاف وتسعون ريال وتسعون هللة شامل الضريبة';
+      if (elTafqeetAmtNum && (!elTafqeetAmtNum.textContent.trim() || elTafqeetAmtNum.textContent.indexOf('{{') !== -1)) {
+        elTafqeetAmtNum.textContent = fmtNum(grandVal, 2);
       }
 
-      // تفقيط الذهب
+      // تفقيط الذهب التلقائي عند توفر الوزن
       var elTafqeetGoldNum = document.getElementById('tafqeet-gold-num');
-      if (elTafqeetGoldNum) elTafqeetGoldNum.textContent = fmtNum(totalWeight, 2);
+      if (elTafqeetGoldNum && (!elTafqeetGoldNum.textContent.trim() || elTafqeetGoldNum.textContent.indexOf('{{') !== -1)) {
+        elTafqeetGoldNum.textContent = fmtNum(totalWeight, 2);
+      }
 
       var elTafqeetGoldWords = document.getElementById('tafqeet-gold-words');
-      if (elTafqeetGoldWords) {
-        elTafqeetGoldWords.textContent = tafqeetGramsBakoban(totalWeight > 0 ? totalWeight : 353.10);
-      }
-
-      // 5. تعبئة البيانات الافتراضية الرسمية لمشغل باكوبن عند غياب المتغيرات
-      var sName = document.querySelector('.seller-name-el');
-      if (sName && (!sName.textContent.trim() || sName.textContent.indexOf('{{') !== -1)) {
-        sName.textContent = 'مشغل سعيد علي باكوبن للمعادن الثمينة';
-      }
-
-      var sEn = document.querySelector('.seller-en-el');
-      if (sEn && (!sEn.textContent.trim() || sEn.textContent.indexOf('{{') !== -1)) {
-        sEn.textContent = 'Saeed Ali Bakoban Precious Metal Workshop';
-      }
-
-      var sCr = document.querySelector('.seller-cr-val');
-      if (sCr && (!sCr.textContent.trim() || sCr.textContent.indexOf('{{') !== -1)) {
-        sCr.textContent = '4030114000';
-      }
-
-      var sTax = document.querySelector('.seller-tax-val');
-      if (sTax && (!sTax.textContent.trim() || sTax.textContent.indexOf('{{') !== -1)) {
-        sTax.textContent = '300113828800003';
-      }
-
-      var fAddr = document.querySelector('.footer-address');
-      if (fAddr && (!fAddr.textContent.trim() || fAddr.textContent.indexOf('{{') !== -1)) {
-        fAddr.textContent = 'جدة - حي مشرفة - شارع الصحافة';
-      }
-
-      var fPhone = document.querySelector('.footer-phone');
-      if (fPhone && (!fPhone.textContent.trim() || fPhone.textContent.indexOf('{{') !== -1)) {
-        fPhone.textContent = '012 6172910 جوال : 0504610207';
+      if (elTafqeetGoldWords && (!elTafqeetGoldWords.textContent.trim() || elTafqeetGoldWords.textContent.indexOf('{{') !== -1)) {
+        if (totalWeight > 0) {
+          elTafqeetGoldWords.textContent = tafqeetGramsBakoban(totalWeight);
+        } else {
+          elTafqeetGoldWords.textContent = '';
+        }
       }
 
       // تنظيف أي وسم placeholder متبقي في الصفحة لضمان المظهر المهني النظيف

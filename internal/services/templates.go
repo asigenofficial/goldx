@@ -1585,7 +1585,21 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 		"{{credit_days}}", "0",
 		"{{seller_branch}}", "فرع الذهب والمجوهرات",
 		"{{seller_license}}", "11/40301936",
-		"{{gold_amount_in_words}}", "",
+		"{{seller_activity}}", "صناعة و بيع وشراء المعادن الثمينة والأحجار الكريمة",
+		"{{gold_amount_in_words}}", tafqeetGoldArabic(totalQty, "عيار 875"),
+		"{{total_pieces}}", fmt.Sprintf("%d", len(inv.Lines)),
+		"{{reference_no}}", "",
+		"{{gold_price}}", func() string {
+			for _, l := range inv.Lines {
+				if l.UnitPriceMajor > 0 {
+					return fmt.Sprintf("%.2f", l.UnitPriceMajor)
+				}
+				if l.GramPriceMajor > 0 {
+					return fmt.Sprintf("%.2f", l.GramPriceMajor)
+				}
+			}
+			return "0.00"
+		}(),
 
 		// ─── سندات القبض والصرف والمستندات ───
 		"{{voucher_number}}", inv.InvoiceNumber,
@@ -2150,6 +2164,56 @@ func tafqeetUnder1000(n int64) string {
 }
 
 func TafqeetArabic(val float64) string { return tafqeetArabic(val) }
+
+func TafqeetGoldArabic(val float64, karat string) string { return tafqeetGoldArabic(val, karat) }
+
+func tafqeetGoldArabic(val float64, karat string) string {
+	if val <= 0 {
+		return ""
+	}
+	intPart := int64(math.Floor(val))
+	decPart := int64(math.Round((val - float64(intPart)) * 1000))
+
+	var chunks []string
+	millions := intPart / 1000000
+	thousands := (intPart % 1000000) / 1000
+	units := intPart % 1000
+
+	if millions > 0 {
+		if millions == 1 {
+			chunks = append(chunks, "مليون")
+		} else if millions == 2 {
+			chunks = append(chunks, "مليونان")
+		} else if millions >= 3 && millions <= 10 {
+			chunks = append(chunks, tafqeetUnder1000(millions)+" ملايين")
+		} else {
+			chunks = append(chunks, tafqeetUnder1000(millions)+" مليون")
+		}
+	}
+	if thousands > 0 {
+		if thousands == 1 {
+			chunks = append(chunks, "ألف")
+		} else if thousands == 2 {
+			chunks = append(chunks, "ألفان")
+		} else if thousands >= 3 && thousands <= 10 {
+			chunks = append(chunks, tafqeetUnder1000(thousands)+" آلاف")
+		} else {
+			chunks = append(chunks, tafqeetUnder1000(thousands)+" ألف")
+		}
+	}
+	if units > 0 {
+		chunks = append(chunks, tafqeetUnder1000(units))
+	}
+	text := "فقط " + strings.Join(chunks, " و") + " جرام"
+	if decPart > 0 {
+		text += " و" + tafqeetUnder1000(decPart) + " مليجرام"
+	}
+	text += " لاغير"
+	if karat != "" {
+		text += " " + karat
+	}
+	return text
+}
 
 func tafqeetArabic(val float64) string {
 	total := int64(math.Round(val * 100))

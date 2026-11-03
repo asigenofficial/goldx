@@ -1299,6 +1299,13 @@ export function fillDynamicTemplateHtml(rawHtml, { issuer = {}, client = {}, vou
     if (['receipt_items','receipt_conversion','receipt_weight_summary'].includes(k)) return '';
     if (k === 'gold_invoice_type') return invoice?.gold_invoice_type || 'PRICE_AND_WAGE';
     if (k === 'gold_type_label') return ({PRICE_ONLY:'سعر فقط (ذهب فقط)',WAGE_ONLY:'أجور فقط (مصنعية فقط)',PRICE_AND_WAGE:'سعر وأجور (ذهب ومصنعية)'})[invoice?.gold_invoice_type || 'PRICE_AND_WAGE'];
+    if (k === 'total_pieces' || k === 'pieces_count' || k === 'items_count') return String((invoice?.lines || invoice?.items || []).length || 1);
+    if (k === 'gold_price' || k === 'gram_price') {
+      const line = (invoice?.lines || invoice?.items || [])[0];
+      const p = Number(line?.unit_price || line?.gram_price || 0);
+      return p > 0 ? p.toFixed(2) : '0.00';
+    }
+    if (k === 'seller_activity') return issuer?.activity || issuer?.description || 'صناعة و بيع وشراء المعادن الثمينة والأحجار الكريمة';
     if (k === 'total_weight') return (invoice?.lines || invoice?.items || []).reduce((sum,line) => sum + Number(line.quantity || 0),0).toFixed(2);
     if (k === 'bags_weight' || k === 'bag_weight') return Number(invoice?.bags_weight || invoice?.bag_weight || 0).toFixed(2);
     if (k === 'gross_weight' || k === 'total_weight_with_bags') {
