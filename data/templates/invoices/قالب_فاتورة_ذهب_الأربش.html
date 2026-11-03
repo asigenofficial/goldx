@@ -857,14 +857,6 @@
       var weights = { '18': 0, '21': 0, '22': 0, '24': 0 };
 
       if (table) {
-        var tbody = table.querySelector('tbody');
-        if (tbody && (tbody.innerHTML.indexOf('{{') !== -1 || tbody.children.length === 0)) {
-          tbody.innerHTML = '<tr><td>875</td><td>سوبر لايت</td><td></td><td>500.26</td><td>43.00</td><td>1.00</td><td>21511.18</td><td>17697.95</td><td>39209.13</td><td>96475</td></tr>' +
-            '<tr><td>875</td><td>هندي</td><td></td><td>204.40</td><td>32.00</td><td>1.00</td><td>6540.80</td><td>6893.90</td><td>13434.70</td><td>39419</td></tr>' +
-            '<tr><td>875</td><td>ايطالي</td><td></td><td>266.28</td><td>40.00</td><td>1.00</td><td>10651.20</td><td>9300.49</td><td>19951.69</td><td>51352</td></tr>' +
-            '<tr><td>875</td><td>تركي</td><td></td><td>85.68</td><td>40.00</td><td>1.00</td><td>3427.20</td><td>2992.59</td><td>6419.79</td><td>16523</td></tr>' +
-            '<tr><td>875</td><td>ايطالي</td><td></td><td>178.40</td><td>45.00</td><td>1.00</td><td>8028.00</td><td>6364.87</td><td>14392.87</td><td>34404</td></tr>';
-        }
         var rows = table.querySelectorAll('tbody tr');
         rows.forEach(function (row) {
           var cells = row.querySelectorAll('td');
