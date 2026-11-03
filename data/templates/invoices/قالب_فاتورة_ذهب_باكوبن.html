@@ -474,32 +474,33 @@
     }
 
     /* ─── 8. إقرار الخطأ والسهو وتاريخ الطباعة ─── */
-    .print-notes-bar {
-      display: flex;
-      flex-direction: row;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 9.5px;
-      font-weight: bold;
+    table.print-notes-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: none !important;
       margin-top: 4px;
       margin-bottom: 4px;
+      font-size: 9.5px;
+      font-weight: bold;
       direction: rtl !important;
     }
 
-    .print-notes-bar .print-date-col {
-      text-align: right;
-      direction: rtl;
+    table.print-notes-table td {
+      border: none !important;
+      padding: 0;
+      vertical-align: middle;
     }
 
-    .print-notes-bar .print-date-col .print-time-stamp {
-      direction: ltr;
-      display: inline-block;
-      margin-right: 4px;
+    table.print-notes-table td.date-col {
+      text-align: right !important;
+      direction: rtl !important;
+      width: 60%;
     }
 
-    .print-notes-bar .print-disclaimer-col {
-      text-align: left;
-      direction: rtl;
+    table.print-notes-table td.disclaimer-col {
+      text-align: left !important;
+      direction: rtl !important;
+      width: 40%;
     }
 
     /* ─── 9. تذييل الفاتورة في أسفل الصفحة تماماً ─── */
@@ -729,21 +730,23 @@
       </section>
 
       <!-- ─── 8. إقرار الخطأ والسهو وتاريخ الطباعة ─── -->
-      <div class="print-notes-bar">
-        <div class="print-date-col">
-          <span>طبع في: </span><span class="print-time-stamp" dir="ltr">{{issue_date}} {{issue_time}}</span>
-        </div>
-        <div class="print-disclaimer-col">
-          <span>المستند معتمد ما عدا السهو و الخطأ</span>
-        </div>
-      </div>
+      <table class="print-notes-table">
+        <tr>
+          <td class="date-col">
+            <span>طبع في: </span><span class="print-time-stamp" dir="ltr">{{issue_date}} {{issue_time}}</span>
+          </td>
+          <td class="disclaimer-col">
+            <span>المستند معتمد ما عدا السهو و الخطأ</span>
+          </td>
+        </tr>
+      </table>
 
       <!-- ─── 9. تذييل الفاتورة في أسفل الصفحة تماماً ─── -->
       <footer class="invoice-footer-wrap">
-        <div class="footer-center-text">
-          <span class="footer-country">المملكة العربية السعودية</span> - 
-          <span class="footer-address">{{seller_address}}</span> - 
-          ت: <span class="footer-phone">{{seller_phone}}</span>
+        <div class="footer-center-text" id="footer-center-text">
+          <span class="footer-country">{{seller_country}}</span>
+          <span class="footer-address">{{seller_address}}</span>
+          <span class="footer-phone">{{seller_phone}}</span>
         </div>
         <div class="page-count-marker">1/1</div>
       </footer>
@@ -940,6 +943,36 @@
           elTafqeetGoldWords.textContent = tafqeetGramsBakoban(totalWeight);
         } else {
           elTafqeetGoldWords.textContent = '';
+        }
+      }
+
+      // تنسيق تذييل الفاتورة ديناميكياً بدون أي نصوص أو بيانات ثابتة
+      var footEl = document.getElementById('footer-center-text');
+      if (footEl) {
+        var countryEl = footEl.querySelector('.footer-country');
+        var addrEl = footEl.querySelector('.footer-address');
+        var phoneEl = footEl.querySelector('.footer-phone');
+
+        var country = countryEl ? countryEl.textContent.trim() : '';
+        var addr = addrEl ? addrEl.textContent.trim() : '';
+        var phone = phoneEl ? phoneEl.textContent.trim() : '';
+
+        if (country.indexOf('{{') !== -1) country = '';
+        if (addr.indexOf('{{') !== -1) addr = '';
+        if (phone.indexOf('{{') !== -1) phone = '';
+
+        var parts = [];
+        if (country) parts.push(country);
+        if (addr) parts.push(addr);
+        if (phone) {
+          if (phone.indexOf('ت:') === -1 && phone.indexOf('هاتف') === -1 && phone.indexOf('جوال') === -1) {
+            parts.push('ت: ' + phone);
+          } else {
+            parts.push(phone);
+          }
+        }
+        if (parts.length > 0) {
+          footEl.innerHTML = parts.join(' - ');
         }
       }
 
