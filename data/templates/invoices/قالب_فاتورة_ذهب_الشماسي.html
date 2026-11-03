@@ -326,14 +326,14 @@ table.items-grid-table th small {
   font-family: Arial, sans-serif;
   font-weight: normal;
 }
-/* تلوين الجدول: أول صف فضي ثم أبيض ثم فضي وهكذا */
+/* تلوين الجدول: أول صف أبيض ثم فضي ثم أبيض وهكذا */
 table.items-grid-table tbody tr:nth-child(odd),
 table.items-grid-table tbody tr:nth-child(odd) td {
-  background: #d8dee4 !important;
+  background: #ffffff !important;
 }
 table.items-grid-table tbody tr:nth-child(even),
 table.items-grid-table tbody tr:nth-child(even) td {
-  background: #ffffff !important;
+  background: #d8dee4 !important;
 }
 table.items-grid-table tbody td {
   border: 1px solid #333;
@@ -939,8 +939,8 @@ table.payment-mini-table td {
 
     var rowIndex = 1;
     rows.forEach(function(row, rIdx) {
-      // تلوين الصفوف: الأول فضي ثم الثاني أبيض ثم الثالث فضي وهكذا بوضوح تام
-      var isSilver = (rIdx % 2 === 0);
+      // تلوين الصفوف: الأول أبيض ثم الثاني فضي ثم الثالث أبيض وهكذا
+      var isSilver = (rIdx % 2 === 1);
       var rowBg = isSilver ? '#d8dee4' : '#ffffff';
       row.style.setProperty('background', rowBg, 'important');
       row.querySelectorAll('td').forEach(function(td) {
