@@ -220,7 +220,7 @@
     table.meta-twin-table td.lbl {
       text-align: right;
       font-weight: bold;
-      background: #fff;
+      background: #e9ecef !important;
       white-space: nowrap;
       width: 38%;
     }
@@ -251,7 +251,7 @@
       border: 1px solid #000;
       padding: 3px 2px;
       font-weight: bold;
-      background: #fff;
+      background: #e9ecef !important;
       font-size: 9px;
       font-family: Arial, Helvetica, sans-serif;
       text-align: center;
@@ -262,7 +262,7 @@
       border: 1px solid #000;
       padding: 4px 2px;
       font-weight: bold;
-      background: #fff;
+      background: #e9ecef !important;
       font-size: 10px;
       line-height: 1.25;
       text-align: center;
@@ -294,6 +294,13 @@
       font-weight: bold;
       font-variant-numeric: tabular-nums;
       text-align: center;
+      background: #fff;
+    }
+
+    table.table-summary-strip td.th-lbl,
+    .th-lbl {
+      background: #e9ecef !important;
+      font-weight: bold;
     }
 
     /* ─── 6. التواقيع المعتمدة (مباشرة أسفل جدول الملخص) ─── */
@@ -406,7 +413,7 @@
     table.totals-summary-table td.lbl {
       text-align: right;
       font-weight: bold;
-      background: #fff;
+      background: #e9ecef !important;
       width: 65%;
       white-space: nowrap;
     }
@@ -476,7 +483,23 @@
       font-weight: bold;
       margin-top: 4px;
       margin-bottom: 4px;
-      direction: ltr !important;
+      direction: rtl !important;
+    }
+
+    .print-notes-bar .print-date-col {
+      text-align: right;
+      direction: rtl;
+    }
+
+    .print-notes-bar .print-date-col .print-time-stamp {
+      direction: ltr;
+      display: inline-block;
+      margin-right: 4px;
+    }
+
+    .print-notes-bar .print-disclaimer-col {
+      text-align: left;
+      direction: rtl;
     }
 
     /* ─── 9. تذييل الفاتورة في أسفل الصفحة تماماً ─── */
@@ -618,30 +641,36 @@
       <!-- ─── 5. شريط ملخص الأوزان والتفصيل ─── -->
       <table class="table-summary-strip">
         <tr style="direction: ltr;">
-          <td style="width: 3.5%; text-align: center;" id="foot-pieces-count">{{total_pieces}}</td>
-          <td style="width: 5.5%; text-align: center; font-weight: bold;">العدد</td>
-          <td style="width: 27%; text-align: center; font-weight: bold;">جرام الوزن مع الأكياس</td>
-          <td style="width: 14%; text-align: center; font-weight: bold;" id="foot-gross-weight">{{total_weight}}</td>
-          <td style="width: 31%; text-align: center; font-weight: 900;">Total &nbsp; الإجمالــــــــــــــــي</td>
-          <td style="width: 19%; text-align: center; font-weight: bold;" id="foot-subtotal">{{subtotal}}</td>
+          <td style="width: 3.5%; text-align: center; background: #fff;" id="foot-pieces-count">{{total_pieces}}</td>
+          <td class="th-lbl" style="width: 5.5%; text-align: center;">العدد</td>
+          <td class="th-lbl" style="width: 27%; text-align: center;">جرام الوزن مع الأكياس</td>
+          <td style="width: 14%; text-align: center; background: #fff;" id="foot-gross-weight">{{total_weight}}</td>
+          <td class="th-lbl" style="width: 31%; text-align: center; font-weight: 900;">Total &nbsp; الإجمالــــــــــــــــي</td>
+          <td style="width: 19%; text-align: center; background: #fff;" id="foot-subtotal">{{subtotal}}</td>
         </tr>
         <tr style="direction: ltr;">
-          <td colspan="3" style="text-align: center;">
-            <span style="margin-right: 8px;" id="foot-kother">{{weight_other}}</span>
-            <span>جرام عيار آخر</span>
+          <td colspan="3" style="padding: 0; background: #fff;">
+            <div style="display: flex; height: 100%; width: 100%; align-items: center;">
+              <div style="width: 30%; border-right: 1px solid #000; padding: 3px 6px; text-align: center; background: #fff;" id="foot-kother">{{weight_other}}</div>
+              <div class="th-lbl" style="width: 70%; padding: 3px 6px; text-align: center;">جرام عيار آخر</div>
+            </div>
           </td>
-          <td colspan="2" style="text-align: center;">
-            <span style="margin-right: 8px;" id="foot-k21">{{weight_21}}</span>
-            <span>جرام عيار 21</span>
+          <td colspan="2" style="padding: 0; background: #fff;">
+            <div style="display: flex; height: 100%; width: 100%; align-items: center;">
+              <div style="width: 30%; border-right: 1px solid #000; padding: 3px 6px; text-align: center; background: #fff;" id="foot-k21">{{weight_21}}</div>
+              <div class="th-lbl" style="width: 70%; padding: 3px 6px; text-align: center;">جرام عيار 21</div>
+            </div>
           </td>
-          <td style="text-align: center;">
-            <span style="margin-right: 8px;" id="foot-k18">{{weight_18}}</span>
-            <span>جرام عيار 18</span>
+          <td style="padding: 0; background: #fff;">
+            <div style="display: flex; height: 100%; width: 100%; align-items: center;">
+              <div style="width: 35%; border-right: 1px solid #000; padding: 3px 6px; text-align: center; background: #fff;" id="foot-k18">{{weight_18}}</div>
+              <div class="th-lbl" style="width: 65%; padding: 3px 6px; text-align: center;">جرام عيار 18</div>
+            </div>
           </td>
         </tr>
         <tr>
-          <td colspan="6" style="text-align: right; direction: rtl; padding-right: 12px; font-weight: normal;">
-            <b style="margin-left: 10px;">ملاحظات</b>
+          <td colspan="6" style="text-align: right; direction: rtl; padding-right: 12px; font-weight: normal; background: #fff;">
+            <b class="th-lbl" style="padding: 2px 8px; border: 1px solid #000; margin-left: 10px; display: inline-block;">ملاحظات</b>
             <span id="foot-notes">{{notes}}</span>
           </td>
         </tr>
@@ -701,8 +730,12 @@
 
       <!-- ─── 8. إقرار الخطأ والسهو وتاريخ الطباعة ─── -->
       <div class="print-notes-bar">
-        <span>المستند معتمد ما عدا السهو و الخطأ</span>
-        <span>طبع في: <span class="print-time-stamp">{{issue_date}} {{issue_time}}</span> م</span>
+        <div class="print-date-col">
+          <span>طبع في: </span><span class="print-time-stamp" dir="ltr">{{issue_date}} {{issue_time}}</span>
+        </div>
+        <div class="print-disclaimer-col">
+          <span>المستند معتمد ما عدا السهو و الخطأ</span>
+        </div>
       </div>
 
       <!-- ─── 9. تذييل الفاتورة في أسفل الصفحة تماماً ─── -->
