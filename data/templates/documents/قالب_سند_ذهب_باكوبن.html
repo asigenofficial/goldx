@@ -566,77 +566,77 @@
             {{items_rows}}
           </tbody>
         </table>
-
-        <!-- ─── 5. شريط ملخص الأوزان والتسوية الملحق بالجدول ─── -->
-        <table class="table-summary-strip">
-          <tr>
-            <td style="width: 48%; text-align: right; padding-right: 10px;">
-              Total الإجمالــــــــــــــــي
-            </td>
-            <td style="width: 12%;" id="foot-amount-total">{{grand_total}}</td>
-            <td style="width: 14%;" id="foot-gross-weight">{{total_weight}}</td>
-            <td style="width: 16%;">
-              <span>جرام الوزن مع الأكياس</span>
-              <span id="foot-bags-weight" style="margin-right: 4px;">{{total_weight}}</span>
-            </td>
-            <td style="width: 10%;">
-              <span style="float: right;">العدد</span>
-              <span id="foot-pieces-count">{{total_pieces}}</span>
-            </td>
-          </tr>
-          <tr>
-            <td style="width: 25%; text-align: center;">
-              <span style="margin-left: 8px;">جرام 18</span>
-              <span id="foot-k18">{{weight_18}}</span>
-            </td>
-            <td style="width: 25%; text-align: center;">
-              <span style="margin-left: 8px;">جرام 21</span>
-              <span id="foot-k21">{{weight_21}}</span>
-            </td>
-            <td style="width: 20%; text-align: center;">
-              <span style="margin-left: 6px;">جرام آخر</span>
-              <span id="foot-kother">{{weight_other}}</span>
-            </td>
-            <td style="width: 15%; text-align: center;">
-              <span style="margin-left: 4px;">ريال قيمة الذهب</span>
-              <span id="foot-gold-value">{{subtotal}}</span>
-            </td>
-            <td style="width: 15%; text-align: center;">
-              <span style="margin-left: 4px;">ريال أجور المستند</span>
-              <span id="foot-doc-wage">{{total_wage}}</span>
-            </td>
-          </tr>
-          <tr>
-            <td colspan="5" style="text-align: right; padding-right: 12px; font-weight: normal;">
-              <b style="margin-left: 8px;">ملاحظات</b>
-              <span id="foot-notes">{{notes}}</span>
-            </td>
-          </tr>
-        </table>
-
-        <!-- ─── 6. التواقيع المعتمدة الثلاثية (مباشرة أسفل جدول الملخص) ─── -->
-        <section class="signatures-row">
-          <div class="sign-col">
-            <div class="en-sign">AUTHORISED SIGNATURE</div>
-            <div class="ar-sign">توقيع أمين الصندوق</div>
-          </div>
-
-          <div class="sign-col">
-            <div class="en-sign">CHECKED BY</div>
-            <div class="ar-sign">توقيع المدقق</div>
-          </div>
-
-          <div class="sign-col">
-            <div class="en-sign">CUSTOMER'S SIGNATURE</div>
-            <div class="ar-sign">توقيع العميل</div>
-            <div class="accountant-lbl">المحاسب</div>
-          </div>
-        </section>
       </main>
     </div>
 
     <!-- ═══════════════ القسم السفلي (مثبت في أسفل الصفحة تماماً) ═══════════════ -->
     <div class="bottom-content">
+      <!-- ─── 5. شريط ملخص الأوزان والتسوية الملحق بالجدول ─── -->
+      <table class="table-summary-strip">
+        <tr>
+          <td style="width: 48%; text-align: right; padding-right: 10px;">
+            Total الإجمالــــــــــــــــي
+          </td>
+          <td style="width: 12%;" id="foot-amount-total">{{grand_total}}</td>
+          <td style="width: 14%;" id="foot-gross-weight">{{total_weight}}</td>
+          <td style="width: 16%;">
+            <span>جرام الوزن مع الأكياس</span>
+            <span id="foot-bags-weight" style="margin-right: 4px;">{{total_weight}}</span>
+          </td>
+          <td style="width: 10%;">
+            <span style="float: right;">العدد</span>
+            <span id="foot-pieces-count">{{total_pieces}}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="width: 25%; text-align: center;">
+            <span style="margin-left: 8px;">جرام 18</span>
+            <span id="foot-k18">{{weight_18}}</span>
+          </td>
+          <td style="width: 25%; text-align: center;">
+            <span style="margin-left: 8px;">جرام 21</span>
+            <span id="foot-k21">{{weight_21}}</span>
+          </td>
+          <td style="width: 20%; text-align: center;">
+            <span style="margin-left: 6px;">جرام آخر</span>
+            <span id="foot-kother">{{weight_other}}</span>
+          </td>
+          <td style="width: 15%; text-align: center;">
+            <span style="margin-left: 4px;">ريال قيمة الذهب</span>
+            <span id="foot-gold-value">{{subtotal}}</span>
+          </td>
+          <td style="width: 15%; text-align: center;">
+            <span style="margin-left: 4px;">ريال أجور المستند</span>
+            <span id="foot-doc-wage">{{total_wage}}</span>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="5" style="text-align: right; padding-right: 12px; font-weight: normal;">
+            <b style="margin-left: 8px;">ملاحظات</b>
+            <span id="foot-notes">{{notes}}</span>
+          </td>
+        </tr>
+      </table>
+
+      <!-- ─── 6. التواقيع المعتمدة الثلاثية ─── -->
+      <section class="signatures-row">
+        <div class="sign-col">
+          <div class="en-sign">AUTHORISED SIGNATURE</div>
+          <div class="ar-sign">توقيع أمين الصندوق</div>
+        </div>
+
+        <div class="sign-col">
+          <div class="en-sign">CHECKED BY</div>
+          <div class="ar-sign">توقيع المدقق</div>
+        </div>
+
+        <div class="sign-col">
+          <div class="en-sign">CUSTOMER'S SIGNATURE</div>
+          <div class="ar-sign">توقيع العميل</div>
+          <div class="accountant-lbl">المحاسب</div>
+        </div>
+      </section>
+
       <!-- ─── 7. الإجماليات والتفقيط في الركن الأيمن ─── -->
       <section class="bottom-totals-section">
         <div class="totals-tafqeet-stack">

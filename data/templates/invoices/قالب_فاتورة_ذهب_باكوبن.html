@@ -603,63 +603,63 @@
             {{items_rows}}
           </tbody>
         </table>
-
-        <!-- ─── 5. شريط ملخص الأوزان والتفصيل تحت جدول الأصناف مباشرة ─── -->
-        <table class="table-summary-strip">
-          <tr>
-            <td style="width: 18%;" id="foot-subtotal">{{subtotal}}</td>
-            <td style="width: 28%; text-align: right; padding-right: 12px; font-weight: 900;">
-              Total &nbsp; الإجمالــــــــــــــــي
-            </td>
-            <td style="width: 14%;" id="foot-gross-weight">{{total_weight}}</td>
-            <td style="width: 18%; font-weight: bold;">جرام الوزن مع الأكياس</td>
-            <td style="width: 14%;" id="foot-bags-weight">{{bags_weight}}</td>
-            <td style="width: 8%;">
-              <span style="float: right;">العدد</span>
-              <span id="foot-pieces-count">{{total_pieces}}</span>
-            </td>
-          </tr>
-          <tr>
-            <td style="width: 18%; text-align: center;">
-              <span style="margin-left: 6px;" id="foot-k18">{{weight_18}}</span>
-              <span>جرام عيار 18</span>
-            </td>
-            <td style="width: 28%; text-align: center;">
-              <span style="margin-left: 8px;" id="foot-k21">{{weight_21}}</span>
-              <span>جرام عيار 21</span>
-            </td>
-            <td style="width: 14%; text-align: center;">
-              <span style="margin-left: 6px;" id="foot-kother">{{weight_other}}</span>
-              <span>جرام عيار آخر</span>
-            </td>
-            <td colspan="3" style="background: #fff;"></td>
-          </tr>
-          <tr>
-            <td colspan="6" style="text-align: right; padding-right: 12px; font-weight: normal;">
-              <b style="margin-left: 10px;">ملاحظات</b>
-              <span id="foot-notes">{{notes}}</span>
-            </td>
-          </tr>
-        </table>
-
-        <!-- ─── 6. التواقيع المعتمدة (مباشرة أسفل جدول الملخص في منتصف الصفحة) ─── -->
-        <section class="signatures-row">
-          <div class="sign-col-customer">
-            <div class="en-sign">CUSTOMER</div>
-            <div class="ar-sign">توقيع العميل</div>
-          </div>
-
-          <div class="sign-col-seller">
-            <div class="en-sign">AUTHORISED'S SIGNATURE</div>
-            <div class="ar-sign">توقيع البائع</div>
-            <div class="accountant-lbl">المحاسب</div>
-          </div>
-        </section>
       </main>
     </div>
 
     <!-- ═══════════════ القسم السفلي (تثبيت كامل في أسفل A4) ═══════════════ -->
     <div class="bottom-content">
+      <!-- ─── 5. شريط ملخص الأوزان والتفصيل ─── -->
+      <table class="table-summary-strip">
+        <tr>
+          <td style="width: 18%;" id="foot-subtotal">{{subtotal}}</td>
+          <td style="width: 28%; text-align: right; padding-right: 12px; font-weight: 900;">
+            Total &nbsp; الإجمالــــــــــــــــي
+          </td>
+          <td style="width: 14%;" id="foot-gross-weight">{{total_weight}}</td>
+          <td style="width: 18%; font-weight: bold;">جرام الوزن مع الأكياس</td>
+          <td style="width: 14%;" id="foot-bags-weight">{{bags_weight}}</td>
+          <td style="width: 8%;">
+            <span style="float: right;">العدد</span>
+            <span id="foot-pieces-count">{{total_pieces}}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="width: 18%; text-align: center;">
+            <span style="margin-left: 6px;" id="foot-k18">{{weight_18}}</span>
+            <span>جرام عيار 18</span>
+          </td>
+          <td style="width: 28%; text-align: center;">
+            <span style="margin-left: 8px;" id="foot-k21">{{weight_21}}</span>
+            <span>جرام عيار 21</span>
+          </td>
+          <td style="width: 14%; text-align: center;">
+            <span style="margin-left: 6px;" id="foot-kother">{{weight_other}}</span>
+            <span>جرام عيار آخر</span>
+          </td>
+          <td colspan="3" style="background: #fff;"></td>
+        </tr>
+        <tr>
+          <td colspan="6" style="text-align: right; padding-right: 12px; font-weight: normal;">
+            <b style="margin-left: 10px;">ملاحظات</b>
+            <span id="foot-notes">{{notes}}</span>
+          </td>
+        </tr>
+      </table>
+
+      <!-- ─── 6. التواقيع المعتمدة ─── -->
+      <section class="signatures-row">
+        <div class="sign-col-customer">
+          <div class="en-sign">CUSTOMER</div>
+          <div class="ar-sign">توقيع العميل</div>
+        </div>
+
+        <div class="sign-col-seller">
+          <div class="en-sign">AUTHORISED'S SIGNATURE</div>
+          <div class="ar-sign">توقيع البائع</div>
+          <div class="accountant-lbl">المحاسب</div>
+        </div>
+      </section>
+
       <!-- ─── 7. شبكة الباركود الموسع والإجماليات والتفقيط ─── -->
       <section class="bottom-totals-qr-grid">
         <!-- باركود الزكاة والضريبة QR الموسع والواضح -->
