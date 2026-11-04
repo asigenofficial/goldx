@@ -314,14 +314,19 @@
       box-sizing: border-box;
     }
 
-    /* أوزان أعمدة جدول الشركة (تسمية على اليسار 38% | قيمة سوداء على اليمين 62%) */
+    /* أوزان أعمدة جدول الشركة (تسمية على اليسار 38% | قيمة زرقاء على اليمين 62% كالمتبقي) */
     .party-col-company table.box-table td.cell-lbl { width: 38%; }
-    .party-col-company table.box-table td.cell-val { width: 62%; color: #000000; }
+    .party-col-company table.box-table td.cell-val {
+      width: 62%;
+      color: #0f356c !important; /* لون الخط الأزرق الكحلي لبيانات الشركة كالمتبقي */
+      font-weight: 700 !important;
+    }
 
     /* أوزان أعمدة جدول العميل (قيمة زرقاء على اليسار 62% | تسمية سوداء على اليمين 38%) */
     .party-col-customer table.box-table td.cell-val {
       width: 62%;
       color: #0f356c !important; /* لون الخط الأزرق الكحلي لبيانات العميل */
+      font-weight: 700 !important;
     }
     .party-col-customer table.box-table td.cell-lbl { width: 38%; }
 
@@ -394,8 +399,8 @@
 
     .addr-val {
       background: #ffffff;
-      font-weight: 600;
-      color: #000000;
+      font-weight: 700 !important;
+      color: #0f356c !important; /* لون الخط الأزرق الكحلي لجميع قيم العناوين مثل المتبقي */
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -404,14 +409,15 @@
 
     /* نصوص العميل باللون الأزرق المطابق للصورة (المنطقة، المدينة، الحي، الشارع، وأرقام العنوان) */
     .cust-blue-val,
-    .party-col-customer .addr-val {
+    .party-col-customer .addr-val,
+    .party-col-company .addr-val {
       color: #0f356c !important;
       font-weight: 700 !important;
     }
 
     /* العمود الأوسط: الفاتورة والباركود */
     .center-top-header {
-      background: #b2c6d9 !important;
+      background: #b5c7d8 !important;
       border-bottom: 1px solid #000000;
       padding: 2px 3px;
       text-align: center;
