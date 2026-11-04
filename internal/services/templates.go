@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1736,7 +1737,7 @@ func detectColumnType(th string) colType {
 	if strings.Contains(clean, "خصم") || strings.Contains(clean, "discount") {
 		return colDiscount
 	}
-	if strings.Contains(clean, "نسبة") || strings.Contains(clean, "rate") || clean == "%" || clean == "15%" {
+	if strings.Contains(clean, "نسبة") || strings.Contains(clean, "rate") || clean == "%" || clean == "15%" || strings.Contains(clean, "%") {
 		return colTaxRate
 	}
 	// فحص "قبل الضريبة" أو "الخاضع للضريبة" قبل كلمة "ضريبة" لأن عبارة "قبل الضريبة" تحتوي على لفظ "ضريبة"
@@ -1749,7 +1750,7 @@ func detectColumnType(th string) colType {
 	if strings.Contains(clean, "إجمالي") || strings.Contains(clean, "total") || strings.Contains(clean, "مبلغ") {
 		return colTaxable
 	}
-	if strings.Contains(clean, "ملاحظ") || strings.Contains(clean, "note") {
+	if strings.Contains(clean, "ملاحظ") || strings.Contains(clean, "note") || strings.Contains(clean, "حجر") || strings.Contains(clean, "stone") {
 		return colNotes
 	}
 	return colName
@@ -1783,8 +1784,40 @@ func extractTableHeaders(htmlSnippet string) []string {
 		targetTableHtml = htmlSnippet
 	}
 
+	// 1. Support explicit data-columns attribute on the <table>
+	dataColsRegex := regexp.MustCompile(`(?i)<table\b[^>]*\bdata-columns=["']([^"']+)["']`)
+	if m := dataColsRegex.FindStringSubmatch(targetTableHtml); len(m) > 1 {
+		rawCols := strings.Split(m[1], ",")
+		cols := make([]string, 0, len(rawCols))
+		for _, c := range rawCols {
+			c = strings.TrimSpace(c)
+			if c != "" {
+				cols = append(cols, c)
+			}
+		}
+		if len(cols) > 0 {
+			return cols
+		}
+	}
+
+	// 2. Check for multi-row thead with colspan / rowspan
+	theadRegex := regexp.MustCompile(`(?i)<thead\b[^>]*>([\s\S]*?)</thead>`)
+	headerArea := targetTableHtml
+	if m := theadRegex.FindStringSubmatch(targetTableHtml); len(m) > 1 {
+		headerArea = m[1]
+	}
+
+	trRegex := regexp.MustCompile(`(?i)<tr\b[^>]*>([\s\S]*?)</tr>`)
+	trMatches := trRegex.FindAllStringSubmatch(headerArea, -1)
+	if len(trMatches) > 1 {
+		multiHeaders := parseMultiRowHeader(trMatches)
+		if len(multiHeaders) > 0 {
+			return multiHeaders
+		}
+	}
+
 	thRegex := regexp.MustCompile(`(?i)<th\b[^>]*>([\s\S]*?)</th>`)
-	matches := thRegex.FindAllStringSubmatch(targetTableHtml, -1)
+	matches := thRegex.FindAllStringSubmatch(headerArea, -1)
 	if len(matches) > 0 {
 		headers := make([]string, 0, len(matches))
 		for _, m := range matches {
@@ -1796,10 +1829,9 @@ func extractTableHeaders(htmlSnippet string) []string {
 	}
 
 	// Try <td> in the first <tr>
-	trRegex := regexp.MustCompile(`(?i)<tr\b[^>]*>([\s\S]*?)</tr>`)
-	if trMatch := trRegex.FindStringSubmatch(targetTableHtml); len(trMatch) > 1 {
+	if len(trMatches) > 0 {
 		tdRegex := regexp.MustCompile(`(?i)<td\b[^>]*>([\s\S]*?)</td>`)
-		tdMatches := tdRegex.FindAllStringSubmatch(trMatch[1], -1)
+		tdMatches := tdRegex.FindAllStringSubmatch(trMatches[0][1], -1)
 		if len(tdMatches) > 0 {
 			headers := make([]string, 0, len(tdMatches))
 			for _, m := range tdMatches {
@@ -1812,6 +1844,81 @@ func extractTableHeaders(htmlSnippet string) []string {
 	}
 
 	return nil
+}
+
+func parseMultiRowHeader(trMatches [][]string) []string {
+	type cellCoord struct {
+		r, c int
+	}
+	grid := make(map[cellCoord]string)
+	numRows := len(trMatches)
+	thRegex := regexp.MustCompile(`(?i)<th\b([^>]*)>([\s\S]*?)</th>`)
+	colspanRegex := regexp.MustCompile(`(?i)colspan=["']?(\d+)`)
+	rowspanRegex := regexp.MustCompile(`(?i)rowspan=["']?(\d+)`)
+
+	for r, tr := range trMatches {
+		if len(tr) < 2 {
+			continue
+		}
+		cells := thRegex.FindAllStringSubmatch(tr[1], -1)
+		c := 0
+		for _, cell := range cells {
+			if len(cell) < 3 {
+				continue
+			}
+			attrs := cell[1]
+			text := cell[2]
+			for {
+				if _, ok := grid[cellCoord{r, c}]; !ok {
+					break
+				}
+				c++
+			}
+			cs := 1
+			if m := colspanRegex.FindStringSubmatch(attrs); len(m) > 1 {
+				if n, err := strconv.Atoi(m[1]); err == nil && n > 0 {
+					cs = n
+				}
+			}
+			rs := 1
+			if m := rowspanRegex.FindStringSubmatch(attrs); len(m) > 1 {
+				if n, err := strconv.Atoi(m[1]); err == nil && n > 0 {
+					rs = n
+				}
+			}
+			for dr := 0; dr < rs; dr++ {
+				for dc := 0; dc < cs; dc++ {
+					grid[cellCoord{r + dr, c + dc}] = text
+				}
+			}
+			c += cs
+		}
+	}
+
+	maxCol := -1
+	for coord := range grid {
+		if coord.c > maxCol {
+			maxCol = coord.c
+		}
+	}
+	if maxCol < 0 {
+		return nil
+	}
+
+	leafHeaders := make([]string, 0, maxCol+1)
+	for col := 0; col <= maxCol; col++ {
+		bottomCell := grid[cellCoord{numRows - 1, col}]
+		topCell := grid[cellCoord{0, col}]
+		if topCell != "" && bottomCell != "" && topCell != bottomCell {
+			leafHeaders = append(leafHeaders, topCell+" "+bottomCell)
+		} else if bottomCell != "" {
+			leafHeaders = append(leafHeaders, bottomCell)
+		} else {
+			leafHeaders = append(leafHeaders, topCell)
+		}
+	}
+
+	return leafHeaders
 }
 
 func ensureItemsRowsInTbody(tpl string) string {

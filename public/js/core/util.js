@@ -927,7 +927,7 @@ function detectColumnTypeJS(th) {
   if (clean.includes('خصم') || clean.includes('discount')) {
     return 'discount';
   }
-  if (clean.includes('نسبة') || clean.includes('معدل') || clean.includes('rate') || clean === '%' || clean === '15%') {
+  if (clean.includes('نسبة') || clean.includes('معدل') || clean.includes('rate') || clean.includes('%')) {
     return 'tax_rate';
   }
   // فحص "قبل الضريبة" أو "الخاضع للضريبة" قبل كلمة "ضريبة" لأن عبارة "قبل الضريبة" تحتوي على لفظ "ضريبة"
@@ -940,7 +940,7 @@ function detectColumnTypeJS(th) {
   if (clean.includes('إجمالي') || clean.includes('total') || clean.includes('مبلغ')) {
     return 'taxable';
   }
-  if (clean.includes('ملاحظ') || clean.includes('note')) {
+  if (clean.includes('ملاحظ') || clean.includes('note') || clean.includes('حجر') || clean.includes('stone')) {
     return 'notes';
   }
   return 'name';
@@ -967,19 +967,88 @@ function extractTableHeadersJS(htmlSnippet) {
     targetTableHtml = htmlSnippet;
   }
 
+  // 1. Support explicit data-columns attribute on the <table>
+  const dataColsMatch = targetTableHtml.match(/<table\b[^>]*\bdata-columns=["']([^"']+)["']/i);
+  if (dataColsMatch && dataColsMatch[1]) {
+    const cols = dataColsMatch[1].split(',').map(s => s.trim()).filter(Boolean);
+    if (cols.length > 0) return cols;
+  }
+
+  // 2. Check for multi-row thead with colspan / rowspan
+  const theadMatch = targetTableHtml.match(/<thead\b[^>]*>([\s\S]*?)<\/thead>/i);
+  const headerArea = theadMatch ? theadMatch[1] : targetTableHtml;
+  const trMatches = [...headerArea.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)];
+
+  if (trMatches.length > 1) {
+    const multiHeaders = parseMultiRowHeaderJS(trMatches.map(m => m[1]));
+    if (multiHeaders && multiHeaders.length > 0) {
+      return multiHeaders;
+    }
+  }
+
   const thRegex = /<th\b[^>]*>([\s\S]*?)<\/th>/gi;
-  let matches = [...targetTableHtml.matchAll(thRegex)];
+  let matches = [...headerArea.matchAll(thRegex)];
   if (matches.length > 0) {
     return matches.map(m => m[1]);
   }
-  const trMatch = targetTableHtml.match(/<tr\b[^>]*>([\s\S]*?)<\/tr>/i);
-  if (trMatch) {
-    const tdMatches = [...trMatch[1].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)];
+  if (trMatches.length > 0) {
+    const tdMatches = [...trMatches[0][1].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)];
     if (tdMatches.length > 0) {
       return tdMatches.map(m => m[1]);
     }
   }
   return [];
+}
+
+function parseMultiRowHeaderJS(rowHtmls) {
+  const grid = {};
+  const numRows = rowHtmls.length;
+
+  for (let r = 0; r < numRows; r++) {
+    const trHtml = rowHtmls[r];
+    const cellRegex = /<th\b([^>]*)>([\s\S]*?)<\/th>/gi;
+    let c = 0;
+    let cellMatch;
+    while ((cellMatch = cellRegex.exec(trHtml)) !== null) {
+      const attrs = cellMatch[1];
+      const text = cellMatch[2];
+      while (grid[`${r},${c}`] !== undefined) {
+        c++;
+      }
+      const csMatch = attrs.match(/colspan=["']?(\d+)/i);
+      const rsMatch = attrs.match(/rowspan=["']?(\d+)/i);
+      const cs = csMatch ? parseInt(csMatch[1], 10) : 1;
+      const rs = rsMatch ? parseInt(rsMatch[1], 10) : 1;
+
+      for (let dr = 0; dr < rs; dr++) {
+        for (let dc = 0; dc < cs; dc++) {
+          grid[`${r + dr},${c + dc}`] = text;
+        }
+      }
+      c += cs;
+    }
+  }
+
+  let maxCol = -1;
+  for (const k of Object.keys(grid)) {
+    const colIdx = parseInt(k.split(',')[1], 10);
+    if (colIdx > maxCol) maxCol = colIdx;
+  }
+  if (maxCol < 0) return null;
+
+  const leafHeaders = [];
+  for (let col = 0; col <= maxCol; col++) {
+    const bottomCell = grid[`${numRows - 1},${col}`] || '';
+    const topCell = grid[`0,${col}`] || '';
+    if (topCell && bottomCell && topCell !== bottomCell) {
+      leafHeaders.append ? leafHeaders.append(topCell + ' ' + bottomCell) : leafHeaders.push(topCell + ' ' + bottomCell);
+    } else if (bottomCell) {
+      leafHeaders.push(bottomCell);
+    } else {
+      leafHeaders.push(topCell);
+    }
+  }
+  return leafHeaders;
 }
 
 function generateSmartRowsJS(htmlSnippet, rawLines, offset = 0) {
