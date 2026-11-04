@@ -1334,7 +1334,7 @@
                   <td id="val-tot-weight">{{total_weight}}</td>
                   <td id="val-tot-w21">{{weight_21}}</td>
                   <td id="val-tot-wage">{{total_wage}}</td>
-                  <td id="val-tot-gold">{{subtotal}}</td>
+                  <td id="val-tot-gold">0.00</td>
                 </tr>
               </tbody>
             </table>
@@ -1661,6 +1661,12 @@
           if (!bTxt || bTxt.indexOf('{{') !== -1) {
             branchEl.textContent = 'المصنع الادارة';
           }
+        }
+
+        // إجمالي قيمة الذهب يظل دائماً 0.00 لفواتير أجور التصنيع
+        var goldTotEl = document.getElementById('val-tot-gold');
+        if (goldTotEl) {
+          goldTotEl.textContent = '0.00';
         }
       };
       setCompanyAddrIfEmpty();
