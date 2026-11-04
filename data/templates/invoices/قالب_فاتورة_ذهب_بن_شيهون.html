@@ -514,7 +514,6 @@
 
     table.main-items-grid {
       width: 100% !important;
-      height: 100% !important;
       border-collapse: collapse !important;
       border: none !important;
       font-size: 8.8px !important;
@@ -525,7 +524,7 @@
     }
 
     table.main-items-grid tbody {
-      height: 100% !important;
+      background: #ffffff !important;
     }
 
     /* خلايا ترويسة الجدول العلوية */
@@ -629,28 +628,7 @@
       font-weight: 700 !important;
     }
 
-    /* تمديد الخطوط الرأسية للجدول لتصل بدقة إلى صندوق الإجماليات وتملأ الورقة بالكامل */
-    tr.grid-stretch-row {
-      height: 100% !important;
-    }
 
-    tr.grid-stretch-row td {
-      border-top: none !important;
-      border-bottom: none !important;
-      border-left: 1px solid #000000 !important;
-      border-right: 1px solid #000000 !important;
-      height: 100% !important;
-      background: #ffffff !important;
-      padding: 0 !important;
-    }
-
-    tr.grid-stretch-row td:first-child {
-      border-right: none !important;
-    }
-
-    tr.grid-stretch-row td:last-child {
-      border-left: none !important;
-    }
 
     /* ─── 4. ملخص الإجماليات وأوزان العيارات والتفقيط (متصلة مباشرة بأسفل الجدول) ─── */
     .totals-area {
@@ -1623,25 +1601,6 @@
           });
         }
 
-        // تمديد خطوط الجدول لملء كامل صفحة A4 حتى الأسفل بدقة ومطابقة 100%
-        var usedHeight = rowCount * 20;
-        var stretchHeight = Math.max(160, 440 - usedHeight);
-        var stretchTr = document.createElement('tr');
-        stretchTr.className = 'grid-stretch-row';
-        stretchTr.innerHTML = `
-          <td style="height:${stretchHeight}px !important;"></td>
-          <td style="height:${stretchHeight}px !important;"></td>
-          <td style="height:${stretchHeight}px !important;"></td>
-          <td style="height:${stretchHeight}px !important;"></td>
-          <td style="height:${stretchHeight}px !important;"></td>
-          <td style="height:${stretchHeight}px !important;"></td>
-          <td style="height:${stretchHeight}px !important;"></td>
-          <td style="height:${stretchHeight}px !important;"></td>
-          <td style="height:${stretchHeight}px !important;"></td>
-          <td style="height:${stretchHeight}px !important;"></td>
-          <td style="height:${stretchHeight}px !important;"></td>
-        `;
-        tbody.appendChild(stretchTr);
       }
 
       // ضمان ظهور عنوان الشركة كاملاً وتثبيت المنطقة لمكة المكرمة في المعاينة والفواتير المباشرة
