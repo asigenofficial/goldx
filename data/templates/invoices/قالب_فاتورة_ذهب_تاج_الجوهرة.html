@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="utf-8">
+  <title>{{seller_name}} — فاتورة ضريبية</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    html,
+    body {
+      width: 210mm;
+      height: 297mm;
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: #000000;
+      direction: rtl;
+      font-family: 'goldx Document', Tahoma, Arial, sans-serif;
+      font-size: 11px;
+      line-height: 1.25;
+    }
+
+    /* ─── الحاوية الرئيسية A4 بدقة مطلقة ومطابقة 100% للصورة ─── */
+    .invoice-container {
+      width: 210mm;
+      height: 297mm;
+      min-height: 297mm;
+      max-height: 297mm;
+      margin: 0 auto;
+      padding: 8mm 12mm 6mm 12mm;
+      background: #ffffff;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: space-between !important;
+      position: relative;
+      box-sizing: border-box;
+      overflow: hidden;
+      page-break-after: avoid;
+      page-break-inside: avoid;
+    }
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+
+      html,
+      body {
+        width: 210mm;
+        height: 297mm;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden;
+      }
+
+      .invoice-container {
+        width: 210mm !important;
+        height: 297mm !important;
+        max-height: 297mm !important;
+        margin: 0 !important;
+        padding: 8mm 12mm 6mm 12mm !important;
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
+      }
+    }
+
+    /* ─── 1. ترويسة المصنع الأفقية الخارجية (إطار بيضاوي الزوايا ثلاثي الأعمدة) ─── */
+    .header-box {
+      border: 1.5px solid #000000;
+      border-radius: 14px;
+      padding: 8px 16px;
+      display: flex !important;
+      flex-direction: row !important;
+      direction: ltr !important; /* الإنجليزي يسار، الشعار وسط، العربي يمين */
+      justify-content: space-between !important;
+      align-items: center !important;
+      margin-bottom: 10px;
+      background: #ffffff;
+      min-height: 85px;
+    }
+
+    /* الجهة اليسرى: إنجليزي ديناميكي بالكامل */
+    .header-col-en {
+      text-align: left;
+      direction: ltr;
+      flex: 1 1 38%;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .header-col-en .en-name {
+      font-size: 13.5px;
+      font-weight: bold;
+      color: #000000;
+      margin-bottom: 2px;
+      letter-spacing: 0.1px;
+    }
+
+    .header-col-en .en-line {
+      font-size: 11.5px;
+      font-weight: bold;
+      color: #000000;
+      line-height: 1.35;
+    }
+
+    /* الشعار في المنتصف: يُضاف من النظام مباشرة عبر {{logo}} */
+    .header-col-logo {
+      flex: 0 0 24%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 75px;
+      padding: 0 4px;
+    }
+
+    .logo-frame {
+      width: 100%;
+      height: 75px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-frame img,
+    .logo-frame svg {
+      max-height: 75px !important;
+      max-width: 120px !important;
+      object-fit: contain !important;
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* الجهة اليمنى: عربي ديناميكي بالكامل */
+    .header-col-ar {
+      text-align: right;
+      direction: rtl;
+      flex: 1 1 38%;
+    }
+
+    .header-col-ar .ar-name {
+      font-size: 13.5px;
+      font-weight: bold;
+      color: #000000;
+      margin-bottom: 2px;
+    }
+
+    .header-col-ar .ar-line {
+      font-size: 11.5px;
+      font-weight: bold;
+      color: #000000;
+      line-height: 1.35;
+    }
+
+    /* ─── 2. عنوان الفاتورة الضريبية ─── */
+    .invoice-title-wrap {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .invoice-title-text {
+      font-size: 14.5px;
+      font-weight: bold;
+      color: #000000;
+    }
+
+    .invoice-title-line {
+      width: 175px;
+      height: 1.5px;
+      background: #000000;
+      margin: 4px auto 0 auto;
+    }
+
+    /* ─── 3. صف بيانات الفاتورة (يسار) ورمز QR (يمين) ─── */
+    .meta-qr-container {
+      display: flex !important;
+      flex-direction: row !important;
+      direction: ltr !important; /* الجدول في اليسار والباركود في اليمين */
+      justify-content: space-between !important;
+      align-items: flex-start !important;
+      margin-bottom: 10px !important;
+      width: 100% !important;
+    }
+
+    /* الجدول الخماسي في أقصى اليسار */
+    .meta-left-col {
+      direction: rtl !important;
+    }
+
+    table.meta-table {
+      width: 215px;
+      border-collapse: collapse;
+      border: 1px solid #000000;
+      font-size: 10.5px;
+    }
+
+    table.meta-table td {
+      border: 1px solid #000000;
+      padding: 2.5px 4px;
+      height: 20px;
+      vertical-align: middle;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    table.meta-table td.lbl {
+      width: 48%;
+      background: #ffffff;
+      color: #000000;
+    }
+
+    table.meta-table td.val {
+      width: 52%;
+      background: #ffffff;
+      color: #000000;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* رمز QR في أقصى اليمين محاذٍ لأعلى الجدول */
+    .qr-right-col {
+      width: 110px;
+      height: 110px;
+      flex: 0 0 110px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+    }
+
+    .qr-right-col svg,
+    .qr-right-col img,
+    .qr-right-col .zatca-qr-container svg {
+      width: 108px !important;
+      height: 108px !important;
+      max-width: 108px !important;
+      max-height: 108px !important;
+      display: block;
+      margin: 0;
+    }
+
+    /* ─── 4. بيانات العميل (ديناميكية 100% من النظام) ─── */
+    .customer-info-section {
+      width: 100%;
+      margin-bottom: 6px;
+    }
+
+    /* السطر الأول: اسم العميل بكامل العرض */
+    table.cust-row1-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #000000;
+      font-size: 11px;
+      margin-bottom: 3px;
+      direction: rtl;
+    }
+
+    table.cust-row1-table td {
+      border: 1px solid #000000;
+      padding: 3px 6px;
+      height: 23px;
+      vertical-align: middle;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    table.cust-row1-table td.lbl {
+      width: 24%;
+      background: #ffffff;
+    }
+
+    table.cust-row1-table td.val {
+      width: 76%;
+      background: #ffffff;
+      font-size: 11.5px;
+    }
+
+    /* السطر الثاني والسطر الثالث: صندوقان متجاوران بهندسة LTR ثابتة */
+    .cust-sub-boxes-container {
+      display: flex !important;
+      flex-direction: row !important;
+      direction: ltr !important; /* Left is Left, Right is Right */
+      justify-content: space-between !important;
+      width: 100% !important;
+      gap: 10px !important;
+    }
+
+    table.cust-box-table {
+      width: 49.3% !important;
+      border-collapse: collapse !important;
+      border: 1px solid #000000 !important;
+      font-size: 10.5px !important;
+      direction: rtl !important;
+    }
+
+    table.cust-box-table td {
+      border: 1px solid #000000 !important;
+      padding: 2.5px 6px !important;
+      height: 21px !important;
+      vertical-align: middle !important;
+      font-weight: bold !important;
+      text-align: center !important;
+    }
+
+    table.cust-box-table td.lbl {
+      background: #ffffff !important;
+      white-space: nowrap !important;
+    }
+
+    table.cust-box-table td.val {
+      background: #ffffff !important;
+      font-variant-numeric: tabular-nums !important;
+    }
+
+    /* ─── 5. جدول الأصناف الرئيسي (تمديد الخطوط العمودية لكامل الصفحة) ─── */
+    .items-table-container {
+      width: 100%;
+      margin-top: 2px;
+      margin-bottom: 6px;
+    }
+
+    table.items-main-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1.5px solid #000000;
+      font-size: 10.5px;
+      text-align: center;
+      direction: rtl;
+      table-layout: fixed;
+    }
+
+    table.items-main-table thead th {
+      border: 1px solid #000000;
+      padding: 3px 2px;
+      height: 22px;
+      font-weight: bold;
+      font-size: 10.5px;
+      background: #ffffff;
+      color: #000000;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    /* صفوف البيانات الفعلية القادمة من النظام */
+    table.items-main-table tbody tr.item-data-row td {
+      border: 1px solid #000000;
+      padding: 3px 2px;
+      font-size: 10.5px;
+      font-weight: bold;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+      vertical-align: middle;
+      height: 23px;
+    }
+
+    /* صف الامتداد الفارغ الذي يمد الخطوط العمودية السبعة لأسفل الجدول دون أي خطوط أفقية */
+    table.items-main-table tbody tr.table-stretch-row td {
+      border-left: 1px solid #000000 !important;
+      border-right: 1px solid #000000 !important;
+      border-top: none !important;
+      border-bottom: 1px solid #000000 !important;
+      background: #ffffff !important;
+      padding: 0 !important;
+      height: 440px !important;
+    }
+
+    /* ─── 6. قسم الإجماليات والتفقيط (الإجماليات يسار، التفقيط يمين) ─── */
+    .bottom-summary-container {
+      width: 100%;
+      display: flex !important;
+      flex-direction: row !important;
+      direction: ltr !important; /* Left is Left, Right is Right */
+      justify-content: space-between !important;
+      align-items: flex-end !important;
+      margin-top: 4px;
+      margin-bottom: 8px;
+    }
+
+    /* جدول الإجماليات الرباعي على اليسار */
+    .summary-left-col {
+      width: 42.5%;
+      direction: rtl !important;
+    }
+
+    table.totals-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #000000;
+      font-size: 10.5px;
+      direction: rtl;
+    }
+
+    table.totals-table td {
+      border: 1px solid #000000;
+      padding: 2.5px 6px;
+      height: 20px;
+      vertical-align: middle;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    table.totals-table td.lbl {
+      width: 60%;
+      background: #ffffff;
+      font-size: 10.5px;
+    }
+
+    table.totals-table td.val {
+      width: 40%;
+      font-variant-numeric: tabular-nums;
+      background: #ffffff;
+      direction: ltr;
+      font-size: 10.5px;
+    }
+
+    /* صناديق التفقيط على اليمين محاذية بدقة لسطري إجمالي المبلغ والوزن القائم */
+    .summary-right-col {
+      width: 56.5%;
+      direction: rtl !important;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    .tafqeet-box {
+      border: 1px solid #000000;
+      height: 20px;
+      padding: 0 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 10px;
+      color: #000000;
+      background: #ffffff;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .tafqeet-box-money {
+      margin-bottom: -1px; /* دمج الخط الأفقي بين الصندوقين */
+    }
+
+    /* ─── 7. إقرار الاستلام والتعهد ─── */
+    .declaration-wrap {
+      width: 100%;
+      text-align: right;
+      direction: rtl;
+      font-size: 10.5px;
+      font-weight: bold;
+      line-height: 1.4;
+      color: #000000;
+      margin-top: 6px;
+      margin-bottom: 22px;
+      padding-right: 4px;
+    }
+
+    /* ─── 8. التواقيع المعتمدة (يسار: توقيع العميل | وسط: دققة من قبل | يمين: المفوض بالتوقيع) ─── */
+    .signatures-container {
+      width: 100%;
+      display: flex !important;
+      flex-direction: row !important;
+      direction: ltr !important; /* Left is Customer, Right is Seller */
+      justify-content: space-between !important;
+      align-items: flex-end !important;
+      padding: 0 35px !important;
+      margin-bottom: 8px !important;
+    }
+
+    .sig-col {
+      text-align: center;
+      width: 140px;
+      direction: rtl !important;
+    }
+
+    .sig-line {
+      width: 130px;
+      height: 1.5px;
+      background: #000000;
+      margin: 0 auto 5px auto;
+    }
+
+    .sig-title {
+      font-size: 11.5px;
+      font-weight: bold;
+      color: #000000;
+    }
+
+    /* ─── 9. رقم الصفحة في اليمين السفلي مطابقاً للصورة ─── */
+    .page-footer-wrap {
+      width: 100%;
+      text-align: right;
+      direction: rtl;
+      font-size: 11.5px;
+      font-weight: bold;
+      color: #888888;
+      padding-right: 4px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="invoice-container" data-invoice-page="1">
+
+    <!-- ═══════════════ المحتوى العلوي ═══════════════ -->
+    <div style="flex: 0 0 auto; width: 100%;">
+
+      <!-- ─── 1. ترويسة المنشأة الأفقية (ديناميكية 100% من النظام) ─── -->
+      <header class="header-box">
+        <!-- الجهة اليسرى: إنجليزي من بيانات المنشأة بالنظام -->
+        <div class="header-col-en">
+          <div class="en-name" id="hdr-seller-name-en">{{seller_name_en}}</div>
+          <div class="en-line" id="hdr-seller-addr-en">{{seller_address_en}}</div>
+          <div class="en-line" id="hdr-seller-cr-en">C.R: <span class="val">{{seller_cr}}</span></div>
+          <div class="en-line" id="hdr-seller-vat-en">VAT: <span class="val">{{seller_tax}}</span></div>
+        </div>
+
+        <!-- الشعار في المنتصف: يُسحب الشعار المرفوع في إعدادات المنشأة عبر {{logo}} -->
+        <div class="header-col-logo">
+          <div class="logo-frame" id="invoice-header-logo">
+            {{logo}}
+          </div>
+        </div>
+
+        <!-- الجهة اليمنى: عربي من بيانات المنشأة بالنظام -->
+        <div class="header-col-ar">
+          <div class="ar-name" id="hdr-seller-name-ar">{{seller_name}}</div>
+          <div class="ar-line" id="hdr-seller-addr-ar">العنوان / {{seller_address}}</div>
+          <div class="ar-line" id="hdr-seller-cr-ar">السجل التجاري: <span class="val">{{seller_cr}}</span></div>
+          <div class="ar-line" id="hdr-seller-vat-ar">الرقم الضريبي: <span class="val">{{seller_tax}}</span></div>
+        </div>
+      </header>
+
+      <!-- ─── 2. عنوان الفاتورة الضريبية ─── -->
+      <section class="invoice-title-wrap">
+        <div class="invoice-title-text">{{invoice_type}}</div>
+        <div class="invoice-title-line"></div>
+      </section>
+
+      <!-- ─── 3. صف بيانات الفاتورة (يسار) ورمز QR (يمين) ─── -->
+      <section class="meta-qr-container">
+        <!-- جدول البيانات على اليسار (5 أسطر) -->
+        <div class="meta-left-col">
+          <table class="meta-table">
+            <tr>
+              <td class="val" id="meta-inv-num">{{invoice_number}}</td>
+              <td class="lbl">رقم الفاتورة</td>
+            </tr>
+            <tr>
+              <td class="val" id="meta-seq-num">{{invoice_number}}</td>
+              <td class="lbl">الرقم التسلسلي</td>
+            </tr>
+            <tr>
+              <td class="val" id="meta-date">{{issue_date}}</td>
+              <td class="lbl">التاريخ</td>
+            </tr>
+            <tr>
+              <td class="val" id="meta-time">{{issue_time}}</td>
+              <td class="lbl">الوقت</td>
+            </tr>
+            <tr>
+              <td class="val" id="meta-currency">ريال سعودي</td>
+              <td class="lbl">عملة الفاتورة</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- رمز QR على اليمين محاذٍ لأعلى الجدول -->
+        <div class="qr-right-col" id="invoice-qr-wrap">
+          {{qr_code}}
+        </div>
+      </section>
+
+      <!-- ─── 4. بيانات العميل (ديناميكية 100% من بيانات الفاتورة والعميل) ─── -->
+      <section class="customer-info-section">
+        <!-- السطر الأول: اسم العميل بكامل العرض -->
+        <table class="cust-row1-table">
+          <tr>
+            <td class="val" id="val-buyer-name">{{buyer_name}}</td>
+            <td class="lbl">اسم العميل</td>
+          </tr>
+        </table>
+
+        <!-- السطران الثاني والثالث: صندوقان متجاوران (يسار: العنوان والبيان | يمين: رقم الحساب والرقم الضريبي) -->
+        <div class="cust-sub-boxes-container">
+          <!-- الصندوق الأيسر: العنوان والبيان -->
+          <table class="cust-box-table">
+            <tr>
+              <td class="val" id="val-buyer-address" style="width: 72%;">{{buyer_address}}</td>
+              <td class="lbl" style="width: 28%;">العنوان:</td>
+            </tr>
+            <tr>
+              <td class="val" id="val-notes" style="width: 72%;">{{notes}}</td>
+              <td class="lbl" style="width: 28%;">البيان:</td>
+            </tr>
+          </table>
+
+          <!-- الصندوق الأيمن: رقم الحساب والرقم الضريبي للعميل -->
+          <table class="cust-box-table">
+            <tr>
+              <td class="val" id="val-buyer-code" style="width: 65%;">{{buyer_code}}</td>
+              <td class="lbl" style="width: 35%;">رقم الحساب:</td>
+            </tr>
+            <tr>
+              <td class="val" id="val-buyer-tax" style="width: 65%; direction: ltr;">{{buyer_tax}}</td>
+              <td class="lbl" style="width: 35%;">الرقم الضريبي للعميل:</td>
+            </tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ─── 5. جدول الأصناف الرئيسي ─── -->
+      <main class="items-table-container">
+        <table class="items-main-table" id="items-main-table">
+          <thead>
+            <tr>
+              <th style="width: 3.2%;">م</th>
+              <th style="width: 36.8%;">التفاصيل<span style="font-size:0;line-height:0;opacity:0;"> اسم الصنف</span></th>
+              <th style="width: 6%;">العدد<span style="font-size:0;line-height:0;opacity:0;"> unit قطعة</span></th>
+              <th style="width: 14%;">الوزن القائم<span style="font-size:0;line-height:0;opacity:0;"> وزن qty</span></th>
+              <th style="width: 7%;">العيار<span style="font-size:0;line-height:0;opacity:0;"> عيار karat</span></th>
+              <th style="width: 15%;">اجرة الجرام<span style="font-size:0;line-height:0;opacity:0;"> اجرة wage</span></th>
+              <th style="width: 18%;">الاجمالي<span style="font-size:0;line-height:0;opacity:0;"> إجمالي مبلغ taxable</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {{items_rows}}
+          </tbody>
+        </table>
+      </main>
+
+    </div>
+
+    <!-- ═══════════════ المحتوى السفلي ═══════════════ -->
+    <div style="flex-shrink: 0; width: 100%;">
+
+      <!-- ─── 6. الإجماليات والتفقيط (الإجماليات يسار، التفقيط يمين) ─── -->
+      <section class="bottom-summary-container">
+        <!-- جدول الإجماليات الرباعي على اليسار -->
+        <div class="summary-left-col">
+          <table class="totals-table">
+            <tr>
+              <td class="val" id="sum-subtotal">{{subtotal}}</td>
+              <td class="lbl">اجمالي الاجور بدون ضريبة</td>
+            </tr>
+            <tr>
+              <td class="val" id="sum-tax">{{tax_amount}}</td>
+              <td class="lbl">مجموع ضريبة القيمة المضافة 15%</td>
+            </tr>
+            <tr>
+              <td class="val" id="sum-grand-total">{{grand_total}}</td>
+              <td class="lbl">إجمالي المبلغ</td>
+            </tr>
+            <tr>
+              <td class="val" id="sum-total-weight">{{total_weight}}</td>
+              <td class="lbl">اجمالي الوزن القائم</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- صناديق التفقيط على اليمين محاذية بدقة لسطري إجمالي المبلغ والوزن القائم -->
+        <div class="summary-right-col">
+          <div class="tafqeet-box tafqeet-box-money" id="box-tafqeet-money">
+            <span id="tafqeet-money-text">{{amount_in_words}}</span>
+          </div>
+          <div class="tafqeet-box" id="box-tafqeet-weight">
+            <span id="tafqeet-weight-text">{{gold_amount_in_words}}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── 7. إقرار الاستلام والتعهد ─── -->
+      <div class="declaration-wrap">
+        استلمت البضاعة الموضحة اعلاه كاملة وفي حالة جيدة<br>
+        واتعهد بدفع القيمة حال الطلب وبسند رسمي
+      </div>
+
+      <!-- ─── 8. التواقيع المعتمدة (يسار: توقيع العميل | وسط: دققة من قبل | يمين: المفوض بالتوقيع) ─── -->
+      <section class="signatures-container">
+        <!-- توقيع العميل على اليسار -->
+        <div class="sig-col">
+          <div class="sig-line"></div>
+          <div class="sig-title">توقيع العميل</div>
+        </div>
+
+        <!-- دققة من قبل في المنتصف -->
+        <div class="sig-col">
+          <div class="sig-line"></div>
+          <div class="sig-title">دققة من قبل</div>
+        </div>
+
+        <!-- المفوض بالتوقيع على اليمين -->
+        <div class="sig-col">
+          <div class="sig-line"></div>
+          <div class="sig-title">المفوض بالتوقيع</div>
+        </div>
+      </section>
+
+      <!-- ─── 9. رقم الصفحة في اليمين السفلي مطابقاً للصورة ─── -->
+      <div class="page-footer-wrap" id="page-footer-wrap">
+        1/1
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ═══════════════ المعالجة الذكية والتنسيق والمطابقة الدقيقة ═══════════════ -->
+  <script>
+    (function () {
+      function parseNum(str) {
+        if (!str) return 0;
+        var clean = String(str).replace(/[^\d.-]/g, '');
+        var n = parseFloat(clean);
+        return isNaN(n) ? 0 : n;
+      }
+
+      function fmtNum(n, decimals) {
+        if (decimals === undefined) decimals = 2;
+        var parts = Number(n).toFixed(decimals).split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return parts.join('.');
+      }
+
+      // 1. معالجة صفوف جدول الأصناف وتمديد الخطوط العمودية
+      var table = document.getElementById('items-main-table');
+      var tbody = table ? table.querySelector('tbody') : null;
+      var totalWeight = 0;
+      var totalSubtotal = 0;
+      var realRowCount = 0;
+
+      if (tbody) {
+        var rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.forEach(function (tr, idx) {
+          tr.className = 'item-data-row';
+          var cells = tr.querySelectorAll('td');
+          if (cells.length >= 6) {
+            realRowCount++;
+            // م
+            if (cells[0] && (!cells[0].textContent.trim() || cells[0].textContent.indexOf('{{') !== -1)) {
+              cells[0].textContent = String(idx + 1);
+            }
+            // الوزن القائم
+            if (cells[3]) {
+              var w = parseNum(cells[3].textContent);
+              if (w > 0) {
+                totalWeight += w;
+                cells[3].textContent = fmtNum(w, 2);
+              }
+            }
+            // اجرة الجرام
+            if (cells[5]) {
+              var wage = parseNum(cells[5].textContent);
+              if (wage > 0) {
+                cells[5].textContent = fmtNum(wage, 2);
+              }
+            }
+            // الاجمالي
+            if (cells[6]) {
+              var tot = parseNum(cells[6].textContent);
+              if (tot > 0) {
+                totalSubtotal += tot;
+                cells[6].textContent = fmtNum(tot, 2);
+              }
+            }
+          }
+        });
+
+        // تمديد الخطوط العمودية للجدول لتصل للأسفل تماماً كما في الصورة الأصلية
+        var stretchHeight = Math.max(160, 440 - (realRowCount * 24));
+        var stretchTr = document.createElement('tr');
+        stretchTr.className = 'table-stretch-row';
+        stretchTr.innerHTML = `
+          <td style="height:${stretchHeight}px !important;"></td>
+          <td style="height:${stretchHeight}px !important;"></td>
+          <td style="height:${stretchHeight}px !important;"></td>
+          <td style="height:${stretchHeight}px !important;"></td>
+          <td style="height:${stretchHeight}px !important;"></td>
+          <td style="height:${stretchHeight}px !important;"></td>
+          <td style="height:${stretchHeight}px !important;"></td>
+        `;
+        tbody.appendChild(stretchTr);
+      }
+
+      // 2. تحديث قيم الإجماليات إذا لم تكن ممررة
+      var elSubtotal = document.getElementById('sum-subtotal');
+      var elTax = document.getElementById('sum-tax');
+      var elGrand = document.getElementById('sum-grand-total');
+      var elTotalWeight = document.getElementById('sum-total-weight');
+
+      var subVal = parseNum(elSubtotal ? elSubtotal.textContent : '0') || totalSubtotal;
+      var taxVal = parseNum(elTax ? elTax.textContent : '0') || (subVal * 0.15);
+      var grandVal = parseNum(elGrand ? elGrand.textContent : '0') || (subVal + taxVal);
+      var weightVal = parseNum(elTotalWeight ? elTotalWeight.textContent : '0') || totalWeight;
+
+      if (elSubtotal && (!elSubtotal.textContent.trim() || elSubtotal.textContent.indexOf('{{') !== -1)) elSubtotal.textContent = fmtNum(subVal, 2);
+      if (elTax && (!elTax.textContent.trim() || elTax.textContent.indexOf('{{') !== -1)) elTax.textContent = fmtNum(taxVal, 2);
+      if (elGrand && (!elGrand.textContent.trim() || elGrand.textContent.indexOf('{{') !== -1)) elGrand.textContent = fmtNum(grandVal, 2);
+      if (elTotalWeight && (!elTotalWeight.textContent.trim() || elTotalWeight.textContent.indexOf('{{') !== -1)) elTotalWeight.textContent = fmtNum(weightVal, 2);
+
+      // 3. التفقيط التلقائي للمبالغ والوزن عند توفر أرقام
+      function tafqeetHundreds(n) {
+        var units = ["", "واحد", "اثنان", "ثلاثة", "أربعة", "خمسة", "ستة", "سبعة", "ثمانية", "تسعة"];
+        var teens = ["عشرة", "أحد عشر", "اثنا عشر", "ثلاثة عشر", "أربعة عشر", "خمسة عشر", "ستة عشر", "سبعة عشر", "ثمانية عشر", "تسعة عشر"];
+        var tens = ["", "عشرة", "عشرون", "ثلاثون", "أربعون", "خمسون", "ستون", "سبعون", "ثمانون", "تسعون"];
+        var hundreds = ["", "مائة", "مئتان", "ثلاثمائة", "أربعمائة", "خمسمائة", "ستمائة", "سبعمائة", "ثمانمائة", "تسعمائة"];
+
+        var res = [];
+        var h = Math.floor(n / 100);
+        var rem = n % 100;
+        if (h > 0) res.push(hundreds[h]);
+        if (rem > 0) {
+          if (rem < 10) res.push(units[rem]);
+          else if (rem < 20) res.push(teens[rem - 10]);
+          else {
+            var u = rem % 10;
+            var t = Math.floor(rem / 10);
+            if (u > 0) res.push(units[u] + " و " + tens[t]);
+            else res.push(tens[t]);
+          }
+        }
+        return res.join(" و ");
+      }
+
+      function tafqeetSaudiRiyals(num) {
+        var val = parseFloat(num);
+        if (isNaN(val) || val <= 0) return "";
+        var intPart = Math.floor(val);
+        var decPart = Math.round((val - intPart) * 100);
+        var words = [];
+
+        if (intPart > 0) {
+          var millions = Math.floor(intPart / 1000000);
+          var remMil = intPart % 1000000;
+          var thousands = Math.floor(remMil / 1000);
+          var remainder = remMil % 1000;
+
+          if (millions === 1) words.push("مليون");
+          else if (millions === 2) words.push("مليونان");
+          else if (millions >= 3 && millions <= 10) words.push(tafqeetHundreds(millions) + " ملايين");
+          else if (millions > 10) words.push(tafqeetHundreds(millions) + " مليون");
+
+          if (thousands === 1) words.push("ألف");
+          else if (thousands === 2) words.push("ألفان");
+          else if (thousands >= 3 && thousands <= 10) words.push(tafqeetHundreds(thousands) + " آلاف");
+          else if (thousands > 10) words.push(tafqeetHundreds(thousands) + " ألف");
+
+          if (remainder > 0) words.push(tafqeetHundreds(remainder));
+          words.push("ريال سعودي");
+        }
+
+        if (decPart > 0) {
+          words.push("و" + tafqeetHundreds(decPart) + " هللة");
+        }
+        return words.join(" و ");
+      }
+
+      function tafqeetGramsTaj(num) {
+        var val = parseFloat(num);
+        if (isNaN(val) || val <= 0) return "";
+        var intPart = Math.floor(val);
+        var decPart = Math.round((val - intPart) * 100);
+        var words = [];
+
+        if (intPart > 0) {
+          var thousands = Math.floor(intPart / 1000);
+          var rem1000 = intPart % 1000;
+          if (thousands === 1) words.push("ألف");
+          else if (thousands === 2) words.push("ألفان");
+          else if (thousands >= 3 && thousands <= 10) words.push(tafqeetHundreds(thousands) + " آلاف");
+          else if (thousands > 10) words.push(tafqeetHundreds(thousands) + " ألف");
+
+          if (rem1000 > 0) words.push(tafqeetHundreds(rem1000));
+          words.push("جرام");
+        }
+
+        if (decPart > 0) {
+          words.push("و " + tafqeetHundreds(decPart) + " مللي");
+        }
+        return words.join(" ");
+      }
+
+      var elMoneyText = document.getElementById('tafqeet-money-text');
+      if (elMoneyText && (!elMoneyText.textContent.trim() || elMoneyText.textContent.indexOf('{{') !== -1)) {
+        if (grandVal > 0) {
+          elMoneyText.textContent = tafqeetSaudiRiyals(grandVal);
+        } else {
+          elMoneyText.textContent = '';
+        }
+      }
+
+      var elWeightText = document.getElementById('tafqeet-weight-text');
+      if (elWeightText && (!elWeightText.textContent.trim() || elWeightText.textContent.indexOf('{{') !== -1)) {
+        if (weightVal > 0) {
+          elWeightText.textContent = tafqeetGramsTaj(weightVal);
+        } else {
+          elWeightText.textContent = '';
+        }
+      }
+
+      // تنظيف أي وسوم متبقية {{...}} لضمان عدم ظهور أي وسم خام
+      document.body.innerHTML = document.body.innerHTML.replace(/\{\{[^}]+\}\}/g, '');
+    })();
+  </script>
+
+</body>
+
+</html>
