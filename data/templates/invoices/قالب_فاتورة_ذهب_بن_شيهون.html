@@ -1481,71 +1481,32 @@
         }
 
         if (isMockPreview) {
-          // استبدال الصف التجريبي بصفوف الفاتورة الأصلية الـ 3 تماماً كما في الصورة
-          tbody.innerHTML = `
-            <tr>
-              <td>1</td>
-              <td>8000111</td>
-              <td style="text-align:right;padding-right:6px;">خواتم</td>
-              <td>0.00</td>
-              <td>143.30</td>
-              <td>0.00</td>
-              <td>15.00</td>
-              <td>2,149.50</td>
-              <td>322.43</td>
-              <td>15.00</td>
-              <td>2,471.93</td>
-            </tr>
-            <tr>
-              <td>2</td>
-              <td>8000800</td>
-              <td style="text-align:right;padding-right:6px;">اطقم</td>
-              <td>0.00</td>
-              <td>195.20</td>
-              <td>0.00</td>
-              <td>13.00</td>
-              <td>2,537.60</td>
-              <td>380.64</td>
-              <td>15.00</td>
-              <td>2,918.24</td>
-            </tr>
-            <tr>
-              <td>3</td>
-              <td>8000800</td>
-              <td style="text-align:right;padding-right:6px;">اطقم</td>
-              <td>0.00</td>
-              <td>335.77</td>
-              <td>0.00</td>
-              <td>16.00</td>
-              <td>5,372.32</td>
-              <td>805.85</td>
-              <td>15.00</td>
-              <td>6,178.17</td>
-            </tr>
-          `;
-          rowCount = 3;
+          // في وضع معاينة القالب قبل إدخال فاتورة حقيقية: تفريغ صفوف الأصناف وتصفير جميع الإجماليات
+          tbody.innerHTML = '';
+          rowCount = 0;
 
-          // تحديث ملخص الأرقام للمعاينة لتطابق الصورة تماماً
           var setVal = function(id, val) {
             var el = document.getElementById(id);
-            if (el && (!el.textContent.trim() || el.textContent.indexOf('{{') !== -1 || el.textContent.trim() === '0' || el.textContent.trim() === '0.00')) {
+            if (el) {
               el.textContent = val;
             }
           };
           setVal('val-w18', '0.00');
-          setVal('val-w21', '674.27');
+          setVal('val-w21', '0.00');
           setVal('val-w22', '0.00');
           setVal('val-w24', '0.00');
-          setVal('val-tot-weight', '674.27');
-          setVal('val-tot-w21', '674.27');
-          setVal('val-tot-wage', '10,059.42');
+          setVal('val-tot-weight', '0.00');
+          setVal('val-tot-w21', '0.00');
+          setVal('val-tot-wage', '0.00');
           setVal('val-tot-gold', '0.00');
-          setVal('val-subtotal', '10,059.42');
+          setVal('val-subtotal', '0.00');
           setVal('val-discount', '0.00');
-          setVal('val-tax', '1,508.91');
-          setVal('val-grand', '11,568.33');
-          setVal('val-tafqeet-money', 'احدى عشر الف وخمسمائة وثمانية وستون ريال وثلاثة وثلاثون هللة فقط');
-          setVal('val-tafqeet-gold', 'ستمائة واربعة وسبعون جرام وسبعة وعشرون ملي فقط');
+          setVal('val-tax', '0.00');
+          setVal('val-grand', '0.00');
+          setVal('val-bags-total', '0.00');
+          setVal('val-bags-weight', '0.00');
+          setVal('val-tafqeet-money', 'صفر ريال سعودي');
+          setVal('val-tafqeet-gold', 'صفر جرام ذهب');
 
           // تعبئة بيانات الرأس في وضع المعاينة لتطابق الصورة تماماً
           setVal('seller-name-cell', 'شركة عالم بن شيهون للصناعة');
@@ -1667,6 +1628,32 @@
         var goldTotEl = document.getElementById('val-tot-gold');
         if (goldTotEl) {
           goldTotEl.textContent = '0.00';
+        }
+
+        // إذا لم تكن هناك أصناف مدخلة في الفاتورة (وضع القالب الفارغ)، يتم تصفير جميع القيم الإجمالية تلقائياً
+        var zeroIds = [
+          'val-w18', 'val-w21', 'val-w22', 'val-w24',
+          'val-tot-weight', 'val-tot-w21', 'val-tot-wage', 'val-tot-gold',
+          'val-subtotal', 'val-discount', 'val-tax', 'val-grand',
+          'val-bags-total', 'val-bags-weight'
+        ];
+        if (rowCount === 0) {
+          zeroIds.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = '0.00';
+          });
+          var tm = document.getElementById('val-tafqeet-money');
+          if (tm) tm.textContent = 'صفر ريال سعودي';
+          var tg = document.getElementById('val-tafqeet-gold');
+          if (tg) tg.textContent = 'صفر جرام ذهب';
+        } else {
+          zeroIds.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) {
+              var txt = el.textContent.trim();
+              if (!txt || txt.indexOf('{{') !== -1) el.textContent = '0.00';
+            }
+          });
         }
       };
       setCompanyAddrIfEmpty();
