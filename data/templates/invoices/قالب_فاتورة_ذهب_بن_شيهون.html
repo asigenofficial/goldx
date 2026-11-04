@@ -1074,25 +1074,25 @@
             <tbody>
               <tr>
                 <td class="addr-lbl" style="width:20%;">المنطقة</td>
-                <td class="addr-val" style="width:30%;" id="seller-addr-reg">{{seller_city}}</td>
+                <td class="addr-val" style="width:30%;" id="seller-addr-reg">مكة المكرمة</td>
                 <td class="addr-lbl" style="width:25%;">رقم المبنى</td>
-                <td class="addr-val" style="width:25%;" id="seller-addr-bno">{{seller_building_no}}</td>
+                <td class="addr-val" style="width:25%;" id="seller-addr-bno">2222</td>
               </tr>
               <tr>
                 <td class="addr-lbl">المدينة</td>
-                <td class="addr-val" id="seller-addr-city">{{seller_city}}</td>
+                <td class="addr-val" id="seller-addr-city">جدة</td>
                 <td class="addr-lbl">الرقم الإضافي</td>
-                <td class="addr-val" id="seller-addr-extra">{{seller_postal_code}}</td>
+                <td class="addr-val" id="seller-addr-extra">6300</td>
               </tr>
               <tr>
                 <td class="addr-lbl">الحي</td>
-                <td class="addr-val" id="seller-addr-dist">{{seller_district}}</td>
+                <td class="addr-val" id="seller-addr-dist">الورود</td>
                 <td class="addr-lbl">الرمز البريدي</td>
-                <td class="addr-val" id="seller-addr-post">{{seller_postal_code}}</td>
+                <td class="addr-val" id="seller-addr-post">23221</td>
               </tr>
               <tr>
                 <td class="addr-lbl">الشارع</td>
-                <td colspan="3" class="addr-val" style="text-align:right;padding-right:6px;" id="seller-addr-street">{{seller_street}}</td>
+                <td colspan="3" class="addr-val" style="text-align:right;padding-right:6px;" id="seller-addr-street">طريق الملك عبدالله</td>
               </tr>
             </tbody>
           </table>
@@ -1643,6 +1643,27 @@
         `;
         tbody.appendChild(stretchTr);
       }
+
+      // ضمان ظهور عنوان الشركة كاملاً وتثبيت المنطقة لمكة المكرمة في المعاينة والفواتير المباشرة
+      var setCompanyAddrIfEmpty = function() {
+        var setIfEmpty = function(id, val) {
+          var el = document.getElementById(id);
+          if (el) {
+            var txt = el.textContent.trim();
+            if (!txt || txt.indexOf('{{') !== -1 || txt === '0' || txt === '0.00' || (id === 'seller-addr-reg' && txt === 'جدة')) {
+              el.textContent = val;
+            }
+          }
+        };
+        setIfEmpty('seller-addr-reg', 'مكة المكرمة');
+        setIfEmpty('seller-addr-bno', '2222');
+        setIfEmpty('seller-addr-city', 'جدة');
+        setIfEmpty('seller-addr-extra', '6300');
+        setIfEmpty('seller-addr-dist', 'الورود');
+        setIfEmpty('seller-addr-post', '23221');
+        setIfEmpty('seller-addr-street', 'طريق الملك عبدالله');
+      };
+      setCompanyAddrIfEmpty();
     })();
   </script>
 </body>
