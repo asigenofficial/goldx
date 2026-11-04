@@ -104,7 +104,8 @@ func main() {
 
 	// النسخ الاحتياطي التلقائي الدوري لحماية بيانات الفواتير والعملاء من أي فقدان
 	go func() {
-		time.Sleep(3 * time.Second)
+		// تأخير أخذ النسخة الأولية لدقيقتين بعد الإقلاع لتفادي أي ضغط معالج أو قفل قرص في فترة بدء التشغيل
+		time.Sleep(2 * time.Minute)
 		if res, err := database.CreateBackup(); err == nil {
 			log.Printf("[AutoBackup] تم أخذ نسخة احتياطية أولية تلقائية: %s (%d بايت)", res.Filename, res.SizeBytes)
 		}

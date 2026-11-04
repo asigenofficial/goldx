@@ -138,7 +138,7 @@ function renderShell() {
     <div class="layout">
       <div id="route-progress" class="route-progress" aria-hidden="true"></div>
       <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
-      <aside class="sidebar" id="sidebar">
+      <aside class="sidebar" id="sidebar" aria-label="الشريط الجانبي">
         <div class="sidebar-head">
           <img class="sidebar-logo" src="/img/logo-banner.jpg" alt="GOLDX" width="42" height="42" style="border-radius:10px;box-shadow:0 3px 10px rgba(184,134,11,0.18);object-fit:cover" />
           <div>
@@ -146,14 +146,14 @@ function renderShell() {
             <div class="sidebar-sub">فواتير ومصوغات الذهب</div>
           </div>
         </div>
-        <nav class="nav" id="nav">${raw(navHtml())}</nav>
+        <nav class="nav" id="nav" aria-label="التنقل الرئيسي">${raw(navHtml())}</nav>
         <button class="sidebar-edge-toggle" id="sidebar-edge-toggle" type="button" aria-label="طي / توسيع القائمة الجانبية" title="طي / توسيع القائمة الجانبية (Ctrl+B)">
           <span class="ico-toggle-arrow">${raw(icon.chevronRight({ size: 16 }))}</span>
         </button>
       </aside>
       <div class="main">
-        <header class="topbar">
-          <button class="burger" id="burger" type="button" aria-label="القائمة"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="6" y2="6"/><line x1="3" x2="21" y1="12" y2="12"/><line x1="3" x2="21" y1="18" y2="18"/></svg></button>
+        <header class="topbar" aria-label="شريط الأدوات العلوي">
+          <button class="burger" id="burger" type="button" aria-label="فتح وإغلاق القائمة الجانبية"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="6" y2="6"/><line x1="3" x2="21" y1="12" y2="12"/><line x1="3" x2="21" y1="18" y2="18"/></svg></button>
           <button class="sidebar-desk-toggle" id="sidebar-desk-toggle" type="button" aria-label="طي القائمة الجانبية" title="طي / توسيع القائمة الجانبية">
             ${raw(icon.chevronRight({ size: 18 }))}
           </button>
@@ -170,7 +170,7 @@ function renderShell() {
               <span class="sync-count" id="sync-count">1</span>
             </button>
           ` : '')}
-          <button class="user-chip" id="user-chip" type="button">
+          <button class="user-chip" id="user-chip" type="button" aria-label="ملف المستخدم وخيارات الحساب">
             <span class="avatar">${initials(store.user.full_name || store.user.username)}</span>
             <span class="user-meta">
               <b>${store.user.full_name || store.user.username}</b>
@@ -178,7 +178,7 @@ function renderShell() {
             </span>
           </button>
         </header>
-        <main class="content" id="view"></main>
+        <main class="content" id="view" role="main" aria-label="المحتوى الرئيسي" tabindex="-1"></main>
       </div>
     </div>`;
 

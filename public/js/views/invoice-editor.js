@@ -1,14 +1,14 @@
 // ==========================================================================
 //  محرر الفاتورة (إصدار فاتورة جديدة)
 // ==========================================================================
-import { api } from '../core/api.js';
+import { api, qs } from '../core/api.js';
 import { store, loadClients, loadItems, can, invalidate } from '../core/store.js';
 import * as router from '../core/router.js';
 
 const syncNotify = (entity, action, payload) => (typeof store.syncNotify === 'function' ? store.syncNotify(entity, action, payload) : null);
 import {
   html, raw, esc, money, toNum, today, nowTime, toastOk, toastErr,
-  $, $$, delegate, modal, formValues, confirmDialog, icon, generateNextItemCode,
+  $, $$, delegate, debounce, modal, formValues, confirmDialog, icon, generateNextItemCode,
 } from '../core/util.js';
 
 const emptyLine = () => ({
@@ -165,20 +165,22 @@ export async function render(view, ctx) {
     });
   };
 
-  if (!state.is_edit && draft) {
-    if (state.client_id && !store.clients.some((c) => c.id === state.client_id)) {
-      state.client_id = '';
-    }
-    if (Array.isArray(state.lines)) {
-      state.lines.forEach((l) => {
-        if (l.item_id && !store.items.some((it) => it.id === l.item_id)) {
-          l.item_id = '';
-        }
-      });
-    }
-  }
   if (query.client_id && !state.is_edit) state.client_id = query.client_id;
   if (!state.lines || !state.lines.length) state.lines = [emptyLine()];
+
+  if (state.client_id && !state.selectedClient) {
+    const found = store.clients.find((c) => c.id === state.client_id);
+    if (found) {
+      state.selectedClient = found;
+    } else {
+      api.get(`/api/clients/${state.client_id}`).then((c) => {
+        if (c && c.id) {
+          state.selectedClient = c;
+          draw();
+        }
+      }).catch(() => {});
+    }
+  }
 
   const activeIssuers = store.issuers.filter((i) => i.is_active);
   if (!activeIssuers.length) {
@@ -256,12 +258,12 @@ export async function render(view, ctx) {
           <input type="text" data-f="item_name" value="${esc(l.item_name)}" placeholder="اكتب اسم الصنف (خاتم، سوار، سبيكة…) أو ابحث…" autocomplete="off" />
         </div>
       </td>
-      <td style="width:125px">
-        <select data-f="karat" style="font-weight:700;font-size:12px;padding:4px 6px;">
+      <td style="width:125px;min-width:125px">
+        <select data-f="karat" style="font-weight:700;font-size:12px;min-width:115px;">
           <option value="21" ${l.karat === '21' ? 'selected' : ''}>عيار 21 (15%)</option>
           <option value="18" ${l.karat === '18' ? 'selected' : ''}>عيار 18 (15%)</option>
           <option value="22" ${l.karat === '22' ? 'selected' : ''}>عيار 22 (15%)</option>
-          <option value="24" ${l.karat === '24' ? 'selected' : ''}>عيار 24 (معفى 0%)</option>
+          <option value="24" ${l.karat === '24' ? 'selected' : ''}>عيار 24 (معفى)</option>
         </select>
       </td>
       <td style="width:100px"><input type="number" data-f="quantity" value="${l.quantity}" step="0.001" min="0.001" placeholder="الوزن" title="الوزن بالجرام" /></td>
@@ -297,8 +299,11 @@ export async function render(view, ctx) {
 
   const draw = () => {
     const iss = issuerOf();
-    const curClient = store.clients.find((c) => c.id === state.client_id);
-    const displayedClients = filterClients(clientSearchQ);
+    const curClient = state.selectedClient || store.clients.find((c) => c.id === state.client_id);
+    let displayedClients = state.searchedClients || filterClients(clientSearchQ);
+    if (curClient && !displayedClients.some((c) => c.id === curClient.id)) {
+      displayedClients = [curClient, ...displayedClients];
+    }
     const displayedIssuers = filterIssuers(issuerSearchQ);
     view.innerHTML = html`
       <div class="page-head">
@@ -495,11 +500,11 @@ export async function render(view, ctx) {
           <button class="btn btn-sm btn-primary" id="add-line" type="button">${icon.goldBar({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' })}إضافة صنف ذهب</button>
         </div>
         <div class="table-wrap">
-          <table class="tbl compact" id="lines-tbl" style="min-width:1080px">
+          <table class="tbl compact" id="lines-tbl" style="min-width:1250px">
             <thead><tr>
-              <th style="width:32px">#</th>
+              <th style="width:32px;min-width:32px">#</th>
               <th style="min-width:200px">الصنف / الوصف</th>
-              <th style="width:125px">العيار</th>
+              <th style="width:125px;min-width:125px">العيار</th>
               <th style="width:100px">الوزن (جرام)</th>
               ${raw(state.gold_invoice_type === 'PRICE_AND_WAGE' ? `
                 <th style="width:105px">سعر الجرام</th>
@@ -653,29 +658,54 @@ export async function render(view, ctx) {
       });
     }
 
-    $('#client', view).addEventListener('change', (e) => { state.client_id = e.target.value; saveDraft(state); draw(); });
-
     const clientSearchInput = $('#client-search', view);
     const clientSelect = $('#client', view);
     const clientHint = $('#client-search-hint', view);
 
+    if (clientSelect) {
+      clientSelect.addEventListener('change', (e) => {
+        state.client_id = e.target.value;
+        const all = [...(state.searchedClients || []), ...store.clients];
+        state.selectedClient = all.find((c) => c.id === state.client_id) || null;
+        saveDraft(state);
+        draw();
+      });
+    }
+
     if (clientSearchInput && clientSelect) {
+      const doClientSearch = debounce(async (term) => {
+        const qTrim = term.trim();
+        let matched = [];
+        if (!qTrim) {
+          matched = store.clients.slice(0, 20);
+        } else {
+          try {
+            matched = await api.get(qs('/api/clients/search', { q: qTrim, limit: 20 }));
+            if (!Array.isArray(matched)) matched = [];
+          } catch {
+            matched = filterClients(qTrim).slice(0, 20);
+          }
+        }
+        state.searchedClients = matched;
+        if (clientHint) {
+          clientHint.textContent = qTrim ? `${matched.length} مطابق` : '';
+        }
+        clientSelect.innerHTML = `<option value="">— ${qTrim ? `اختر من النتائج (${matched.length})` : 'اختر العميل'} —</option>` +
+          matched.map((c) => `<option value="${esc(c.id)}" ${c.id === state.client_id ? 'selected' : ''}>${esc(c.name)} (${esc(c.client_code)})</option>`).join('');
+      }, 250);
+
       clientSearchInput.addEventListener('input', (e) => {
         clientSearchQ = e.target.value;
-        const matched = filterClients(clientSearchQ);
-        if (clientHint) {
-          clientHint.textContent = clientSearchQ.trim() ? `${matched.length} مطابق` : '';
-        }
-        clientSelect.innerHTML = `<option value="">— ${clientSearchQ.trim() ? `اختر من النتائج (${matched.length})` : 'اختر العميل'} —</option>` +
-          matched.map((c) => `<option value="${esc(c.id)}" ${c.id === state.client_id ? 'selected' : ''}>${esc(c.name)} (${esc(c.client_code)})</option>`).join('');
+        doClientSearch(clientSearchQ);
       });
 
       clientSearchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
-          const matched = filterClients(clientSearchQ);
+          const matched = state.searchedClients || filterClients(clientSearchQ);
           if (matched.length > 0) {
             state.client_id = matched[0].id;
+            state.selectedClient = matched[0];
             saveDraft(state);
             draw();
           }
@@ -1034,6 +1064,7 @@ export async function render(view, ctx) {
     box.style.width = `${Math.round(width)}px`;
   }
 
+  let itemSearchDebounceTimer = null;
   function showSuggestions(input, line) {
     activeFloatingInput = input;
     activeFloatingLine = line;
@@ -1044,75 +1075,84 @@ export async function render(view, ctx) {
       return;
     }
 
-    const matches = store.items.filter((it) => it.name_ar.toLowerCase().includes(q)
-      || (it.name_en || '').toLowerCase().includes(q)
-      || (it.item_code || '').toLowerCase().includes(q)
-      || (it.barcode || '').includes(q)).slice(0, 10);
+    clearTimeout(itemSearchDebounceTimer);
+    itemSearchDebounceTimer = setTimeout(async () => {
+      let matches = [];
+      try {
+        matches = await api.get(qs('/api/items/search', { q: input.value.trim(), limit: 15 }));
+        if (!Array.isArray(matches)) matches = [];
+      } catch {
+        matches = store.items.filter((it) => (it.name_ar || '').toLowerCase().includes(q)
+          || (it.name_en || '').toLowerCase().includes(q)
+          || (it.item_code || '').toLowerCase().includes(q)
+          || (it.barcode || '').includes(q)).slice(0, 15);
+      }
 
-    if (!matches.length) {
+      if (!matches.length) {
+        box.innerHTML = `
+          <div class="popover-empty">
+            <span>لا يوجد صنف مطابق لـ "<b>${esc(input.value)}</b>"</span>
+            <small class="muted">يمكنك المتابعة واستخدام هذا الوصف كبند حر</small>
+          </div>
+        `;
+        box.classList.remove('hidden');
+        positionPopover(input, box);
+        activePopoverIdx = -1;
+        return;
+      }
+
+      activePopoverIdx = 0;
+
       box.innerHTML = `
-        <div class="popover-empty">
-          <span>لا يوجد صنف مطابق لـ "<b>${esc(input.value)}</b>"</span>
-          <small class="muted">يمكنك المتابعة واستخدام هذا الوصف كبند حر</small>
+        <div class="popover-head">
+          <span class="popover-title">الأصناف المطابقة (${matches.length})</span>
+          <span class="popover-hint">↑↓ للتنقل · Enter للاختيار</span>
+        </div>
+        <div class="popover-list">
+          ${matches.map((it, idx) => `
+            <div class="popover-item ${idx === 0 ? 'sel' : ''}" data-id="${esc(it.id)}" data-idx="${idx}">
+              <div class="popover-item-main">
+                <div class="popover-item-name">${esc(it.name_ar)}</div>
+                ${it.name_en ? `<div class="popover-item-sub">${esc(it.name_en)}</div>` : ''}
+              </div>
+              <div class="popover-item-meta">
+                <div class="popover-item-badges">
+                  <span class="badge mono gray tiny">${esc(it.item_code)}</span>
+                  ${it.barcode ? `<span class="badge mono blue tiny">${esc(it.barcode)}</span>` : ''}
+                </div>
+                <div class="popover-item-price">
+                  <strong>${money(it.sale_price)}</strong> <small class="muted">ر.س / ${esc(it.unit || 'حبة')}</small>
+                </div>
+              </div>
+            </div>
+          `).join('')}
         </div>
       `;
+
       box.classList.remove('hidden');
       positionPopover(input, box);
-      activePopoverIdx = -1;
-      return;
-    }
 
-    activePopoverIdx = 0;
-
-    box.innerHTML = `
-      <div class="popover-head">
-        <span class="popover-title">الأصناف المطابقة (${matches.length})</span>
-        <span class="popover-hint">↑↓ للتنقل · Enter للاختيار</span>
-      </div>
-      <div class="popover-list">
-        ${matches.map((it, idx) => `
-          <div class="popover-item ${idx === 0 ? 'sel' : ''}" data-id="${esc(it.id)}" data-idx="${idx}">
-            <div class="popover-item-main">
-              <div class="popover-item-name">${esc(it.name_ar)}</div>
-              ${it.name_en ? `<div class="popover-item-sub">${esc(it.name_en)}</div>` : ''}
-            </div>
-            <div class="popover-item-meta">
-              <div class="popover-item-badges">
-                <span class="badge mono gray tiny">${esc(it.item_code)}</span>
-                ${it.barcode ? `<span class="badge mono blue tiny">${esc(it.barcode)}</span>` : ''}
-              </div>
-              <div class="popover-item-price">
-                <strong>${money(it.sale_price)}</strong> <small class="muted">ر.س / ${esc(it.unit || 'حبة')}</small>
-              </div>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    `;
-
-    box.classList.remove('hidden');
-    positionPopover(input, box);
-
-    box.querySelectorAll('.popover-item').forEach((el) => {
-      el.addEventListener('mousedown', (ev) => {
-        ev.preventDefault();
-        const item = store.items.find((x) => x.id === el.dataset.id);
-        if (item) {
-          applyItem(line, item);
-          closePopover();
-          refreshLines();
-          setTimeout(() => {
-            const tr = view.querySelector(`tr[data-key="${line.key}"]`);
-            tr?.querySelector('input[data-f="quantity"]')?.focus();
-          }, 40);
-        }
+      box.querySelectorAll('.popover-item').forEach((el) => {
+        el.addEventListener('mousedown', (ev) => {
+          ev.preventDefault();
+          const item = matches.find((x) => x.id === el.dataset.id) || store.items.find((x) => x.id === el.dataset.id);
+          if (item) {
+            applyItem(line, item);
+            closePopover();
+            refreshLines();
+            setTimeout(() => {
+              const tr = view.querySelector(`tr[data-key="${line.key}"]`);
+              tr?.querySelector('input[data-f="quantity"]')?.focus();
+            }, 40);
+          }
+        });
+        el.addEventListener('mouseenter', () => {
+          box.querySelectorAll('.popover-item').forEach((x) => x.classList.remove('sel'));
+          el.classList.add('sel');
+          activePopoverIdx = Number(el.dataset.idx);
+        });
       });
-      el.addEventListener('mouseenter', () => {
-        box.querySelectorAll('.popover-item').forEach(x => x.classList.remove('sel'));
-        el.classList.add('sel');
-        activePopoverIdx = Number(el.dataset.idx);
-      });
-    });
+    }, 180);
   }
 
   async function save(e) {

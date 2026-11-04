@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 
 	"goldx/internal/crypto"
@@ -114,7 +115,46 @@ type ItemListItem struct {
 	CategoryName   string  `json:"category_name"`
 }
 
+type ItemListResult struct {
+	Items      []ItemListItem `json:"items"`
+	Total      int            `json:"total"`
+	Page       int            `json:"page"`
+	Limit      int            `json:"limit"`
+	TotalPages int            `json:"total_pages"`
+}
+
 func (s *ItemService) ListItems(search, categoryID string, activeOnly bool) ([]ItemListItem, error) {
+	res, err := s.ListItemsPaginated(search, categoryID, activeOnly, 1, 0)
+	if err != nil {
+		return nil, err
+	}
+	return res.Items, nil
+}
+
+func (s *ItemService) ListItemsPaginated(search, categoryID string, activeOnly bool, page, limit int) (*ItemListResult, error) {
+	if page < 1 {
+		page = 1
+	}
+
+	activeParam := 0
+	if activeOnly {
+		activeParam = 1
+	}
+	like := "%" + search + "%"
+
+	countQuery := `
+		SELECT COUNT(*)
+		FROM items i
+		WHERE (? = 0 OR i.is_active = 1)
+		  AND (? = '' OR i.category_id = ?)
+		  AND (? = '' OR i.name_ar LIKE ? OR i.name_en LIKE ? OR i.item_code LIKE ? OR i.barcode LIKE ?)
+	`
+	var total int
+	err := s.db.QueryRow(countQuery, activeParam, categoryID, categoryID, search, like, like, like, like).Scan(&total)
+	if err != nil {
+		return nil, err
+	}
+
 	query := `
 		SELECT i.id, i.item_code, i.category_id, i.name_ar, i.name_en, i.barcode,
 		       i.unit, COALESCE(i.karat, '21'), i.cost_price, i.sale_price, COALESCE(i.wage, 0), i.tax_rate, i.is_active,
@@ -126,13 +166,71 @@ func (s *ItemService) ListItems(search, categoryID string, activeOnly bool) ([]I
 		  AND (? = '' OR i.name_ar LIKE ? OR i.name_en LIKE ? OR i.item_code LIKE ? OR i.barcode LIKE ?)
 		ORDER BY i.name_ar ASC
 	`
-	activeParam := 0
-	if activeOnly {
-		activeParam = 1
-	}
-	like := "%" + search + "%"
+	args := []any{activeParam, categoryID, categoryID, search, like, like, like, like}
 
-	rows, err := s.db.Query(query, activeParam, categoryID, categoryID, search, like, like, like, like)
+	if limit > 0 {
+		query += " LIMIT ? OFFSET ?"
+		offset := (page - 1) * limit
+		args = append(args, limit, offset)
+	}
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	list := make([]ItemListItem, 0)
+	for rows.Next() {
+		var item ItemListItem
+		var catID sql.NullString
+		if err := rows.Scan(
+			&item.ID, &item.ItemCode, &catID, &item.NameAr, &item.NameEn, &item.Barcode,
+			&item.Unit, &item.Karat, &item.CostPrice, &item.SalePrice, &item.Wage, &item.TaxRate, &item.IsActive,
+			&item.Notes, &item.CreatedAt, &item.UpdatedAt, &item.CategoryName,
+		); err == nil {
+			if catID.Valid {
+				item.CategoryID = &catID.String
+			}
+			item.CostPriceMajor = models.ToMajor(item.CostPrice)
+			item.SalePriceMajor = models.ToMajor(item.SalePrice)
+			item.WageMajor = models.ToMajor(item.Wage)
+			list = append(list, item)
+		}
+	}
+
+	totalPages := 1
+	if limit > 0 && total > 0 {
+		totalPages = int(math.Ceil(float64(total) / float64(limit)))
+	}
+
+	return &ItemListResult{
+		Items:      list,
+		Total:      total,
+		Page:       page,
+		Limit:      limit,
+		TotalPages: totalPages,
+	}, nil
+}
+
+func (s *ItemService) SearchItems(search string, limit int) ([]ItemListItem, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	search = strings.TrimSpace(search)
+	like := "%" + search + "%"
+	query := `
+		SELECT i.id, i.item_code, i.category_id, i.name_ar, i.name_en, i.barcode,
+		       i.unit, COALESCE(i.karat, '21'), i.cost_price, i.sale_price, COALESCE(i.wage, 0), i.tax_rate, i.is_active,
+		       i.notes, i.created_at, i.updated_at, COALESCE(c.name, '—') AS category_name
+		FROM items i
+		LEFT JOIN item_categories c ON c.id = i.category_id
+		WHERE i.is_active = 1
+		  AND (? = '' OR i.name_ar LIKE ? OR i.name_en LIKE ? OR i.item_code LIKE ? OR i.barcode LIKE ?)
+		ORDER BY i.name_ar ASC
+		LIMIT ?
+	`
+	rows, err := s.db.Query(query, search, like, like, like, like, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -330,149 +428,165 @@ func (s *ItemService) BatchImportItems(items []ImportItemInput, replaceExisting 
 		catMap[strings.ToLower(strings.TrimSpace(c.Name))] = c.ID
 	}
 
-	tx, err := s.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
 	if doReplace {
-		if _, err := tx.Exec("DELETE FROM items"); err != nil {
+		_ = s.db.WithWriteLock(func() error {
+			_, err := s.db.Exec("DELETE FROM items")
+			return err
+		})
+	}
+
+	res := &ImportItemsResult{Total: len(items)}
+	chunkSize := 500
+
+	for i := 0; i < len(items); i += chunkSize {
+		end := i + chunkSize
+		if end > len(items) {
+			end = len(items)
+		}
+		chunk := items[i:end]
+
+		if err := s.db.WithWriteLock(func() error {
+			tx, err := s.db.Begin()
+			if err != nil {
+				return err
+			}
+			defer tx.Rollback()
+
+			stmtFindByName, err := tx.Prepare("SELECT id FROM items WHERE LOWER(TRIM(name_ar)) = LOWER(TRIM(?)) LIMIT 1")
+			if err != nil {
+				return err
+			}
+			defer stmtFindByName.Close()
+
+			stmtFindByCode, err := tx.Prepare("SELECT id FROM items WHERE item_code = ? AND item_code != '' LIMIT 1")
+			if err != nil {
+				return err
+			}
+			defer stmtFindByCode.Close()
+
+			stmtInsertCat, err := tx.Prepare("INSERT INTO item_categories (id, code, name, description, created_at) VALUES (?, ?, ?, '', ?)")
+			if err != nil {
+				return err
+			}
+			defer stmtInsertCat.Close()
+
+			stmtInsertItem, err := tx.Prepare(`
+				INSERT INTO items (
+					id, item_code, category_id, name_ar, name_en, barcode,
+					unit, cost_price, sale_price, tax_rate, is_active, notes,
+					created_at, updated_at
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+			`)
+			if err != nil {
+				return err
+			}
+			defer stmtInsertItem.Close()
+
+			stmtUpdateItem, err := tx.Prepare(`
+				UPDATE items SET
+					item_code = CASE WHEN ? != '' THEN ? ELSE item_code END,
+					category_id = COALESCE(?, category_id),
+					name_en = CASE WHEN ? != '' THEN ? ELSE name_en END,
+					barcode = CASE WHEN ? != '' THEN ? ELSE barcode END,
+					unit = CASE WHEN ? != '' THEN ? ELSE unit END,
+					cost_price = ?,
+					sale_price = ?,
+					tax_rate = ?,
+					notes = CASE WHEN ? != '' THEN ? ELSE notes END,
+					updated_at = ?
+				WHERE id = ?
+			`)
+			if err != nil {
+				return err
+			}
+			defer stmtUpdateItem.Close()
+
+			now := db.NowIso()
+
+			for _, itm := range chunk {
+				nameAr := strings.TrimSpace(itm.NameAr)
+				if nameAr == "" {
+					res.Errors++
+					continue
+				}
+
+				var catID *string
+				if itm.Category != "" {
+					catKey := strings.ToLower(strings.TrimSpace(itm.Category))
+					if cid, exists := catMap[catKey]; exists {
+						catID = &cid
+					} else {
+						newCid := crypto.UUID()
+						newCode := fmt.Sprintf("CAT-%03d", len(catMap)+1)
+						if _, err := stmtInsertCat.Exec(newCid, newCode, itm.Category, now); err == nil {
+							catMap[catKey] = newCid
+							catID = &newCid
+						}
+					}
+				}
+
+				// Check if exists by code or by Arabic name
+				var existingID string
+				if itm.ItemCode != "" {
+					_ = stmtFindByCode.QueryRow(itm.ItemCode).Scan(&existingID)
+				}
+				if existingID == "" {
+					_ = stmtFindByName.QueryRow(nameAr).Scan(&existingID)
+				}
+
+				unit := itm.Unit
+				if unit == "" {
+					unit = "حبة"
+				}
+				taxRate := itm.TaxRate
+				if !validAmount(taxRate) || taxRate > 100 || !validAmount(itm.CostPrice) || !validAmount(itm.SalePrice) {
+					return errors.New("سعر أو ضريبة الصنف غير صالح")
+				}
+				costMinor := models.ToMinor(itm.CostPrice)
+				saleMinor := models.ToMinor(itm.SalePrice)
+
+				if existingID != "" {
+					// Update
+					_, err := stmtUpdateItem.Exec(
+						itm.ItemCode, itm.ItemCode,
+						catID,
+						itm.NameEn, itm.NameEn,
+						itm.Barcode, itm.Barcode,
+						unit, unit,
+						costMinor, saleMinor, taxRate,
+						itm.Notes, itm.Notes,
+						now, existingID,
+					)
+					if err != nil {
+						res.Errors++
+					} else {
+						res.Updated++
+					}
+				} else {
+					// Insert
+					itemCode := itm.ItemCode
+					if itemCode == "" {
+						itemCode = "ITM-" + crypto.UUID()
+					}
+					newID := crypto.UUID()
+					_, err := stmtInsertItem.Exec(
+						newID, itemCode, catID, nameAr, itm.NameEn, itm.Barcode,
+						unit, costMinor, saleMinor, taxRate, itm.Notes,
+						now, now,
+					)
+					if err != nil {
+						res.Errors++
+					} else {
+						res.Created++
+					}
+				}
+			}
+
+			return tx.Commit()
+		}); err != nil {
 			return nil, err
 		}
 	}
 
-	stmtFindByName, err := tx.Prepare("SELECT id FROM items WHERE LOWER(TRIM(name_ar)) = LOWER(TRIM(?)) LIMIT 1")
-	if err != nil {
-		return nil, err
-	}
-	defer stmtFindByName.Close()
-
-	stmtFindByCode, err := tx.Prepare("SELECT id FROM items WHERE item_code = ? AND item_code != '' LIMIT 1")
-	if err != nil {
-		return nil, err
-	}
-	defer stmtFindByCode.Close()
-
-	stmtInsertCat, err := tx.Prepare("INSERT INTO item_categories (id, code, name, description, created_at) VALUES (?, ?, ?, '', ?)")
-	if err != nil {
-		return nil, err
-	}
-	defer stmtInsertCat.Close()
-
-	stmtInsertItem, err := tx.Prepare(`
-		INSERT INTO items (
-			id, item_code, category_id, name_ar, name_en, barcode,
-			unit, cost_price, sale_price, tax_rate, is_active, notes,
-			created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
-	`)
-	if err != nil {
-		return nil, err
-	}
-	defer stmtInsertItem.Close()
-
-	stmtUpdateItem, err := tx.Prepare(`
-		UPDATE items SET
-			item_code = CASE WHEN ? != '' THEN ? ELSE item_code END,
-			category_id = COALESCE(?, category_id),
-			name_en = CASE WHEN ? != '' THEN ? ELSE name_en END,
-			barcode = CASE WHEN ? != '' THEN ? ELSE barcode END,
-			unit = CASE WHEN ? != '' THEN ? ELSE unit END,
-			cost_price = ?,
-			sale_price = ?,
-			tax_rate = ?,
-			notes = CASE WHEN ? != '' THEN ? ELSE notes END,
-			updated_at = ?
-		WHERE id = ?
-	`)
-	if err != nil {
-		return nil, err
-	}
-	defer stmtUpdateItem.Close()
-
-	now := db.NowIso()
-	res := &ImportItemsResult{Total: len(items)}
-
-	for _, itm := range items {
-		nameAr := strings.TrimSpace(itm.NameAr)
-		if nameAr == "" {
-			res.Errors++
-			continue
-		}
-
-		var catID *string
-		if itm.Category != "" {
-			catKey := strings.ToLower(strings.TrimSpace(itm.Category))
-			if cid, exists := catMap[catKey]; exists {
-				catID = &cid
-			} else {
-				newCid := crypto.UUID()
-				newCode := fmt.Sprintf("CAT-%03d", len(catMap)+1)
-				if _, err := stmtInsertCat.Exec(newCid, newCode, itm.Category, now); err == nil {
-					catMap[catKey] = newCid
-					catID = &newCid
-				}
-			}
-		}
-
-		// Check if exists by code or by Arabic name
-		var existingID string
-		if itm.ItemCode != "" {
-			_ = stmtFindByCode.QueryRow(itm.ItemCode).Scan(&existingID)
-		}
-		if existingID == "" {
-			_ = stmtFindByName.QueryRow(nameAr).Scan(&existingID)
-		}
-
-		unit := itm.Unit
-		if unit == "" {
-			unit = "حبة"
-		}
-		taxRate := itm.TaxRate
-		if !validAmount(taxRate) || taxRate > 100 || !validAmount(itm.CostPrice) || !validAmount(itm.SalePrice) { return nil,errors.New("سعر أو ضريبة الصنف غير صالح") }
-		costMinor := models.ToMinor(itm.CostPrice)
-		saleMinor := models.ToMinor(itm.SalePrice)
-
-		if existingID != "" {
-			// Update
-			_, err := stmtUpdateItem.Exec(
-				itm.ItemCode, itm.ItemCode,
-				catID,
-				itm.NameEn, itm.NameEn,
-				itm.Barcode, itm.Barcode,
-				unit, unit,
-				costMinor, saleMinor, taxRate,
-				itm.Notes, itm.Notes,
-				now, existingID,
-			)
-			if err != nil {
-				res.Errors++
-			} else {
-				res.Updated++
-			}
-		} else {
-			// Insert
-			itemCode := itm.ItemCode
-			if itemCode == "" {
-				itemCode = "ITM-" + crypto.UUID()
-			}
-			newID := crypto.UUID()
-			_, err := stmtInsertItem.Exec(
-				newID, itemCode, catID, nameAr, itm.NameEn, itm.Barcode,
-				unit, costMinor, saleMinor, taxRate, itm.Notes,
-				now, now,
-			)
-			if err != nil {
-				res.Errors++
-			} else {
-				res.Created++
-			}
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
 	return res, nil
 }

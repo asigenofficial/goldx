@@ -40,34 +40,34 @@ export function voucherWizard({ clientId = '', issuerId = '', mode = 'single', o
       </div>
 
       <div class="form-grid-3">
-        <div class="field"><label class="req">الشركة المصدرة</label>
+        <div class="field"><label class="req" for="w-issuer">الشركة المصدرة</label>
           <select name="issuer_id" id="w-issuer">
             ${raw(store.issuers.filter((i) => i.is_active).map((i) => `<option value="${esc(i.id)}" ${i.id === issuerId ? 'selected' : ''}>${esc(i.name_ar)}</option>`).join(''))}
           </select></div>
-        <div class="field"><label class="req">العميل</label>
+        <div class="field"><label class="req" for="w-client">العميل</label>
           <select name="client_id" id="w-client">
             <option value="">— اختر العميل —</option>
             ${raw(store.clients.map((c) => `<option value="${esc(c.id)}" ${c.id === clientId ? 'selected' : ''}>${esc(c.name)} (${esc(c.client_code)})</option>`).join(''))}
           </select></div>
-        <div class="field" id="w-date-wrap"><label>التاريخ</label>
+        <div class="field" id="w-date-wrap"><label for="w-date">التاريخ</label>
           <input type="date" name="voucher_date" id="w-date" value="${today()}" /></div>
       </div>
 
-      <div id="w-batch-opts" class="row mt" style="gap:10px;display:none;align-items:center;background:var(--card);padding:8px 12px;border-radius:8px;border:1px solid var(--line)">
-        <div class="field" style="margin:0;min-width:140px">
-          <label style="font-size:12px;margin-bottom:2px">تأخير التاريخ (أيام)</label>
-          <input type="number" id="w-date-offset" value="2" min="0" max="7" style="width:70px" />
+      <div id="w-batch-opts" class="form-grid-2 mt" style="display:none;background:var(--card);padding:10px 14px;border-radius:8px;border:1px solid var(--line)">
+        <div class="field" style="margin:0">
+          <label for="w-date-offset" style="font-size:12px;margin-bottom:2px">تأخير التاريخ (أيام)</label>
+          <input type="number" id="w-date-offset" value="2" min="0" max="7" />
         </div>
-        <div class="field" style="margin:0;min-width:140px">
-          <label style="font-size:12px;margin-bottom:2px">فجوة التسلسل</label>
-          <input type="number" id="w-seq-gap" value="2" min="0" max="20" style="width:70px" />
+        <div class="field" style="margin:0">
+          <label for="w-seq-gap" style="font-size:12px;margin-bottom:2px">فجوة التسلسل</label>
+          <input type="number" id="w-seq-gap" value="2" min="0" max="20" />
         </div>
       </div>
 
       <div id="w-single-opts" class="form-grid-4 mt">
-        <div class="field"><label class="req">المبلغ المستلم (${esc(cur)})</label>
+        <div class="field"><label class="req" for="w-amount">المبلغ المستلم (${esc(cur)})</label>
           <input type="number" name="total_amount" id="w-amount" value="" step="0.01" min="0.01" /></div>
-        <div class="field"><label>طريقة السداد</label>
+        <div class="field"><label for="w-pay-type">طريقة السداد</label>
           <select name="payment_type" id="w-pay-type">
             <option value="CASH">نقداً</option><option value="TRANSFER">تحويل بنكي</option>
             <option value="CARD">شبكة / بطاقة</option><option value="CHEQUE">شيك</option>
@@ -76,12 +76,12 @@ export function voucherWizard({ clientId = '', issuerId = '', mode = 'single', o
         <div class="field"><label>ملاحظات</label><input type="text" name="notes" /></div>
       </div>
       <div id="w-batch-pay" class="form-grid-2 mt" style="display:none">
-        <div class="field"><label>طريقة السداد (لجميع السندات)</label>
+        <div class="field"><label for="w-batch-pay-type">طريقة السداد (لجميع السندات)</label>
           <select id="w-batch-pay-type">
             <option value="CASH">نقداً</option><option value="TRANSFER">تحويل بنكي</option>
             <option value="CARD">شبكة / بطاقة</option><option value="CHEQUE">شيك</option>
           </select></div>
-        <div class="field"><label>رقم المرجع / الشيك</label><input type="text" id="w-batch-ref" class="ltr" /></div>
+        <div class="field"><label for="w-batch-ref">رقم المرجع / الشيك</label><input type="text" id="w-batch-ref" class="ltr" /></div>
       </div>
 
       <!-- ── وضع السندات الدفعية ──────────────────────────────────────────── -->
@@ -91,11 +91,11 @@ export function voucherWizard({ clientId = '', issuerId = '', mode = 'single', o
           يمكنك اختيار فواتير محددة للتوزيع التلقائي (FIFO)، أو تركها بدون تخصيص.
         </div>
         <div class="form-grid-4">
-          <div class="field"><label class="req">عدد الدفعات</label>
+          <div class="field"><label class="req" for="w-inst-count">عدد الدفعات</label>
             <input type="number" id="w-inst-count" value="3" min="2" max="24" /></div>
-          <div class="field"><label class="req">تاريخ أول دفعة</label>
+          <div class="field"><label class="req" for="w-inst-start">تاريخ أول دفعة</label>
             <input type="date" id="w-inst-start" /></div>
-          <div class="field"><label>التواتر</label>
+          <div class="field"><label for="w-inst-freq">التواتر</label>
             <select id="w-inst-freq">
               <option value="7">أسبوعياً</option>
               <option value="14">نصف شهرياً</option>
@@ -103,16 +103,16 @@ export function voucherWizard({ clientId = '', issuerId = '', mode = 'single', o
               <option value="60">كل شهرين</option>
               <option value="90">ربع سنوي</option>
             </select></div>
-          <div class="field"><label class="req">الإجمالي (${esc(cur)})</label>
+          <div class="field"><label class="req" for="w-inst-total">الإجمالي (${esc(cur)})</label>
             <input type="number" id="w-inst-total" step="0.01" min="0.01" /></div>
         </div>
         <div class="form-grid-2 mt">
-          <div class="field"><label>طريقة الدفع (لكل الدفعات)</label>
+          <div class="field"><label for="w-inst-pay">طريقة الدفع (لكل الدفعات)</label>
             <select id="w-inst-pay">
               <option value="CASH">نقداً</option><option value="TRANSFER">تحويل بنكي</option>
               <option value="CARD">شبكة / بطاقة</option><option value="CHEQUE">شيك</option>
             </select></div>
-          <div class="field"><label>رقم المرجع / الشيك</label>
+          <div class="field"><label for="w-inst-ref">رقم المرجع / الشيك</label>
             <input type="text" id="w-inst-ref" class="ltr" /></div>
         </div>
         <div id="w-inst-preview"></div>
@@ -671,7 +671,7 @@ export async function showVoucher(id, onChange) {
       <div style="background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span style="font-weight:700;font-size:13px;color:var(--brand)">قالب السند:</span>
-          <select id="v-style-select" style="min-width:280px;font-size:13px;padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--field-bg, var(--card));color:var(--text);font-weight:700">
+          <select id="v-style-select" aria-label="اختيار قالب السند" aria-label="اختيار قالب السند" style="min-width:280px;font-size:13px;padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--field-bg, var(--card));color:var(--text);font-weight:700">
             ${raw(availableTemplates.length
       ? availableTemplates.map((t) => `<option value="${esc(t.id)}" ${t.id === currentStyle ? 'selected' : ''}>${esc(t.name_ar || t.name)} (${esc(t.badge || 'سند HTML')})</option>`).join('')
       : '<option value="default">قالب سند قبض (سند HTML)</option>')}
@@ -1353,17 +1353,17 @@ export async function render(view, ctx) {
             اختر قالب سند القبض المطلوب لتنزيل ملف الـ Excel الأصلي (.xlsx) المعتمد أو صيغة SpreadsheetML (.xls):
           </p>
           <div class="grid grid-2" style="gap:14px">
-            <div class="card" style="border:2px solid #0284c7;border-radius:10px;padding:16px;background:#f0f9ff">
+            <div class="card" style="border:1.5px solid rgba(212,175,55,0.45);border-radius:12px;padding:16px;background:#ffffff;box-shadow:0 4px 18px rgba(184,134,11,0.06)">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-                <span class="badge" style="background:#0284c7;color:#fff;font-weight:700">عينة توريدات الصقر</span>
-                <span class="tiny mono" style="color:#0369a1">A4 Portrait</span>
+                <span class="badge" style="background:var(--brand);color:#fff;font-weight:700">عينة توريدات الصقر</span>
+                <span class="tiny mono" style="color:var(--brand-dark)">A4 Portrait</span>
               </div>
-              <h3 style="margin:0 0 6px;color:#0369a1;font-size:15px">قسيمة تحصيل وسند قبض (توريدات الصقر)</h3>
+              <h3 style="margin:0 0 6px;color:var(--text-heading);font-size:15px">قسيمة تحصيل وسند قبض (توريدات الصقر)</h3>
               <p style="font-size:12px;color:#334155;margin:0 0 14px;line-height:1.5">
                 قالب قسيمة تحصيل الصقر بكروت المؤشرات الأربعة (المبلغ، رقم السند، التاريخ، العميل)، شريط التفقيط، جدول بيان السند وتوزيع الفواتير، وثلاث تواقيع معتمدة (الصندوق، المحاسب، الختم).
               </p>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <a class="btn btn-sm btn-primary" href="/api/vouchers/template?style=voucher_saqr_slip&format=xlsx" target="_blank" download="voucher_template_voucher_saqr_slip.xlsx" style="background:#0284c7;border-color:#0284c7">
+                <a class="btn btn-sm btn-primary" href="/api/vouchers/template?style=voucher_saqr_slip&format=xlsx" target="_blank" download="voucher_template_voucher_saqr_slip.xlsx">
                   ${raw(icon.download({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' }))}تنزيل Excel (.xlsx)
                 </a>
                 <a class="btn btn-sm" href="/api/vouchers/template?style=voucher_saqr_slip&format=xls" target="_blank" download="voucher_template_voucher_saqr_slip.xls">
@@ -1372,17 +1372,17 @@ export async function render(view, ctx) {
               </div>
             </div>
 
-            <div class="card" style="border:2px solid #1e3a8a;border-radius:10px;padding:16px;background:#f8fafc">
+            <div class="card" style="border:1.5px solid rgba(184,134,11,0.45);border-radius:12px;padding:16px;background:#ffffff;box-shadow:0 4px 18px rgba(184,134,11,0.06)">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-                <span class="badge" style="background:#1e3a8a;color:#fff;font-weight:700">عينة الإصدار الفاخر وتويوتا</span>
-                <span class="tiny mono" style="color:#172554">A4 Portrait</span>
+                <span class="badge" style="background:var(--brand-dark);color:#fff;font-weight:700">عينة الإصدار الفاخر وتويوتا</span>
+                <span class="tiny mono" style="color:var(--brand-dark)">A4 Portrait</span>
               </div>
-              <h3 style="margin:0 0 6px;color:#1e3a8a;font-size:15px">سند قبض تجاري (الإصدار الفاخر وتويوتا)</h3>
+              <h3 style="margin:0 0 6px;color:var(--text-heading);font-size:15px">سند قبض تجاري (الإصدار الفاخر وتويوتا)</h3>
               <p style="font-size:12px;color:#334155;margin:0 0 14px;line-height:1.5">
                 قالب تنفيذي ثنائي اللغة فاخر، شريط بيانات السند والتاريخ، شارة المبلغ البارزة، شريط التفقيط، جدول تسديد الفواتير، والاعتماد الثنائي (الصندوق والمحاسب).
               </p>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <a class="btn btn-sm btn-primary" href="/api/vouchers/template?style=voucher_luxury_receipt&format=xlsx" target="_blank" download="voucher_template_voucher_luxury_receipt.xlsx" style="background:#1e3a8a;border-color:#1e3a8a">
+                <a class="btn btn-sm btn-primary" href="/api/vouchers/template?style=voucher_luxury_receipt&format=xlsx" target="_blank" download="voucher_template_voucher_luxury_receipt.xlsx">
                   ${raw(icon.download({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' }))}تنزيل Excel (.xlsx)
                 </a>
                 <a class="btn btn-sm" href="/api/vouchers/template?style=voucher_luxury_receipt&format=xls" target="_blank" download="voucher_template_voucher_luxury_receipt.xls">

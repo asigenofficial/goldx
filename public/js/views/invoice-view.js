@@ -220,7 +220,7 @@ export function openDownloadModal({ invoice, issuer, client, printSettings = nul
       </div>
       <div style="display:flex;flex-direction:column;gap:.75rem;margin-top:1rem">
         <!-- تحميل مباشر لملف PDF -->
-        <button class="btn btn-primary" id="dl-pdf-file-opt" type="button" style="text-align:right;padding:.9rem 1rem;display:flex;flex-direction:column;gap:3px;background:linear-gradient(135deg,#0d9488,#0f766e);border-color:#0d9488">
+        <button class="btn btn-primary" id="dl-pdf-file-opt" type="button" style="text-align:right;padding:.9rem 1rem;display:flex;flex-direction:column;gap:3px">
           <span style="font-size:1rem;font-weight:bold;display:flex;align-items:center;gap:8px">
             ${raw(icon.pdf({ size: 22 }))}
             تحميل ملف الفاتورة بصيغة PDF مباشرة (.pdf)

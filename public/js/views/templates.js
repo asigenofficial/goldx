@@ -6,7 +6,7 @@ import { api } from '../core/api.js';
 import { store, can } from '../core/store.js';
 import {
   html, raw, esc, printDoc, modal, toastOk, toastErr, $, $$, exportExcel, downloadPdfFromHtml,
-  fillDynamicTemplateHtml, fillStoredTemplate,
+  fillDynamicTemplateHtml, fillStoredTemplate, num, icon,
 } from '../core/util.js';
 
 import { PRESET_LOGOS } from '../print/logos.js';
@@ -291,50 +291,10 @@ export async function render(view) {
 
   let currentInvoice = getDynamicPreviewInvoice();
   let searchQuery = '';
+  let tplPage = 1;
+  const TPL_PAGE_SIZE = 8;
 
   // ------------------------------------------------------------- مولدات الأقسام
-  function renderKpisHtml(invoiceTemplates, voucherTemplates, currentTpl, activeZatcaPhase) {
-    return `
-      <div class="doc-tpl-kpis">
-        <div class="doc-tpl-kpi-card">
-          <div class="doc-tpl-kpi-icon" style="background:rgba(212,175,55,0.15); color:#d4af37;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l3 6-9 12L3 9z"/></svg>
-          </div>
-          <div class="doc-tpl-kpi-info">
-            <span class="doc-tpl-kpi-val">${invoiceTemplates.length}</span>
-            <span class="doc-tpl-kpi-label">قوالب فواتير الذهب المعتمدة</span>
-          </div>
-        </div>
-        <div class="doc-tpl-kpi-card">
-          <div class="doc-tpl-kpi-icon" style="background:rgba(212,175,55,0.15); color:#b45309;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
-          </div>
-          <div class="doc-tpl-kpi-info">
-            <span class="doc-tpl-kpi-val">${voucherTemplates.length}</span>
-            <span class="doc-tpl-kpi-label">قوالب سندات التحصيل</span>
-          </div>
-        </div>
-        <div class="doc-tpl-kpi-card" style="border-color:rgba(212,175,55,0.4);">
-          <div class="doc-tpl-kpi-icon" style="background:rgba(212,175,55,0.2); color:#d4af37;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          </div>
-          <div class="doc-tpl-kpi-info">
-            <span class="doc-tpl-kpi-val" style="font-size:1.05rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px;">${esc(currentTpl?.name_ar || currentTpl?.name || 'لم يُعتمد قالب بعد')}</span>
-            <span class="doc-tpl-kpi-label">قالب الفاتورة النشط</span>
-          </div>
-        </div>
-        <div class="doc-tpl-kpi-card">
-          <div class="doc-tpl-kpi-icon" style="background:rgba(212,175,55,0.15); color:#8c6d1f;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          </div>
-          <div class="doc-tpl-kpi-info">
-            <span class="doc-tpl-kpi-val" style="font-size:0.92rem; color:#8c6d1f; font-weight:700;">${activeZatcaPhase === 'PHASE2' ? 'المرحلة 2 (تكامل)' : 'المرحلة 1 (مشفر)'}</span>
-            <span class="doc-tpl-kpi-label">هيئة الزكاة والضريبة (ZATCA)</span>
-          </div>
-        </div>
-      </div>
-    `;
-  }
 
   function renderSearchBarHtml(activeTab) {
     const uploadLabel = activeTab === 'vouchers' ? 'رفع قالب سند قبض جديد (.html)' : activeTab === 'reports' ? 'رفع قالب تقرير مالي (.html)' : activeTab === 'statements' ? 'رفع قالب كشف حساب (.html)' : 'رفع قالب فاتورة جديد (.html)';
@@ -854,26 +814,68 @@ export async function render(view) {
     const filteredInvoices = filterList(invoiceTemplates);
     const filteredVouchers = filterList(voucherTemplates);
 
-    const kpiHtml = renderKpisHtml(invoiceTemplates, voucherTemplates, currentTpl, activeZatcaPhase);
     const searchBarHtml = activeHubTab !== 'print' ? renderSearchBarHtml(activeHubTab) : '';
 
     let contentHtml = '';
     if (activeHubTab === 'reports' || activeHubTab === 'statements') {
       const settingKey = activeHubTab === 'reports' ? 'report_template_style' : 'statement_template_style';
       const matched = filterList(excelTemplates.filter((tpl) => tpl.category === activeHubTab));
-      contentHtml = matched.length ? `<div class="doc-tpl-grid">${matched.map((tpl) => `<div class="doc-tpl-card" style="padding:1rem">
+      const totalCount = matched.length;
+      const totalPages = Math.max(1, Math.ceil(totalCount / TPL_PAGE_SIZE));
+      if (tplPage > totalPages) tplPage = totalPages;
+      const paged = matched.slice((tplPage - 1) * TPL_PAGE_SIZE, tplPage * TPL_PAGE_SIZE);
+      const pagerHtml = totalCount > 0 ? `
+        <div class="pager" style="margin-top:1.5rem">
+          <button class="btn btn-sm" id="tpl-prev" ${tplPage <= 1 ? 'disabled' : ''} type="button">
+            ${raw(icon.arrowRight({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' }))}السابق
+          </button>
+          <span class="tiny muted">صفحة ${tplPage} من ${totalPages} — إجمالي ${num(totalCount)} قالب</span>
+          <button class="btn btn-sm" id="tpl-next" ${tplPage >= totalPages ? 'disabled' : ''} type="button">
+            التالي${raw(icon.arrowLeft({ size: 14, style: 'vertical-align:text-bottom;margin-right:3px' }))}
+          </button>
+        </div>` : '';
+
+      contentHtml = (paged.length ? `<div class="doc-tpl-grid">${paged.map((tpl) => `<div class="doc-tpl-card" style="padding:1rem">
         <strong>${esc(tpl.name_ar || tpl.name)}</strong><p class="muted">${esc(tpl.description || 'قالب HTML قابل للتخصيص')}</p>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap">
           <button class="btn btn-sm" type="button" data-file-preview="${esc(tpl.id)}">معاينة</button>
           <button class="btn btn-sm ${printCfg[settingKey] === tpl.id && !isAutomaticTemplate(settingKey) ? 'btn-tpl-active-state' : 'btn-primary'}" type="button" data-select-data-template="${esc(tpl.id)}" data-setting-key="${settingKey}" title="اعتماد هذا القالب لهذه الفئة" ${printCfg[settingKey] === tpl.id && !isAutomaticTemplate(settingKey) ? 'disabled' : ''}>${printCfg[settingKey] === tpl.id && !isAutomaticTemplate(settingKey) ? 'معتمد ✓' : 'اعتماد للمنشأة'}</button>
           <button class="btn btn-sm btn-danger" type="button" data-file-delete="${esc(tpl.id)}">حذف</button>
-        </div></div>`).join('')}</div>` : '<div class="doc-tpl-empty">لا توجد قوالب في هذه الفئة. ارفع ملف HTML لإضافتها.</div>';
+        </div></div>`).join('')}</div>` : '<div class="doc-tpl-empty">لا توجد قوالب في هذه الفئة. ارفع ملف HTML لإضافتها.</div>') + pagerHtml;
     } else if (activeHubTab === 'vouchers') {
-      contentHtml = renderVouchersGridHtml(filteredVouchers);
+      const totalCount = filteredVouchers.length;
+      const totalPages = Math.max(1, Math.ceil(totalCount / TPL_PAGE_SIZE));
+      if (tplPage > totalPages) tplPage = totalPages;
+      const paged = filteredVouchers.slice((tplPage - 1) * TPL_PAGE_SIZE, tplPage * TPL_PAGE_SIZE);
+      const pagerHtml = totalCount > 0 ? `
+        <div class="pager" style="margin-top:1.5rem">
+          <button class="btn btn-sm" id="tpl-prev" ${tplPage <= 1 ? 'disabled' : ''} type="button">
+            ${raw(icon.arrowRight({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' }))}السابق
+          </button>
+          <span class="tiny muted">صفحة ${tplPage} من ${totalPages} — إجمالي ${num(totalCount)} قالب</span>
+          <button class="btn btn-sm" id="tpl-next" ${tplPage >= totalPages ? 'disabled' : ''} type="button">
+            التالي${raw(icon.arrowLeft({ size: 14, style: 'vertical-align:text-bottom;margin-right:3px' }))}
+          </button>
+        </div>` : '';
+      contentHtml = renderVouchersGridHtml(paged) + pagerHtml;
     } else if (activeHubTab === 'print') {
       contentHtml = renderPrintStudioHtml(printSubTab, printCfg, qrCfg, activeIssuer, activeZatcaPhase, zoomLevel);
     } else {
-      contentHtml = renderInvoicesGridHtml(filteredInvoices, printCfg.template_style, activeIssuer);
+      const totalCount = filteredInvoices.length;
+      const totalPages = Math.max(1, Math.ceil(totalCount / TPL_PAGE_SIZE));
+      if (tplPage > totalPages) tplPage = totalPages;
+      const paged = filteredInvoices.slice((tplPage - 1) * TPL_PAGE_SIZE, tplPage * TPL_PAGE_SIZE);
+      const pagerHtml = totalCount > 0 ? `
+        <div class="pager" style="margin-top:1.5rem">
+          <button class="btn btn-sm" id="tpl-prev" ${tplPage <= 1 ? 'disabled' : ''} type="button">
+            ${raw(icon.arrowRight({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' }))}السابق
+          </button>
+          <span class="tiny muted">صفحة ${tplPage} من ${totalPages} — إجمالي ${num(totalCount)} قالب</span>
+          <button class="btn btn-sm" id="tpl-next" ${tplPage >= totalPages ? 'disabled' : ''} type="button">
+            التالي${raw(icon.arrowLeft({ size: 14, style: 'vertical-align:text-bottom;margin-right:3px' }))}
+          </button>
+        </div>` : '';
+      contentHtml = renderInvoicesGridHtml(paged, printCfg.template_style, activeIssuer) + pagerHtml;
     }
 
     view.innerHTML = html`
@@ -899,8 +901,6 @@ export async function render(view) {
           </div>
         </div>
 
-        <!-- مؤشرات KPI إحصائية سريعة -->
-        ${raw(kpiHtml)}
 
         <!-- شريط تبويبات المركز الرئيسي (فواتير وسندات فقط) -->
         <div class="doc-tpl-nav">
@@ -2432,6 +2432,7 @@ export async function render(view) {
     $$('.doc-tpl-tab-btn', view).forEach((btn) => {
       btn.addEventListener('click', () => {
         activeHubTab = btn.dataset.hubTab;
+        tplPage = 1;
         window.location.hash = `#/templates?tab=${activeHubTab}`;
         renderView();
       });
@@ -2442,6 +2443,7 @@ export async function render(view) {
     if (searchInp) {
       searchInp.addEventListener('input', (e) => {
         searchQuery = e.target.value.trim();
+        tplPage = 1;
         renderView();
         const newInp = $('#inp-hub-search', view);
         if (newInp) {
@@ -2627,6 +2629,17 @@ export async function render(view) {
     });
 
     // إعادة مزامنة القوالب مع القرص
+    $('#tpl-prev', view)?.addEventListener('click', () => {
+      if (tplPage > 1) {
+        tplPage--;
+        renderView();
+      }
+    });
+    $('#tpl-next', view)?.addEventListener('click', () => {
+      tplPage++;
+      renderView();
+    });
+
     $('#btn-reset-templates', view)?.addEventListener('click', async () => {
       try {
         await api.post('/api/invoices/templates/reset');

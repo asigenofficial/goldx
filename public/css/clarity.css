@@ -4,7 +4,7 @@
 html, html[data-theme], html[data-theme], html[data-theme="dark"] {
   color-scheme: light;
 
-  --brand: #b8860b; --brand-dark: #8c6d1f; --brand-light: rgba(254, 249, 231, 0.85);
+  --brand: #b8860b; --brand-dark: #8c6d1f; --brand-light: #fef9e7;
   --primary: #b8860b; --accent: #d4af37; --brand-glow: 0 4px 18px rgba(184, 134, 11, 0.22);
   --gold-main: #b8860b; --gold-light: #d4af37; --gold-dark: #8c6d1f;
   --gold-gradient: linear-gradient(135deg, #d4af37 0%, #b8860b 100%);
@@ -12,16 +12,16 @@ html, html[data-theme], html[data-theme], html[data-theme="dark"] {
 
   --bg: #faf7f2;
   --canvas: radial-gradient(circle at 12% 10%, rgba(212, 175, 55, 0.05) 0%, transparent 40%), radial-gradient(circle at 88% 90%, rgba(212, 175, 55, 0.04) 0%, transparent 40%);
-  --card: rgba(255, 255, 255, 0.82);
+  --card: #ffffff;
   --card-solid: #ffffff;
-  --card-hover: rgba(255, 253, 247, 0.95);
+  --card-hover: #fffdf7;
   --sidebar: rgba(255, 255, 255, 0.85);
   --sidebar-hover: rgba(254, 249, 231, 0.85);
   --topbar: rgba(255, 255, 255, 0.85);
-  --field-bg: rgba(255, 255, 255, 0.82);
-  --field-focus-bg: #ffffff;
-  --bg-alt: rgba(254, 251, 243, 0.75);
-  --card-bg: rgba(255, 255, 255, 0.82);
+  --field-bg: #ffffff;
+  --field-focus-bg: #fffdf5;
+  --bg-alt: #fcfaf5;
+  --card-bg: #ffffff;
   --card-sub: rgba(251, 248, 240, 0.8);
   --border-color: rgba(212, 175, 55, 0.25);
 
@@ -52,6 +52,7 @@ html[data-theme] .totals-box .grand,
 html[data-theme] .kv dd,
 html[data-theme] .tpl-section-title,
 html[data-theme] .tpl-card-title,
+html[data-theme] .tpl-mini-title,
 html[data-theme] .doc-tpl-card-title,
 html[data-theme] .tab:hover,
 html[data-theme] .tpl-filter-btn:hover,
@@ -78,7 +79,11 @@ html[data-theme] .btn:not(.btn-primary):not(.btn-danger):not(.tb-tool-btn):not(.
 html[data-theme] .nav-item.active .ico { color: var(--brand); }
 
 html[data-theme] table.tbl thead th,
-html[data-theme] table.tbl tfoot td { color: var(--text); background: #f6f8fa; }
+html[data-theme] table.tbl tfoot td {
+  color: var(--text-heading);
+  background: var(--brand-light);
+  border-bottom: 1.5px solid rgba(212, 175, 55, 0.3);
+}
 
 html[data-theme] table.tbl td.num,
 html[data-theme] table.tbl th.num { display: table-cell; }
@@ -106,11 +111,20 @@ html .filter-box {
   box-shadow: 0 8px 30px rgba(184, 134, 11, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
 }
 
-html .btn-primary,
 html .avatar {
-  background: linear-gradient(135deg, #d4af37 0%, #b8860b 100%) !important;
-  color: white !important;
-  box-shadow: 0 4px 14px rgba(184, 134, 11, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+  background: linear-gradient(135deg, #8f6412 0%, #6d390a 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(109, 57, 10, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+}
+
+html .btn-primary,
+html[data-theme] .btn-primary {
+  background: linear-gradient(135deg, #8f6412 0%, #6d390a 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid #5c3008 !important;
+  box-shadow: 0 4px 16px rgba(109, 57, 10, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4) !important;
+  font-weight: 700 !important;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -123,9 +137,9 @@ html .btn:active { transform: scale(0.97) !important; }
 html .page-head .titles p { max-width: 70ch; }
 
 html .tbl thead th {
-  background: rgba(254, 249, 231, 0.75) !important;
+  background: var(--brand-light) !important;
   color: #78350f !important;
-  border-bottom: 1px solid rgba(212, 175, 55, 0.25) !important;
+  border-bottom: 1.5px solid rgba(212, 175, 55, 0.3) !important;
 }
 html .tbl tbody tr:hover { background: rgba(254, 249, 231, 0.35) !important; }
 html[data-theme] .card,
@@ -141,15 +155,15 @@ html[data-theme] .chip {
   font-weight: 600;
 }
 html[data-theme] .chip:hover {
-  background: #e2e8f0;
-  border-color: #059669;
-  color: #0f172a;
+  background: var(--brand-light);
+  border-color: var(--brand);
+  color: var(--brand-dark);
 }
 html[data-theme] .chip.on {
-  background: var(--brand, #059669);
-  border-color: var(--brand, #059669);
+  background: var(--brand, #b8860b);
+  border-color: var(--brand, #b8860b);
   color: #ffffff !important;
-  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.35);
+  box-shadow: 0 2px 6px rgba(184, 134, 11, 0.35);
 }
 html[data-theme] .badge.gray {
   color: #475569;
@@ -159,7 +173,12 @@ html[data-theme] .badge.gray {
 html[data-theme] .badge.green,
 html[data-theme] .doc-tpl-chip.green { color: var(--success); background: var(--success-light); }
 html[data-theme] .badge.blue,
-html[data-theme] .doc-tpl-chip.primary { color: var(--brand-dark); background: var(--brand-light); }
+html[data-theme] .badge.teal,
+html[data-theme] .doc-tpl-chip.primary {
+  color: var(--brand-dark);
+  background: var(--brand-light);
+  border-color: rgba(212, 175, 55, 0.35);
+}
 html[data-theme] .badge.red { color: var(--danger); background: var(--danger-light); }
 html[data-theme] .badge.amber { color: var(--warn); background: var(--warn-light); }
 
@@ -167,10 +186,30 @@ html[data-theme] .advanced-options { margin-top: 1rem; border-top: 1px solid var
 html[data-theme] .advanced-options summary { cursor: pointer; color: var(--brand-dark); font-weight: 600; }
 html[data-theme] .advanced-options > .row { margin-top: 1rem; }
 
-html[data-theme] :focus-visible { outline: 3px solid #0f766e55; outline-offset: 3px; }
-html[data-theme] .toast { background: #172b3a; color: white; border: 1px solid #334155; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); }
-html[data-theme] .toast.ok,
-html[data-theme] .toast.err { border-color: #334155 !important; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important; }
+:focus-visible,
+html[data-theme] :focus-visible {
+  outline: 2px solid #8c6d1f !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.35) !important;
+}
+html[data-theme] .toast {
+  background: #ffffff;
+  color: var(--text);
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  box-shadow: 0 10px 30px rgba(184, 134, 11, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+html[data-theme] .toast.ok {
+  border-color: rgba(21, 128, 61, 0.35) !important;
+  border-right: 4px solid var(--success) !important;
+  color: var(--text-heading) !important;
+  box-shadow: 0 10px 30px rgba(21, 128, 61, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
+html[data-theme] .toast.err {
+  border-color: rgba(220, 38, 38, 0.35) !important;
+  border-right: 4px solid var(--danger) !important;
+  color: var(--text-heading) !important;
+  box-shadow: 0 10px 30px rgba(220, 38, 38, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
 
 /* إصلاح لون نص الصف في الجداول */
 html[data-theme] table.tbl tbody td { color: var(--text); }
@@ -288,17 +327,17 @@ html[data-theme] .invoices-list::-webkit-scrollbar-track { background: #f1f5f9; 
 html[data-theme] .invoices-list::-webkit-scrollbar-thumb { background: #94a3b8; }
 html[data-theme] .invoices-list::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-html[data-theme] table.tbl thead th { background: #f8fafc !important; color: #334155 !important; box-shadow: 0 1px 0 var(--line); }
+html[data-theme] table.tbl thead th { background: var(--brand-light) !important; color: #78350f !important; border-bottom: 1.5px solid rgba(212, 175, 55, 0.3) !important; box-shadow: 0 1px 0 var(--line); }
 
 /* مسرح معاينة المستندات والسندات الورقية في وضع الضوء */
 html[data-theme] .modal-paper-stage {
-  background: #e2e8f0;
-  border-color: #cbd5e1;
+  background: #fcfaf5;
+  border-color: var(--line);
 }
 
 html[data-theme] .modal-paper-sheet {
   background: #ffffff;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.14);
+  box-shadow: 0 10px 30px rgba(184, 134, 11, 0.1);
 }
 
 /* kv list */
@@ -307,7 +346,7 @@ html[data-theme] .kv dd { color: var(--text-heading); }
 
 /* route progress bar */
 html[data-theme] .route-progress::before {
-  background: linear-gradient(90deg, #0f766e, #0d9488, #14b8a6);
+  background: var(--gold-gradient);
 }
 
 /* totals */
@@ -315,7 +354,34 @@ html[data-theme] .totals-box .line { color: var(--muted); }
 html[data-theme] .totals-box .line.grand { color: var(--brand); }
 
 /* pager */
-html[data-theme] .pager { border-color: var(--line); }
+html[data-theme] .pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: .85rem 1.2rem;
+  border-top: 1px solid rgba(184, 134, 11, 0.15);
+  background: var(--card);
+}
+html[data-theme] .pager .btn {
+  border-color: rgba(184, 134, 11, 0.25);
+  font-weight: 600;
+  min-width: 84px;
+}
+html[data-theme] .pager .btn:hover:not(:disabled) {
+  border-color: var(--brand);
+  background: var(--brand-light);
+  color: var(--brand-dark);
+}
+html[data-theme] .pager .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: var(--line);
+}
+html[data-theme] .pager .muted {
+  font-weight: 600;
+  color: var(--text-heading);
+}
 
 /* قوالب المستندات في وضع الضوء */
 html[data-theme] .doc-tpl-card {
@@ -347,7 +413,7 @@ html[data-theme] .doc-tpl-headers-label {
 html[data-theme] .doc-tpl-chip {
   background: #f1f5f9;
   border-color: #cbd5e1;
-  color: #0f172a;
+  color: var(--text);
 }
 html[data-theme] .doc-tpl-chip-more {
   color: #64748b;
@@ -452,29 +518,29 @@ html[data-theme] .visual-doc-editor {
 html[data-theme] .visual-doc-editor > header {
   background: #ffffff !important;
   border-bottom: 1px solid #e2e8f0 !important;
-  color: #0f172a !important;
+  color: var(--text-heading) !important;
 }
 
 html[data-theme] .visual-doc-editor > header span {
-  color: #0f172a !important;
+  color: var(--text-heading) !important;
 }
 
 html[data-theme] .builder-core-controls select,
 html[data-theme] .builder-core-controls input {
   background: #f8fafc !important;
-  color: #0f172a !important;
+  color: var(--text) !important;
   border: 1px solid #cbd5e1 !important;
 }
 
 html[data-theme] .builder-core-controls select option {
   background: #ffffff !important;
-  color: #0f172a !important;
+  color: var(--text) !important;
 }
 
 html[data-theme] .builder-actions-row .btn-clear-sheet,
 html[data-theme] .builder-actions-row .btn-print-sheet {
   background: #f1f5f9 !important;
-  color: #334155 !important;
+  color: var(--text) !important;
   border: 1px solid #cbd5e1 !important;
 }
 
@@ -492,31 +558,31 @@ html[data-theme] .tab-btn {
 }
 
 html[data-theme] .tab-btn:hover {
-  color: #0f172a !important;
+  color: var(--text-heading) !important;
   background: #e2e8f0 !important;
 }
 
 html[data-theme] .tab-btn.active {
-  color: #0284c7 !important;
-  border-bottom-color: #0284c7 !important;
-  background: rgba(2, 132, 199, 0.08) !important;
+  color: var(--brand) !important;
+  border-bottom-color: var(--brand) !important;
+  background: rgba(184, 134, 11, 0.08) !important;
 }
 
 html[data-theme] .tab-panel {
   background: #ffffff !important;
   border-bottom: 1px solid #e2e8f0 !important;
-  color: #1e293b !important;
+  color: var(--text) !important;
 }
 
 html[data-theme] .btn-insert-blk {
   background: #f8fafc !important;
   border: 1px solid #cbd5e1 !important;
-  color: #1e293b !important;
+  color: var(--text) !important;
 }
 
 html[data-theme] .btn-insert-blk:hover {
-  background: var(--brand, #059669) !important;
-  border-color: var(--brand, #059669) !important;
+  background: var(--brand) !important;
+  border-color: var(--brand) !important;
   color: #ffffff !important;
 }
 
@@ -546,7 +612,7 @@ html[data-theme] .tab-panel select,
 html[data-theme] .tab-panel input:not([type=color]):not([type=range]) {
   background: #f8fafc !important;
   border: 1px solid #cbd5e1 !important;
-  color: #0f172a !important;
+  color: var(--text) !important;
 }
 
 html[data-theme] .tab-panel label,
@@ -571,14 +637,14 @@ html[data-theme] .builder-bottom-bar {
 html[data-theme] .builder-bottom-actions select {
   background: #f8fafc !important;
   border: 1px solid #cbd5e1 !important;
-  color: #0f172a !important;
+  color: var(--text) !important;
 }
 
 html[data-theme] #modal-table-gen > div,
 html[data-theme] #modal-paste-html > div {
   background: #ffffff !important;
   border: 1px solid #cbd5e1 !important;
-  color: #0f172a !important;
+  color: var(--text-heading) !important;
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.15) !important;
 }
 
@@ -600,7 +666,7 @@ html[data-theme] #modal-table-gen input,
 html[data-theme] #modal-table-gen select {
   background: #ffffff !important;
   border: 1px solid #cbd5e1 !important;
-  color: #0f172a !important;
+  color: var(--text) !important;
 }
 
 html[data-theme] .builder-palette-controls span {
@@ -609,7 +675,7 @@ html[data-theme] .builder-palette-controls span {
 
 html[data-theme] .tab-panel span[style*="color:#38bdf8"],
 html[data-theme] .tab-panel span[style*="color:#94a3b8"] {
-  color: #0284c7 !important;
+  color: var(--brand) !important;
 }
 
 html[data-theme] .tab-panel div[style*="background:#334155"] {
@@ -671,7 +737,7 @@ html[data-theme] #modal-ai-prompt-studio > div > div:first-child {
 }
 
 html[data-theme] #modal-ai-prompt-studio h3 {
-  color: #0f172a !important;
+  color: var(--text-heading) !important;
 }
 
 html[data-theme] #modal-ai-prompt-studio #btn-close-ai-modal {
@@ -762,14 +828,14 @@ html[data-theme] .segmented-option {
 
 html[data-theme] .segmented-option:hover {
   background: #e2e8f0;
-  color: #0f172a;
+  color: var(--text-heading);
 }
 
 html[data-theme] .segmented-option.is-active,
 html[data-theme] .segmented-option:has(input:checked) {
-  background: #e0f2fe;
-  color: #0369a1;
-  border-color: #7dd3fc;
+  background: var(--brand-light);
+  color: var(--brand-dark);
+  border-color: rgba(212, 175, 55, 0.45);
 }
 
 html[data-theme] .bulk-options-bar {
@@ -783,7 +849,7 @@ html[data-theme] .check-pill:hover {
 }
 
 html[data-theme] .check-pill-content b {
-  color: #0f172a;
+  color: var(--text-heading);
 }
 
 html[data-theme] .bulk-items-bar {
@@ -807,30 +873,31 @@ html[data-theme] .distribution-card:hover {
 }
 
 html[data-theme] .distribution-card:has(input:checked) {
-  background: #e0f2fe;
+  background: var(--brand-light);
   border-color: var(--brand);
 }
 
 html[data-theme] #w-mode-bar {
-  background: #eef2f6;
-  border-color: #cbd5e1;
+  background: rgba(254, 249, 231, 0.6);
+  border-color: rgba(212, 175, 55, 0.35);
 }
 
 html[data-theme] #w-mode-bar .btn:not(.active) {
   background: transparent !important;
-  color: #475569 !important;
+  color: var(--muted) !important;
   border-color: transparent !important;
 }
 
 html[data-theme] #w-mode-bar .btn:hover:not(.active) {
-  background: rgba(0, 0, 0, 0.05) !important;
-  color: #0f172a !important;
+  background: rgba(212, 175, 55, 0.12) !important;
+  color: var(--brand-dark) !important;
 }
 
 html[data-theme] #w-mode-bar .btn.active {
-  background: var(--brand) !important;
+  background: var(--gold-gradient) !important;
   color: #ffffff !important;
   border-color: var(--brand) !important;
+  box-shadow: 0 2px 10px rgba(184, 134, 11, 0.35) !important;
 }
 
 /* ==========================================================================
@@ -1272,3 +1339,212 @@ html[data-theme] .stat .stat-lab {
   margin-top: 4px !important;
 }
 
+/* إصلاح طفحان الأرقام والرموز في جميع بطاقات الإحصائيات */
+.grid-4 {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
+}
+
+.stat {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  padding: 1rem 1.15rem !important;
+  gap: 0.75rem !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.stat .stat-ico {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 12px !important;
+  flex-shrink: 0 !important;
+}
+
+.stat > div:last-child {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.stat .stat-val {
+  font-size: clamp(1.02rem, 1.3vw, 1.25rem) !important;
+  line-height: 1.25 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 100% !important;
+}
+
+.stat .stat-val.num {
+  direction: ltr !important;
+  text-align: right !important;
+  display: block !important;
+}
+
+.stat .stat-val .money-val {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  max-width: 100% !important;
+}
+
+.stat .stat-val .money-val .num {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.stat .stat-val:not(.num) {
+  white-space: nowrap !important;
+  font-size: 1.12rem !important;
+}
+
+/* ===================================================================
+   إصلاح شامل لظهور الأرقام في حقول الإدخال والجداول (All Interfaces Fix)
+   =================================================================== */
+
+/* 1. إخفاء أسهم المتصفح المزعجة من حقول الأرقام لمنع حجب الأرقام داخل الحقول الضيقة */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+input[type=number] {
+  -moz-appearance: textfield !important;
+}
+
+/* 2. ضبط محاذاة ووضوح الأرقام داخل حقول الإدخال بلون داكن ومقروء تماماً */
+input[type=number],
+input.num,
+input.ltr {
+  direction: ltr !important;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+  color: #1c1917 !important;
+  font-weight: 600 !important;
+}
+
+/* 3. ضبط حقول الإدخال داخل الجداول (جدول الفاتورة والأصناف والسندات) لمنع قص الأرقام */
+table.tbl input,
+table.tbl select {
+  height: 34px !important;
+  min-height: 34px !important;
+  padding: 0.25rem 0.55rem !important;
+  font-size: 0.88rem !important;
+  border-radius: 8px !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+}
+
+/* 4. إعطاء مساحة مريحة لحقول أسعار وأجور ومصوغات الذهب في جدول الفاتورة */
+#lines-tbl td input[type=number] {
+  min-width: 75px !important;
+  font-size: 0.92rem !important;
+}
+
+/* 5. تمييز ووضوح خلايا الأرقام المحسوبة آلياً في جدول بنود الفاتورة */
+.col-unit-price,
+.col-taxable,
+.col-tax,
+.col-total {
+  font-weight: 700 !important;
+  color: #78350f !important;
+  font-size: 0.9rem !important;
+  padding: 0.4rem 0.6rem !important;
+}
+.col-total {
+  color: #b8860b !important;
+  font-size: 0.95rem !important;
+}
+
+/* 6. وضوح نصوص الـ placeholder في كافة الحقول */
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8 !important;
+  opacity: 0.85 !important;
+}
+
+/* 7. تباين أرقام تذييل الجداول المالية */
+table.tbl tfoot td,
+table.tbl tfoot td b {
+  color: #78350f !important;
+  font-size: 0.92rem !important;
+}
+
+/* 8. إصلاح عمود وحقل اختيار العيار في جدول الفاتورة لمنع الانكماش وظهور النص كاملاً */
+#lines-tbl {
+  min-width: 1250px !important;
+}
+
+#lines-tbl th:nth-child(3),
+#lines-tbl td:nth-child(3) {
+  width: 125px !important;
+  min-width: 125px !important;
+  white-space: nowrap !important;
+}
+
+#lines-tbl select[data-f="karat"],
+table.tbl select[data-f="karat"],
+select[data-f="karat"] {
+  min-width: 115px !important;
+  width: 100% !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
+  color: #78350f !important;
+  background-color: #ffffff !important;
+  border: 1.5px solid #dfcfad !important;
+  border-radius: 8px !important;
+  padding: 0.25rem 0.5rem !important;
+  padding-left: 24px !important;
+  padding-right: 8px !important;
+  background-position: left 8px center !important;
+  background-size: 14px 14px !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+}
+
+
+
+
+
+
+/* ── Accessibility (WCAG 2.1 AA) Enhancements ── */
+
+/* رابط التخطي للوصول السريع للمحتوى */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  right: 1.5rem;
+  background: #78350f;
+  color: #ffffff !important;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  z-index: 100000;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  transition: top 0.15s ease;
+}
+.skip-link:focus {
+  top: 1rem;
+  outline: 3px solid #d4af37 !important;
+  outline-offset: 2px !important;
+}
+
+/* تحسين الأزرار الأساسية والتفاعلية للأجهزة اللمسية */
+@media (pointer: coarse) {
+  .btn,
+  .btn-icon,
+  .pager .btn,
+  .tbl button,
+  .row-actions-group .btn,
+  .nav-item,
+  .quick-menu button,
+  .field select,
+  .field input {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

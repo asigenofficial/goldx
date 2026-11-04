@@ -5,7 +5,7 @@ import { api } from '../core/api.js';
 import { store, loadIssuers, invalidate, can, setActiveIssuer } from '../core/store.js';
 import {
   html, raw, esc, modal, formValues, toastOk, toastErr,
-  confirmDialog, $, $$, delegate, dateTimeAr, icon,
+  confirmDialog, $, $$, delegate, dateTimeAr, icon, num,
   exportExcel, exportCsv,
 } from '../core/util.js';
 
@@ -438,6 +438,8 @@ function openIssuerImportModal(onSuccess) {
 
 export async function render(view) {
   let searchQ = '';
+  let issuerPage = 1;
+  const ISSUER_PAGE_SIZE = 12;
   const draw = async () => {
     const rawIssuers = await api.get('/api/issuers');
     const issuers = Array.isArray(rawIssuers) ? rawIssuers : (rawIssuers?.data || []);
@@ -505,6 +507,10 @@ export async function render(view) {
     };
 
     const initialList = filterIssuers(searchQ);
+    const totalIssuers = initialList.length;
+    const totalIssuerPages = Math.max(1, Math.ceil(totalIssuers / ISSUER_PAGE_SIZE));
+    if (issuerPage > totalIssuerPages) issuerPage = totalIssuerPages;
+    const pagedIssuers = initialList.slice((issuerPage - 1) * ISSUER_PAGE_SIZE, issuerPage * ISSUER_PAGE_SIZE);
 
     view.innerHTML = html`
       <div class="page-head">
@@ -541,19 +547,39 @@ export async function render(view) {
       </div></div>` : '')}
 
       ${raw(issuers.length ? `<div id="issuers-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:0.65rem;">
-        ${renderGrid(initialList)}
+        ${renderGrid(pagedIssuers)}
+      </div>
+      <div class="pager" style="margin-top:1.5rem">
+        <button class="btn btn-sm" id="issuers-prev" ${issuerPage <= 1 ? 'disabled' : ''} type="button">
+          ${raw(icon.arrowRight({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' }))}السابق
+        </button>
+        <span class="tiny muted">صفحة ${issuerPage} من ${totalIssuerPages} — إجمالي ${num(totalIssuers)} متجر</span>
+        <button class="btn btn-sm" id="issuers-next" ${issuerPage >= totalIssuerPages ? 'disabled' : ''} type="button">
+          التالي${raw(icon.arrowLeft({ size: 14, style: 'vertical-align:text-bottom;margin-right:3px' }))}
+        </button>
       </div>` : '')}`;
+
+    $('#issuers-prev', view)?.addEventListener('click', () => {
+      if (issuerPage > 1) {
+        issuerPage--;
+        draw();
+      }
+    });
+    $('#issuers-next', view)?.addEventListener('click', () => {
+      issuerPage++;
+      draw();
+    });
 
     const searchInput = $('#issuers-search', view);
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
         searchQ = e.target.value;
-        const filtered = filterIssuers(searchQ);
-        const grid = $('#issuers-grid', view);
-        if (grid) grid.innerHTML = renderGrid(filtered);
-        const countEl = $('#issuers-count', view);
-        if (countEl) {
-          countEl.textContent = searchQ.trim() ? `${filtered.length} مطابقة من أصل ${issuers.length} متجر` : `${issuers.length} متجر`;
+        issuerPage = 1;
+        draw();
+        const inp = $('#issuers-search', view);
+        if (inp) {
+          inp.focus();
+          inp.setSelectionRange(inp.value.length, inp.value.length);
         }
       });
     }

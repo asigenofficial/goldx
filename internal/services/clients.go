@@ -27,6 +27,8 @@ type ListClientsFilter struct {
 	ClientType   string
 	City         string
 	OnlyDebtors  bool
+	Page         int
+	Limit        int
 }
 
 type ClientListItem struct {
@@ -39,28 +41,31 @@ type ClientListItem struct {
 	InvoicesCount       int     `json:"invoices_count"`
 }
 
+type ClientListResult struct {
+	Items      []ClientListItem `json:"items"`
+	Total      int              `json:"total"`
+	Page       int              `json:"page"`
+	Limit      int              `json:"limit"`
+	TotalPages int              `json:"total_pages"`
+}
+
 func (s *ClientService) ListClients(f ListClientsFilter) ([]ClientListItem, error) {
-	query := `
-		SELECT c.id, c.client_code, c.name, c.name_en, c.phone, c.mobile, c.email,
-		       c.address, c.building_no, c.street, c.district, c.city, c.postal_code,
-		       c.country, c.tax_number, c.commercial_register, c.client_type,
-		       c.payment_terms_days, c.opening_balance, c.credit_limit, c.notes,
-		       c.is_active, c.created_at, c.updated_at,
-		       (SELECT COUNT(*) FROM invoices i WHERE i.client_id = c.id AND i.status <> 'CANCELLED'
-		           AND (? = '' OR i.issuer_id = ?)) AS invoices_count,
-		       (SELECT COALESCE(SUM(i.grand_total), 0) FROM invoices i WHERE i.client_id = c.id AND i.status <> 'CANCELLED'
-		           AND (? = '' OR i.issuer_id = ?)) AS total_invoiced,
-		       (SELECT COALESCE(SUM(i.paid_amount), 0) FROM invoices i WHERE i.client_id = c.id AND i.status <> 'CANCELLED'
-		           AND (? = '' OR i.issuer_id = ?)) AS total_paid
-		FROM clients c
-		WHERE (? = 0 OR c.is_active = 1)
-		  AND (? = '' OR c.client_type = ?)
-		  AND (? = '' OR c.city LIKE ?)
-		  AND (? = '' OR c.name LIKE ? OR c.client_code LIKE ? OR c.phone LIKE ?
-		       OR c.mobile LIKE ? OR c.tax_number LIKE ? OR c.commercial_register LIKE ?
-		       OR c.email LIKE ? OR c.address LIKE ?)
-		ORDER BY c.name ASC
-	`
+	res, err := s.ListClientsPaginated(f)
+	if err != nil {
+		return nil, err
+	}
+	return res.Items, nil
+}
+
+func (s *ClientService) ListClientsPaginated(f ListClientsFilter) (*ClientListResult, error) {
+	page := f.Page
+	if page < 1 {
+		page = 1
+	}
+	limit := f.Limit
+	if limit < 0 {
+		limit = 50
+	}
 
 	activeParam := 0
 	if f.ActiveOnly {
@@ -69,9 +74,58 @@ func (s *ClientService) ListClients(f ListClientsFilter) ([]ClientListItem, erro
 	likeSearch := "%" + f.Search + "%"
 	cityLike := "%" + f.City + "%"
 
-	rows, err := s.db.Query(query,
-		f.IssuerID, f.IssuerID,
-		f.IssuerID, f.IssuerID,
+	countQuery := `
+		SELECT COUNT(*)
+		FROM clients c
+		WHERE (? = 0 OR c.is_active = 1)
+		  AND (? = '' OR c.client_type = ?)
+		  AND (? = '' OR c.city LIKE ?)
+		  AND (? = '' OR c.name LIKE ? OR c.client_code LIKE ? OR c.phone LIKE ?
+		       OR c.mobile LIKE ? OR c.tax_number LIKE ? OR c.commercial_register LIKE ?
+		       OR c.email LIKE ? OR c.address LIKE ?)
+	`
+	var total int
+	err := s.db.QueryRow(countQuery,
+		activeParam,
+		f.ClientType, f.ClientType,
+		f.City, cityLike,
+		f.Search, likeSearch, likeSearch, likeSearch,
+		likeSearch, likeSearch, likeSearch,
+		likeSearch, likeSearch,
+	).Scan(&total)
+	if err != nil {
+		return nil, err
+	}
+
+	// Optimized aggregated LEFT JOIN scoped to current page or filtered results
+	query := `
+		SELECT c.id, c.client_code, c.name, c.name_en, c.phone, c.mobile, c.email,
+		       c.address, c.building_no, c.street, c.district, c.city, c.postal_code,
+		       c.country, c.tax_number, c.commercial_register, c.client_type,
+		       c.payment_terms_days, c.opening_balance, c.credit_limit, c.notes,
+		       c.is_active, c.created_at, c.updated_at,
+		       COALESCE(inv.invoices_count, 0) AS invoices_count,
+		       COALESCE(inv.total_invoiced, 0) AS total_invoiced,
+		       COALESCE(inv.total_paid, 0) AS total_paid
+		FROM clients c
+		LEFT JOIN (
+			SELECT client_id,
+			       COUNT(*) AS invoices_count,
+			       COALESCE(SUM(grand_total), 0) AS total_invoiced,
+			       COALESCE(SUM(paid_amount), 0) AS total_paid
+			FROM invoices
+			WHERE status <> 'CANCELLED' AND (? = '' OR issuer_id = ?)
+			GROUP BY client_id
+		) inv ON inv.client_id = c.id
+		WHERE (? = 0 OR c.is_active = 1)
+		  AND (? = '' OR c.client_type = ?)
+		  AND (? = '' OR c.city LIKE ?)
+		  AND (? = '' OR c.name LIKE ? OR c.client_code LIKE ? OR c.phone LIKE ?
+		       OR c.mobile LIKE ? OR c.tax_number LIKE ? OR c.commercial_register LIKE ?
+		       OR c.email LIKE ? OR c.address LIKE ?)
+		ORDER BY c.name ASC
+	`
+	args := []any{
 		f.IssuerID, f.IssuerID,
 		activeParam,
 		f.ClientType, f.ClientType,
@@ -79,7 +133,15 @@ func (s *ClientService) ListClients(f ListClientsFilter) ([]ClientListItem, erro
 		f.Search, likeSearch, likeSearch, likeSearch,
 		likeSearch, likeSearch, likeSearch,
 		likeSearch, likeSearch,
-	)
+	}
+
+	if limit > 0 {
+		query += " LIMIT ? OFFSET ?"
+		offset := (page - 1) * limit
+		args = append(args, limit, offset)
+	}
+
+	rows, err := s.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -122,20 +184,107 @@ func (s *ClientService) ListClients(f ListClientsFilter) ([]ClientListItem, erro
 		list = append(list, item)
 	}
 
+	totalPages := 1
+	if limit > 0 && total > 0 {
+		totalPages = int(math.Ceil(float64(total) / float64(limit)))
+	}
+
+	return &ClientListResult{
+		Items:      list,
+		Total:      total,
+		Page:       page,
+		Limit:      limit,
+		TotalPages: totalPages,
+	}, nil
+}
+
+func (s *ClientService) SearchClients(q string, limit int) ([]ClientListItem, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	q = strings.TrimSpace(q)
+	like := "%" + q + "%"
+	query := `
+		SELECT c.id, c.client_code, c.name, c.name_en, c.phone, c.mobile, c.email,
+		       c.address, c.building_no, c.street, c.district, c.city, c.postal_code,
+		       c.country, c.tax_number, c.commercial_register, c.client_type,
+		       c.payment_terms_days, c.opening_balance, c.credit_limit, c.notes,
+		       c.is_active, c.created_at, c.updated_at
+		FROM clients c
+		WHERE c.is_active = 1
+		  AND (? = '' OR c.name LIKE ? OR c.client_code LIKE ? OR c.phone LIKE ?
+		       OR c.mobile LIKE ? OR c.tax_number LIKE ? OR c.commercial_register LIKE ?)
+		ORDER BY c.name ASC
+		LIMIT ?
+	`
+	rows, err := s.db.Query(query, q, like, like, like, like, like, like, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	list := make([]ClientListItem, 0)
+	for rows.Next() {
+		var item ClientListItem
+		err := rows.Scan(
+			&item.ID, &item.ClientCode, &item.Name, &item.NameEn, &item.Phone, &item.Mobile, &item.Email,
+			&item.Address, &item.BuildingNo, &item.Street, &item.District, &item.City, &item.PostalCode,
+			&item.Country, &item.TaxNumber, &item.CommercialRegister, &item.ClientType,
+			&item.PaymentTermsDays, &item.OpeningBalance, &item.CreditLimit, &item.Notes,
+			&item.IsActive, &item.CreatedAt, &item.UpdatedAt,
+		)
+		if err == nil {
+			item.OpeningBalanceMajor = models.ToMajor(item.OpeningBalance)
+			item.CreditLimitMajor = models.ToMajor(item.CreditLimit)
+			list = append(list, item)
+		}
+	}
 	return list, nil
 }
 
 func (s *ClientService) GetClient(id string) (*ClientListItem, error) {
-	list, err := s.ListClients(ListClientsFilter{Search: "", WithBalances: true})
+	query := `
+		SELECT c.id, c.client_code, c.name, c.name_en, c.phone, c.mobile, c.email,
+		       c.address, c.building_no, c.street, c.district, c.city, c.postal_code,
+		       c.country, c.tax_number, c.commercial_register, c.client_type,
+		       c.payment_terms_days, c.opening_balance, c.credit_limit, c.notes,
+		       c.is_active, c.created_at, c.updated_at,
+		       COALESCE(inv.invoices_count, 0) AS invoices_count,
+		       COALESCE(inv.total_invoiced, 0) AS total_invoiced,
+		       COALESCE(inv.total_paid, 0) AS total_paid
+		FROM clients c
+		LEFT JOIN (
+			SELECT client_id,
+			       COUNT(*) AS invoices_count,
+			       COALESCE(SUM(grand_total), 0) AS total_invoiced,
+			       COALESCE(SUM(paid_amount), 0) AS total_paid
+			FROM invoices
+			WHERE client_id = ? AND status <> 'CANCELLED'
+			GROUP BY client_id
+		) inv ON inv.client_id = c.id
+		WHERE c.id = ?
+		LIMIT 1
+	`
+	var item ClientListItem
+	var totalInvoicedMinor, totalPaidMinor int64
+	err := s.db.QueryRow(query, id, id).Scan(
+		&item.ID, &item.ClientCode, &item.Name, &item.NameEn, &item.Phone, &item.Mobile, &item.Email,
+		&item.Address, &item.BuildingNo, &item.Street, &item.District, &item.City, &item.PostalCode,
+		&item.Country, &item.TaxNumber, &item.CommercialRegister, &item.ClientType,
+		&item.PaymentTermsDays, &item.OpeningBalance, &item.CreditLimit, &item.Notes,
+		&item.IsActive, &item.CreatedAt, &item.UpdatedAt,
+		&item.InvoicesCount, &totalInvoicedMinor, &totalPaidMinor,
+	)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("العميل غير موجود")
 	}
-	for _, c := range list {
-		if c.ID == id {
-			return &c, nil
-		}
-	}
-	return nil, errors.New("العميل غير موجود")
+	item.OpeningBalanceMajor = models.ToMajor(item.OpeningBalance)
+	item.CreditLimitMajor = models.ToMajor(item.CreditLimit)
+	item.TotalInvoicedMajor = models.ToMajor(totalInvoicedMinor)
+	item.TotalPaidMajor = models.ToMajor(totalPaidMinor)
+	balanceMinor := item.OpeningBalance + totalInvoicedMinor - totalPaidMinor
+	item.BalanceMajor = models.ToMajor(balanceMinor)
+	return &item, nil
 }
 
 func (s *ClientService) nextClientCode() string {
@@ -672,134 +821,146 @@ func (s *ClientService) BatchImportClients(clients []ImportClientInput) (*Import
 		return &ImportClientsResult{}, nil
 	}
 
-	tx, err := s.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	stmtFindByName, err := tx.Prepare("SELECT id FROM clients WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) LIMIT 1")
-	if err != nil {
-		return nil, err
-	}
-	defer stmtFindByName.Close()
-
-	stmtFindByCode, err := tx.Prepare("SELECT id FROM clients WHERE client_code = ? AND client_code != '' LIMIT 1")
-	if err != nil {
-		return nil, err
-	}
-	defer stmtFindByCode.Close()
-
-	stmtInsertClient, err := tx.Prepare(`
-		INSERT INTO clients (
-			id, client_code, name, name_en, phone, mobile, email,
-			address, building_no, street, district, city, postal_code, country,
-			tax_number, commercial_register, client_type, payment_terms_days,
-			opening_balance, credit_limit, notes, is_active, created_at, updated_at
-		) VALUES (
-			?, ?, ?, ?, ?, '', ?,
-			?, '', ?, '', ?, '', 'SA',
-			?, ?, 'COMPANY', 30,
-			?, 0, ?, 1, ?, ?
-		)
-	`)
-	if err != nil {
-		return nil, err
-	}
-	defer stmtInsertClient.Close()
-
-	stmtUpdateClient, err := tx.Prepare(`
-		UPDATE clients SET
-			client_code = CASE WHEN ? != '' THEN ? ELSE client_code END,
-			name_en = CASE WHEN ? != '' THEN ? ELSE name_en END,
-			phone = CASE WHEN ? != '' THEN ? ELSE phone END,
-			email = CASE WHEN ? != '' THEN ? ELSE email END,
-			tax_number = CASE WHEN ? != '' THEN ? ELSE tax_number END,
-			commercial_register = CASE WHEN ? != '' THEN ? ELSE commercial_register END,
-			city = CASE WHEN ? != '' THEN ? ELSE city END,
-			street = CASE WHEN ? != '' THEN ? ELSE street END,
-			notes = CASE WHEN ? != '' THEN ? ELSE notes END,
-			updated_at = ?
-		WHERE id = ?
-	`)
-	if err != nil {
-		return nil, err
-	}
-	defer stmtUpdateClient.Close()
-
-	now := db.NowIso()
 	res := &ImportClientsResult{Total: len(clients)}
+	chunkSize := 500
 
-	for _, c := range clients {
-		name := strings.TrimSpace(c.Name)
-		if name == "" {
-			res.Errors++
-			continue
+	for i := 0; i < len(clients); i += chunkSize {
+		end := i + chunkSize
+		if end > len(clients) {
+			end = len(clients)
 		}
+		chunk := clients[i:end]
 
-		var existingID string
-		if c.ClientCode != "" {
-			_ = stmtFindByCode.QueryRow(c.ClientCode).Scan(&existingID)
-		}
-		if existingID == "" {
-			_ = stmtFindByName.QueryRow(name).Scan(&existingID)
-		}
-
-		balMinor := models.ToMinor(c.OpeningBalance)
-		if !validAmount(c.OpeningBalance) && !validAmount(-c.OpeningBalance) {
-			return nil, errors.New("رصيد افتتاحي غير صالح")
-		}
-
-		if existingID != "" {
-			_, err := stmtUpdateClient.Exec(
-				c.ClientCode, c.ClientCode,
-				c.NameEn, c.NameEn,
-				c.Phone, c.Phone,
-				c.Email, c.Email,
-				c.TaxNumber, c.TaxNumber,
-				c.CommercialRegister, c.CommercialRegister,
-				c.City, c.City,
-				c.Street, c.Street,
-				c.Notes, c.Notes,
-				now, existingID,
-			)
+		if err := s.db.WithWriteLock(func() error {
+			tx, err := s.db.Begin()
 			if err != nil {
-				res.Errors++
-			} else {
-				res.Updated++
+				return err
 			}
-		} else {
-			code := c.ClientCode
-			if code == "" {
-				code = "C-" + crypto.UUID()
-			}
-			newID := crypto.UUID()
-			_, err := stmtInsertClient.Exec(
-				newID, code, name, c.NameEn, c.Phone, c.Email,
-				c.Street, c.Street, c.City,
-				c.TaxNumber, c.CommercialRegister,
-				balMinor, c.Notes,
-				now, now,
-			)
+			defer tx.Rollback()
+
+			stmtFindByName, err := tx.Prepare("SELECT id FROM clients WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) LIMIT 1")
 			if err != nil {
-				res.Errors++
-			} else {
-				res.Created++
-				if balMinor != 0 {
-					debit, credit := balMinor, int64(0)
-					if debit < 0 {
-						credit, debit = -debit, 0
+				return err
+			}
+			defer stmtFindByName.Close()
+
+			stmtFindByCode, err := tx.Prepare("SELECT id FROM clients WHERE client_code = ? AND client_code != '' LIMIT 1")
+			if err != nil {
+				return err
+			}
+			defer stmtFindByCode.Close()
+
+			stmtInsertClient, err := tx.Prepare(`
+				INSERT INTO clients (
+					id, client_code, name, name_en, phone, mobile, email,
+					address, building_no, street, district, city, postal_code, country,
+					tax_number, commercial_register, client_type, payment_terms_days,
+					opening_balance, credit_limit, notes, is_active, created_at, updated_at
+				) VALUES (
+					?, ?, ?, ?, ?, '', ?,
+					?, '', ?, '', ?, '', 'SA',
+					?, ?, 'COMPANY', 30,
+					?, 0, ?, 1, ?, ?
+				)
+			`)
+			if err != nil {
+				return err
+			}
+			defer stmtInsertClient.Close()
+
+			stmtUpdateClient, err := tx.Prepare(`
+				UPDATE clients SET
+					client_code = CASE WHEN ? != '' THEN ? ELSE client_code END,
+					name_en = CASE WHEN ? != '' THEN ? ELSE name_en END,
+					phone = CASE WHEN ? != '' THEN ? ELSE phone END,
+					email = CASE WHEN ? != '' THEN ? ELSE email END,
+					tax_number = CASE WHEN ? != '' THEN ? ELSE tax_number END,
+					commercial_register = CASE WHEN ? != '' THEN ? ELSE commercial_register END,
+					city = CASE WHEN ? != '' THEN ? ELSE city END,
+					street = CASE WHEN ? != '' THEN ? ELSE street END,
+					notes = CASE WHEN ? != '' THEN ? ELSE notes END,
+					updated_at = ?
+				WHERE id = ?
+			`)
+			if err != nil {
+				return err
+			}
+			defer stmtUpdateClient.Close()
+
+			now := db.NowIso()
+
+			for _, c := range chunk {
+				name := strings.TrimSpace(c.Name)
+				if name == "" {
+					res.Errors++
+					continue
+				}
+
+				var existingID string
+				if c.ClientCode != "" {
+					_ = stmtFindByCode.QueryRow(c.ClientCode).Scan(&existingID)
+				}
+				if existingID == "" {
+					_ = stmtFindByName.QueryRow(name).Scan(&existingID)
+				}
+
+				balMinor := models.ToMinor(c.OpeningBalance)
+				if !validAmount(c.OpeningBalance) && !validAmount(-c.OpeningBalance) {
+					return errors.New("رصيد افتتاحي غير صالح")
+				}
+
+				if existingID != "" {
+					_, err := stmtUpdateClient.Exec(
+						c.ClientCode, c.ClientCode,
+						c.NameEn, c.NameEn,
+						c.Phone, c.Phone,
+						c.Email, c.Email,
+						c.TaxNumber, c.TaxNumber,
+						c.CommercialRegister, c.CommercialRegister,
+						c.City, c.City,
+						c.Street, c.Street,
+						c.Notes, c.Notes,
+						now, existingID,
+					)
+					if err != nil {
+						res.Errors++
+					} else {
+						res.Updated++
 					}
-					if _, err := tx.Exec("INSERT INTO client_ledger (id,client_id,doc_type,doc_number,transaction_date,debit,credit,description,created_at) VALUES (?,?,'OPENING_BALANCE','OPENING',?,?,?,'رصيد افتتاحي مستورد',?)", crypto.UUID(), newID, db.TodayIso(), debit, credit, now); err != nil {
-						return nil, err
+				} else {
+					code := c.ClientCode
+					if code == "" {
+						code = "C-" + crypto.UUID()
+					}
+					newID := crypto.UUID()
+					_, err := stmtInsertClient.Exec(
+						newID, code, name, c.NameEn, c.Phone, c.Email,
+						c.Street, c.Street, c.City,
+						c.TaxNumber, c.CommercialRegister,
+						balMinor, c.Notes,
+						now, now,
+					)
+					if err != nil {
+						res.Errors++
+					} else {
+						res.Created++
+						if balMinor != 0 {
+							debit, credit := balMinor, int64(0)
+							if debit < 0 {
+								credit, debit = -debit, 0
+							}
+							if _, err := tx.Exec("INSERT INTO client_ledger (id,client_id,doc_type,doc_number,transaction_date,debit,credit,description,created_at) VALUES (?,?,'OPENING_BALANCE','OPENING',?,?,?,'رصيد افتتاحي مستورد',?)", crypto.UUID(), newID, db.TodayIso(), debit, credit, now); err != nil {
+								return err
+							}
+						}
 					}
 				}
 			}
+			return tx.Commit()
+		}); err != nil {
+			return nil, err
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
 	return res, nil
 }

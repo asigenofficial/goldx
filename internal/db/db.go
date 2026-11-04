@@ -43,17 +43,17 @@ func Open(cfg *config.Config) (*DB, error) {
 	}
 
 	// Reserve the writer before reading, so concurrent saves wait instead of failing a WAL snapshot upgrade.
-	dsn := fmt.Sprintf("%s?_txlock=immediate&_pragma=busy_timeout(15000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(ON)&_pragma=cache_size(-128000)&_pragma=mmap_size(268435456)&_pragma=temp_store(MEMORY)&_pragma=wal_autocheckpoint(1000)", cfg.DbFile)
+	dsn := fmt.Sprintf("%s?_txlock=immediate&_pragma=busy_timeout(30000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(ON)&_pragma=cache_size(-128000)&_pragma=mmap_size(268435456)&_pragma=temp_store(MEMORY)&_pragma=wal_autocheckpoint(1000)", cfg.DbFile)
 	sqldb, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open sqlite: %w", err)
 	}
 
-	maxConns := runtime.NumCPU() * 4
-	if maxConns < 10 {
-		maxConns = 10
-	} else if maxConns > 50 {
-		maxConns = 50
+	maxConns := runtime.NumCPU() * 2
+	if maxConns < 4 {
+		maxConns = 4
+	} else if maxConns > 16 {
+		maxConns = 16
 	}
 	sqldb.SetMaxOpenConns(maxConns)
 	sqldb.SetMaxIdleConns(maxConns)
@@ -105,6 +105,13 @@ func (d *DB) initSchema() error {
 	_, _ = d.Exec("ALTER TABLE invoice_items ADD COLUMN wage INTEGER DEFAULT 0")
 	_, _ = d.Exec("ALTER TABLE items ADD COLUMN karat TEXT DEFAULT '21'")
 	_, _ = d.Exec("ALTER TABLE items ADD COLUMN wage INTEGER DEFAULT 0")
+
+	// Performance indexes for large datasets and ledger queries
+	_, _ = d.Exec("CREATE INDEX IF NOT EXISTS idx_client_ledger_client_date ON client_ledger(client_id, transaction_date)")
+	_, _ = d.Exec("CREATE INDEX IF NOT EXISTS idx_client_ledger_doc ON client_ledger(doc_type, doc_id)")
+	_, _ = d.Exec("CREATE INDEX IF NOT EXISTS idx_invoices_client_status ON invoices(client_id, status)")
+	_, _ = d.Exec("CREATE INDEX IF NOT EXISTS idx_items_category ON items(category_id)")
+	_, _ = d.Exec("CREATE INDEX IF NOT EXISTS idx_items_search_p ON items(is_active, category_id, name_ar)")
 	return nil
 }
 
@@ -396,16 +403,16 @@ func (d *DB) rollbackFailedRestore(backup *BackupResult, cause error) error {
 }
 
 func (d *DB) reopen() error {
-	dsn := fmt.Sprintf("%s?_txlock=immediate&_pragma=busy_timeout(15000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(ON)&_pragma=cache_size(-128000)&_pragma=mmap_size(268435456)&_pragma=temp_store(MEMORY)&_pragma=wal_autocheckpoint(1000)", d.cfg.DbFile)
+	dsn := fmt.Sprintf("%s?_txlock=immediate&_pragma=busy_timeout(30000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(ON)&_pragma=cache_size(-128000)&_pragma=mmap_size(268435456)&_pragma=temp_store(MEMORY)&_pragma=wal_autocheckpoint(1000)", d.cfg.DbFile)
 	sqldb, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return err
 	}
-	maxConns := runtime.NumCPU() * 4
-	if maxConns < 10 {
-		maxConns = 10
-	} else if maxConns > 50 {
-		maxConns = 50
+	maxConns := runtime.NumCPU() * 2
+	if maxConns < 4 {
+		maxConns = 4
+	} else if maxConns > 16 {
+		maxConns = 16
 	}
 	sqldb.SetMaxOpenConns(maxConns)
 	sqldb.SetMaxIdleConns(maxConns)

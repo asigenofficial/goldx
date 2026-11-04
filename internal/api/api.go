@@ -79,7 +79,7 @@ func NewServer(
 		publicFS:  publicFS,
 		pdfWake:   make(chan struct{}, 1),
 	}
-	server.enqueueMissingPDFs()
+	// On-Demand PDF rendering: PDFs are rendered on request or by throttled worker
 	server.startPDFWorker()
 	return server
 }
@@ -822,7 +822,10 @@ func (s *Server) Handler() http.Handler {
 	// ---------------------------------------------------- العملاء
 	mux.HandleFunc("GET /api/clients", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
-		list, err := s.clients.ListClients(services.ListClientsFilter{
+		pageStr := q.Get("page")
+		limitStr := q.Get("limit")
+
+		filter := services.ListClientsFilter{
 			Search:       q.Get("q"),
 			ActiveOnly:   q.Get("active_only") == "1" || q.Get("active_only") == "true",
 			WithBalances: true,
@@ -830,7 +833,50 @@ func (s *Server) Handler() http.Handler {
 			ClientType:   q.Get("client_type"),
 			City:         q.Get("city"),
 			OnlyDebtors:  q.Get("only_debtors") == "1" || q.Get("only_debtors") == "true",
-		})
+		}
+
+		if pageStr != "" || limitStr != "" {
+			page, _ := strconv.Atoi(pageStr)
+			if page < 1 {
+				page = 1
+			}
+			limit := 50
+			if limitStr != "" && limitStr != "all" {
+				if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+					limit = parsedLimit
+				}
+			} else if limitStr == "all" {
+				limit = 0
+			}
+			filter.Page = page
+			filter.Limit = limit
+
+			result, err := s.clients.ListClientsPaginated(filter)
+			if err != nil {
+				s.err(w, 500, err.Error())
+				return
+			}
+			s.json(w, 200, result)
+			return
+		}
+
+		list, err := s.clients.ListClients(filter)
+		if err != nil {
+			s.err(w, 500, err.Error())
+			return
+		}
+		s.json(w, 200, list)
+	})
+
+	mux.HandleFunc("GET /api/clients/search", func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query().Get("q")
+		limit := 20
+		if lStr := r.URL.Query().Get("limit"); lStr != "" {
+			if l, err := strconv.Atoi(lStr); err == nil && l > 0 {
+				limit = l
+			}
+		}
+		list, err := s.clients.SearchClients(q, limit)
 		if err != nil {
 			s.err(w, 500, err.Error())
 			return
@@ -1040,7 +1086,48 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/items", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		activeOnly := q.Get("active_only") == "1" || q.Get("active_only") == "true"
+		pageStr := q.Get("page")
+		limitStr := q.Get("limit")
+
+		if pageStr != "" || limitStr != "" {
+			page, _ := strconv.Atoi(pageStr)
+			if page < 1 {
+				page = 1
+			}
+			limit := 50
+			if limitStr != "" && limitStr != "all" {
+				if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+					limit = parsedLimit
+				}
+			} else if limitStr == "all" {
+				limit = 0
+			}
+			result, err := s.items.ListItemsPaginated(q.Get("q"), q.Get("category_id"), activeOnly, page, limit)
+			if err != nil {
+				s.err(w, 500, err.Error())
+				return
+			}
+			s.json(w, 200, result)
+			return
+		}
+
 		list, err := s.items.ListItems(q.Get("q"), q.Get("category_id"), activeOnly)
+		if err != nil {
+			s.err(w, 500, err.Error())
+			return
+		}
+		s.json(w, 200, list)
+	})
+
+	mux.HandleFunc("GET /api/items/search", func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query().Get("q")
+		limit := 20
+		if lStr := r.URL.Query().Get("limit"); lStr != "" {
+			if l, err := strconv.Atoi(lStr); err == nil && l > 0 {
+				limit = l
+			}
+		}
+		list, err := s.items.SearchItems(q, limit)
 		if err != nil {
 			s.err(w, 500, err.Error())
 			return

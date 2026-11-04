@@ -4,62 +4,62 @@
 import { api, qs } from '../core/api.js';
 import { store, loadClients, invalidate, can, currencyLabel, getFilterState, setFilterState, clearFilterState } from '../core/store.js';
 import {
-  html, raw, esc, money, modal, formValues, toastOk, toastErr, confirmDialog,
+  html, raw, esc, money, num, modal, formValues, toastOk, toastErr, confirmDialog,
   $, delegate, debounce, exportCsv, exportExcel, dateAr, icon, amount, sarSvg,
 } from '../core/util.js';
 
 function clientForm(data = {}) {
   const v = (k, def = '') => (data[k] === undefined || data[k] === null ? def : data[k]);
   return html`
-    <div class="row">
-      <div class="field" style="max-width:170px"><label>كود العميل</label>
-        <input type="text" name="client_code" value="${v('client_code')}" class="ltr" placeholder="تلقائي" />
+    <div class="form-grid-2">
+      <div class="field"><label for="cf-client_code">كود العميل</label>
+        <input type="text" id="cf-client_code" name="client_code" value="${v('client_code')}" class="ltr" placeholder="تلقائي" />
         <span class="hint">يُولَّد تلقائياً إن تُرك فارغاً</span></div>
-      <div class="field"><label class="req">اسم العميل</label>
-        <input type="text" name="name" value="${v('name')}" /></div>
+      <div class="field"><label class="req" for="cf-name">اسم العميل</label>
+        <input type="text" id="cf-name" name="name" value="${v('name')}" /></div>
     </div>
-    <div class="row mt">
-      <div class="field"><label>نوع العميل</label>
-        <select name="client_type">
+    <div class="form-grid-2 mt">
+      <div class="field"><label for="cf-client_type">نوع العميل</label>
+        <select id="cf-client_type" name="client_type">
           <option value="COMPANY" ${raw(v('client_type', 'COMPANY') === 'COMPANY' ? 'selected' : '')}>شركة / مؤسسة (B2B)</option>
           <option value="INDIVIDUAL" ${raw(v('client_type') === 'INDIVIDUAL' ? 'selected' : '')}>فرد (B2C)</option>
         </select></div>
-      <div class="field"><label>الرقم الضريبي</label>
-        <input type="text" name="tax_number" value="${v('tax_number')}" class="ltr" maxlength="15" />
+      <div class="field"><label for="cf-tax_number">الرقم الضريبي</label>
+        <input type="text" id="cf-tax_number" name="tax_number" value="${v('tax_number')}" class="ltr" maxlength="15" />
         <span class="hint">مطلوب للفواتير الضريبية بين المنشآت</span></div>
     </div>
-    <div class="row mt">
-      <div class="field"><label>رقم الجوال</label><input type="text" name="mobile" value="${v('mobile')}" class="ltr" /></div>
-      <div class="field"><label>الهاتف</label><input type="text" name="phone" value="${v('phone')}" class="ltr" /></div>
-      <div class="field"><label>البريد الإلكتروني</label><input type="email" name="email" value="${v('email')}" class="ltr" /></div>
+    <div class="form-grid-3 mt">
+      <div class="field"><label for="cf-mobile">رقم الجوال</label><input type="text" id="cf-mobile" name="mobile" value="${v('mobile')}" class="ltr" /></div>
+      <div class="field"><label for="cf-phone">الهاتف</label><input type="text" id="cf-phone" name="phone" value="${v('phone')}" class="ltr" /></div>
+      <div class="field"><label for="cf-email">البريد الإلكتروني</label><input type="email" id="cf-email" name="email" value="${v('email')}" class="ltr" /></div>
     </div>
-    <div class="row mt">
-      <div class="field"><label>الرقم الوطني الموحد / السجل</label><input type="text" name="commercial_register" value="${v('commercial_register')}" class="ltr" /></div>
-      <div class="field"><label>رمز الدولة</label><input type="text" name="country" value="${v('country', 'SA')}" class="ltr" maxlength="2" /></div>
+    <div class="form-grid-2 mt">
+      <div class="field"><label for="cf-commercial_register">الرقم الوطني الموحد / السجل</label><input type="text" id="cf-commercial_register" name="commercial_register" value="${v('commercial_register')}" class="ltr" /></div>
+      <div class="field"><label for="cf-country">رمز الدولة</label><input type="text" id="cf-country" name="country" value="${v('country', 'SA')}" class="ltr" maxlength="2" /></div>
     </div>
-    <div style="background:rgba(255,255,255,0.03);border:1px solid var(--line);border-radius:8px;padding:.8rem;margin-top:.9rem">
-      <div style="font-weight:700;font-size:.85rem;margin-bottom:.5rem;color:var(--primary)">العنوان الوطني للعميل (المشتري)</div>
-      <div class="row">
-        <div class="field"><label>المدينة</label><input type="text" name="city" value="${v('city')}" placeholder="الرياض، جدة، الدمام…" /></div>
-        <div class="field"><label>الحي</label><input type="text" name="district" value="${v('district')}" placeholder="العليا، الملز، النسيم…" /></div>
-        <div class="field"><label>الشارع</label><input type="text" name="street" value="${v('street')}" placeholder="طريق الملك فهد…" /></div>
+    <div style="background:rgba(254, 249, 231, 0.6);border:1px solid rgba(212, 175, 55, 0.25);border-radius:8px;padding:.8rem;margin-top:.9rem">
+      <div style="font-weight:700;font-size:.85rem;margin-bottom:.5rem;color:var(--text-heading)">العنوان الوطني للعميل (المشتري)</div>
+      <div class="form-grid-3">
+        <div class="field"><label for="cf-city">المدينة</label><input type="text" id="cf-city" name="city" value="${v('city')}" placeholder="الرياض، جدة، الدمام…" /></div>
+        <div class="field"><label for="cf-district">الحي</label><input type="text" id="cf-district" name="district" value="${v('district')}" placeholder="العليا، الملز، النسيم…" /></div>
+        <div class="field"><label for="cf-street">الشارع</label><input type="text" id="cf-street" name="street" value="${v('street')}" placeholder="طريق الملك فهد…" /></div>
       </div>
-      <div class="row mt">
-        <div class="field" style="max-width:140px"><label>رقم المبنى</label><input type="text" name="building_no" value="${v('building_no')}" class="ltr" placeholder="1234" /></div>
-        <div class="field" style="max-width:160px"><label>الرمز البريدي</label><input type="text" name="postal_code" value="${v('postal_code')}" class="ltr" placeholder="12345" /></div>
-        <div class="field"><label>العنوان الكامل / الإضافي</label><input type="text" name="address" value="${v('address')}" placeholder="وصف إضافي أو عنوان تفصيلي" /></div>
+      <div class="form-grid-3 mt">
+        <div class="field"><label for="cf-building_no">رقم المبنى</label><input type="text" id="cf-building_no" name="building_no" value="${v('building_no')}" class="ltr" placeholder="1234" /></div>
+        <div class="field"><label for="cf-postal_code">الرمز البريدي</label><input type="text" id="cf-postal_code" name="postal_code" value="${v('postal_code')}" class="ltr" placeholder="12345" /></div>
+        <div class="field"><label for="cf-address">العنوان الكامل / الإضافي</label><input type="text" id="cf-address" name="address" value="${v('address')}" placeholder="وصف إضافي أو عنوان تفصيلي" /></div>
       </div>
     </div>
-    <div class="row mt">
-      <div class="field"><label>الرصيد الافتتاحي</label>
-        <input type="number" name="opening_balance" value="${v('opening_balance', 0)}" step="0.01" />
+    <div class="form-grid-3 mt">
+      <div class="field"><label for="cf-opening_balance">الرصيد الافتتاحي</label>
+        <input type="number" id="cf-opening_balance" name="opening_balance" value="${v('opening_balance', 0)}" step="0.01" />
         <span class="hint">موجب = مدين علينا له، سالب = دفعة مقدمة</span></div>
-      <div class="field"><label>الحد الائتماني</label>
-        <input type="number" name="credit_limit" value="${v('credit_limit', 0)}" step="0.01" min="0" /></div>
-      <div class="field" style="max-width:150px"><label>مدة السداد (يوم)</label>
-        <input type="number" name="payment_terms_days" value="${v('payment_terms_days', 0)}" min="0" /></div>
+      <div class="field"><label for="cf-credit_limit">الحد الائتماني</label>
+        <input type="number" id="cf-credit_limit" name="credit_limit" value="${v('credit_limit', 0)}" step="0.01" min="0" /></div>
+      <div class="field"><label for="cf-payment_terms_days">مدة السداد (يوم)</label>
+        <input type="number" id="cf-payment_terms_days" name="payment_terms_days" value="${v('payment_terms_days', 0)}" min="0" /></div>
     </div>
-    <div class="field mt"><label>ملاحظات</label><textarea name="notes" style="min-height:52px">${v('notes')}</textarea></div>
+    <div class="field mt"><label for="cf-notes">ملاحظات</label><textarea id="cf-notes" name="notes" style="min-height:52px">${v('notes')}</textarea></div>
     <label class="check mt"><input type="checkbox" name="is_active" ${raw(v('is_active', true) ? 'checked' : '')} /> عميل نشط</label>`;
 }
 
@@ -251,9 +251,9 @@ function openClientImportModal(onSuccess) {
 }
 
 export async function render(view) {
-  const defaults = { q: '', client_type: '', onlyDebtors: false, scope: 'ALL' };
+  const defaults = { q: '', client_type: '', onlyDebtors: false, scope: 'ALL', page: 1, limit: 50 };
   const cached = getFilterState('clients', defaults);
-  const state = { ...cached, rows: [] };
+  const state = { ...cached, rows: [], total: 0, totalPages: 1, page: cached.page || 1, limit: 50 };
   const cur = currencyLabel();
 
   const saveState = () => {
@@ -262,17 +262,31 @@ export async function render(view) {
       client_type: state.client_type,
       onlyDebtors: state.onlyDebtors,
       scope: state.scope,
+      page: state.page,
     });
   };
 
   const load = async () => {
     saveState();
-    state.rows = await api.get(qs('/api/clients', {
+    const res = await api.get(qs('/api/clients', {
       with_balances: true,
       q: state.q,
       client_type: state.client_type,
+      only_debtors: state.onlyDebtors,
       issuer_id: state.scope === 'ISSUER' ? store.activeIssuerId : '',
+      page: state.page,
+      limit: state.limit,
     }));
+    if (res && res.items) {
+      state.rows = res.items;
+      state.total = res.total;
+      state.page = res.page;
+      state.totalPages = res.total_pages || 1;
+    } else {
+      state.rows = Array.isArray(res) ? res : [];
+      state.total = state.rows.length;
+      state.totalPages = 1;
+    }
   };
 
   const rowsHtml = () => {
@@ -356,23 +370,23 @@ export async function render(view) {
       </div>
 
       <div class="card">
-        <div class="row">
-          <div class="field" style="flex:1.8"><label>بحث</label>
+        <div class="row align-center" style="flex-wrap:wrap;gap:.75rem">
+          <div class="field" style="flex:2;min-width:200px"><label for="q">بحث</label>
             <input type="search" id="q" value="${state.q}" placeholder="اسم، كود، جوال، رقم ضريبي، سجل…" /></div>
-          <div class="field" style="max-width:180px"><label>نوع العميل</label>
+          <div class="field" style="flex:1;min-width:140px"><label for="client_type">نوع العميل</label>
             <select id="client_type">
               <option value="">كل الأنواع</option>
               <option value="COMPANY" ${state.client_type === 'COMPANY' ? 'selected' : ''}>شركات / منشآت</option>
               <option value="INDIVIDUAL" ${state.client_type === 'INDIVIDUAL' ? 'selected' : ''}>أفراد</option>
             </select></div>
-          <div class="field" style="max-width:200px"><label>نطاق الأرصدة</label>
+          <div class="field" style="flex:1;min-width:150px"><label for="scope">نطاق الأرصدة</label>
             <select id="scope">
               <option value="ALL" ${raw(state.scope === 'ALL' ? 'selected' : '')}>كل الشركات (موحّد)</option>
               <option value="ISSUER" ${raw(state.scope === 'ISSUER' ? 'selected' : '')}>الشركة النشطة فقط</option>
             </select></div>
-          <div class="field" style="max-width:140px"><label>&nbsp;</label>
+          <div class="field" style="min-width:110px"><label>&nbsp;</label>
             <label class="check"><input type="checkbox" id="debtors" ${raw(state.onlyDebtors ? 'checked' : '')} /> المدينون فقط</label></div>
-          <div class="field" style="max-width:110px"><label>&nbsp;</label>
+          <div class="field" style="min-width:90px"><label>&nbsp;</label>
             <button class="btn btn-sm" id="clear-filters" type="button">إزالة التصفية</button></div>
         </div>
         ${raw(state.scope === 'ISSUER' ? '<div class="alert alert-info mt tiny">النطاق مفلتر على الشركة النشطة، لذلك لا يشمل الأرصدة الافتتاحية العامة للعميل.</div>' : '')}
@@ -401,6 +415,11 @@ export async function render(view) {
             <tbody id="rows">${raw(rowsHtml())}</tbody>
           </table>
         </div>
+        <div class="pager">
+          <button class="btn btn-sm" id="prev-page" ${raw(state.page <= 1 ? 'disabled' : '')} type="button">${raw(icon.arrowRight({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' }))}السابق</button>
+          <span class="tiny muted">صفحة ${state.page} من ${state.totalPages} — إجمالي ${num(state.total)} عميل</span>
+          <button class="btn btn-sm" id="next-page" ${raw(state.page >= state.totalPages ? 'disabled' : '')} type="button">التالي${raw(icon.arrowLeft({ size: 14, style: 'vertical-align:text-bottom;margin-right:3px' }))}</button>
+        </div>
       </div>`;
 
     const addBtn = $('#add', view);
@@ -408,29 +427,50 @@ export async function render(view) {
     const importClientsBtn = $('#import-clients-btn', view);
     if (importClientsBtn) importClientsBtn.addEventListener('click', () => openClientImportModal(async () => { await load(); draw(); }));
 
+    $('#prev-page', view)?.addEventListener('click', async () => {
+      if (state.page > 1) {
+        state.page--;
+        await load();
+        draw();
+      }
+    });
+
+    $('#next-page', view)?.addEventListener('click', async () => {
+      if (state.page < state.totalPages) {
+        state.page++;
+        await load();
+        draw();
+      }
+    });
+
     $('#q', view).addEventListener('input', debounce(async (e) => {
       state.q = e.target.value;
+      state.page = 1;
       await load();
-      $('#rows', view).innerHTML = rowsHtml();
+      draw();
     }, 300));
     $('#client_type', view).addEventListener('change', async (e) => {
       state.client_type = e.target.value;
+      state.page = 1;
       await load();
       draw();
     });
     $('#scope', view).addEventListener('change', async (e) => {
       state.scope = e.target.value;
+      state.page = 1;
       await load();
       draw();
     });
-    $('#debtors', view).addEventListener('change', (e) => {
+    $('#debtors', view).addEventListener('change', async (e) => {
       state.onlyDebtors = e.target.checked;
-      saveState();
+      state.page = 1;
+      await load();
       draw();
     });
     $('#clear-filters', view).addEventListener('click', async () => {
       clearFilterState('clients');
       Object.assign(state, defaults);
+      state.page = 1;
       await load();
       draw();
     });

@@ -8,8 +8,8 @@ import { code39Svg } from '../print/code39.js';
 import { openAiPromptModal } from './ai-prompt-modal.js';
 
 const PALETTE = [
-  '#059669', '#1d4ed8', '#0f172a', '#6d28d9',
-  '#0e7490', '#d97706', '#be123c', '#334155'
+  '#b8860b', '#d4af37', '#8c6d1f', '#78350f',
+  '#1e293b', '#0f766e', '#d97706', '#475569'
 ];
 
 export const SAR_SYMBOL_SVG = `<svg viewBox="0 0 1124.14 1256.39" width="0.72em" height="0.82em" class="sar-sym" style="vertical-align:-0.08em;display:inline-block;fill:currentColor;margin:0 2px;" aria-label="ريال سعودي" title="ريال سعودي"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"/><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"/></svg>`;
@@ -50,7 +50,7 @@ let activeTab = 'elements'; // 'elements' | 'background' | 'typography'
 let docMeta = {
   type: 'invoices',
   name_ar: 'قالب فواتير مخصص',
-  primary_color: '#1a2638',
+  primary_color: '#b8860b',
 };
 
 // ─── Sheet Background & Framing State ─────────────────────────────────────
@@ -207,16 +207,16 @@ function getInfoPillsBlockHTML(color) {
   }
   return `
     <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:14px;">
-      <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:4px; height:36px; display:flex; align-items:center; font-size:12px; font-weight:800; color:#0f172a; overflow:hidden;">
-        <span style="width:34px; height:100%; display:flex; align-items:center; justify-content:center; background:#f1f5f9; border-inline-end:1px solid #cbd5e1; color:${color}; font-size:13px; font-weight:900;">#</span>
+      <div style="background:#fffdf7; border:1px solid rgba(212,175,55,0.3); border-radius:4px; height:36px; display:flex; align-items:center; font-size:12px; font-weight:800; color:#1c1917; overflow:hidden;">
+        <span style="width:34px; height:100%; display:flex; align-items:center; justify-content:center; background:rgba(254,249,231,0.85); border-inline-end:1px solid rgba(212,175,55,0.3); color:${color}; font-size:13px; font-weight:900;">#</span>
         <span contenteditable="true" style="padding:0 8px; flex:1; outline:none;">رقم الفاتورة: <span style="color:${color}; font-weight:900;">{{invoice_number}}</span></span>
       </div>
-      <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:4px; height:36px; display:flex; align-items:center; font-size:12px; font-weight:800; color:#0f172a; overflow:hidden;">
-        <span style="width:34px; height:100%; display:flex; align-items:center; justify-content:center; background:#f1f5f9; border-inline-end:1px solid #cbd5e1; color:${color}; font-size:13px;">التاريخ:</span>
+      <div style="background:#fffdf7; border:1px solid rgba(212,175,55,0.3); border-radius:4px; height:36px; display:flex; align-items:center; font-size:12px; font-weight:800; color:#1c1917; overflow:hidden;">
+        <span style="width:34px; height:100%; display:flex; align-items:center; justify-content:center; background:rgba(254,249,231,0.85); border-inline-end:1px solid rgba(212,175,55,0.3); color:${color}; font-size:13px;">التاريخ:</span>
         <span contenteditable="true" style="padding:0 8px; flex:1; outline:none;">تاريخ الإصدار: <span>{{issue_date}}</span></span>
       </div>
-      <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:4px; height:36px; display:flex; align-items:center; font-size:12px; font-weight:800; color:#0f172a; overflow:hidden;">
-        <span style="width:34px; height:100%; display:flex; align-items:center; justify-content:center; background:#f1f5f9; border-inline-end:1px solid #cbd5e1; color:${color}; font-size:13px;">العميل:</span>
+      <div style="background:#fffdf7; border:1px solid rgba(212,175,55,0.3); border-radius:4px; height:36px; display:flex; align-items:center; font-size:12px; font-weight:800; color:#1c1917; overflow:hidden;">
+        <span style="width:34px; height:100%; display:flex; align-items:center; justify-content:center; background:rgba(254,249,231,0.85); border-inline-end:1px solid rgba(212,175,55,0.3); color:${color}; font-size:13px;">العميل:</span>
         <span contenteditable="true" style="padding:0 8px; flex:1; outline:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">العميل: <span>{{buyer_name}}</span></span>
       </div>
     </div>
@@ -244,26 +244,26 @@ function getImageBlockHTML(src = '', width = '140px') {
 // 3. Customer Info Box
 function getBuyerBlockHTML(color) {
   return `
-    <div style="border:1px solid #cbd5e1; border-radius:4px; overflow:hidden; margin-bottom:14px;">
-      <div style="background:#f8fafc; border-bottom:1px solid #cbd5e1; padding:6px 12px; font-size:12px; font-weight:800; color:${color}; display:flex; justify-content:space-between; align-items:center;">
+    <div style="border:1px solid rgba(212,175,55,0.3); border-radius:4px; overflow:hidden; margin-bottom:14px;">
+      <div style="background:#fef9e7; border-bottom:1px solid rgba(212,175,55,0.3); padding:6px 12px; font-size:12px; font-weight:800; color:${color}; display:flex; justify-content:space-between; align-items:center;">
         <span contenteditable="true" style="outline:none;">بيانات العميل (المشتري)</span>
         <span contenteditable="true" style="font-size:10px; color:#64748b; font-weight:600; outline:none;">عميل معتمد</span>
       </div>
       <table style="width:100%; border-collapse:collapse; font-size:12px;">
         <tr style="border-bottom:1px solid #e2e8f0;">
-          <td style="width:140px; font-weight:700; padding:6px 12px; background:#f8fafc; color:#475569;">الاسم / المنشأة:</td>
+          <td style="width:140px; font-weight:700; padding:6px 12px; background:#fffdf7; color:#78350f;">الاسم / المنشأة:</td>
           <td contenteditable="true" style="padding:6px 12px; font-weight:800; color:#0f172a; outline:none;">{{buyer_name}}</td>
         </tr>
         <tr style="border-bottom:1px solid #e2e8f0;">
-          <td style="width:140px; font-weight:700; padding:6px 12px; background:#f8fafc; color:#475569;">الرقم الضريبي:</td>
+          <td style="width:140px; font-weight:700; padding:6px 12px; background:#fffdf7; color:#78350f;">الرقم الضريبي:</td>
           <td contenteditable="true" style="padding:6px 12px; font-weight:800; color:#0f172a; outline:none;">{{buyer_tax}}</td>
         </tr>
         <tr style="border-bottom:1px solid #e2e8f0;">
-          <td style="width:140px; font-weight:700; padding:6px 12px; background:#f8fafc; color:#475569;">العنوان الوطني:</td>
+          <td style="width:140px; font-weight:700; padding:6px 12px; background:#fffdf7; color:#78350f;">العنوان الوطني:</td>
           <td contenteditable="true" style="padding:6px 12px; color:#334155; outline:none;">{{buyer_address}}</td>
         </tr>
         <tr>
-          <td style="width:140px; font-weight:700; padding:6px 12px; background:#f8fafc; color:#475569;">رقم التواصل:</td>
+          <td style="width:140px; font-weight:700; padding:6px 12px; background:#fffdf7; color:#78350f;">رقم التواصل:</td>
           <td contenteditable="true" style="padding:6px 12px; color:#334155; outline:none;">{{buyer_phone}}</td>
         </tr>
       </table>
@@ -3180,7 +3180,7 @@ export async function render(container) {
   docMeta = {
     type: 'invoices',
     name_ar: 'قالب فواتير مخصص',
-    primary_color: '#1a2638',
+    primary_color: '#b8860b',
   };
   sheetBg = {
     bgColor: '#ffffff',
@@ -3220,7 +3220,7 @@ export async function render(container) {
       const htmlToLoad = config.html_content || config.editor_content;
       if (htmlToLoad) {
         editingId = requestedId;
-        docMeta = { type: config.type || config.category || 'invoices', name_ar: config.name_ar || 'قالب مخصص', primary_color: config.primary_color || '#1a2638' };
+        docMeta = { type: config.type || config.category || 'invoices', name_ar: config.name_ar || 'قالب مخصص', primary_color: config.primary_color || '#b8860b' };
         if (config.bg_config) sheetBg = { ...sheetBg, ...config.bg_config };
         renderView();
         loadRawHtmlIntoCanvas(htmlToLoad, docMeta.name_ar);

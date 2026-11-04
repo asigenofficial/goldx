@@ -982,6 +982,10 @@ func (s *BulkService) CommitBatch(req CommitBatchRequest, username string) (map[
 		return nil, err
 	}
 	hash := fmt.Sprintf("%x", sha256.Sum256(encoded))
+
+	s.db.WriteLock()
+	defer s.db.WriteUnlock()
+
 	tx, err := s.db.Begin()
 	if err != nil {
 		return nil, err

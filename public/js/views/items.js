@@ -19,41 +19,41 @@ function itemForm(data = {}, categories = []) {
   const defaultTax = curKarat === '24' ? 0 : 15;
   return html`
     <div class="form-grid-3">
-      <div class="field"><label>رقم / كود الصنف</label>
-        <input type="text" name="item_code" value="${v('item_code')}" class="ltr" placeholder="تلقائي" /></div>
-      <div class="field" style="grid-column: span 2"><label class="req">اسم الصنف</label>
-        <input type="text" name="name_ar" value="${v('name_ar')}" placeholder="مثال: خاتم لازوردي، سوار عيار 21…" /></div>
+      <div class="field"><label for="it-item_code">رقم / كود الصنف</label>
+        <input type="text" id="it-item_code" name="item_code" value="${v('item_code')}" class="ltr" placeholder="تلقائي" /></div>
+      <div class="field" style="grid-column: span 2"><label class="req" for="it-name_ar">اسم الصنف</label>
+        <input type="text" id="it-name_ar" name="name_ar" value="${v('name_ar')}" placeholder="مثال: خاتم لازوردي، سوار عيار 21…" /></div>
     </div>
     <div class="form-grid-3 mt">
-      <div class="field"><label>العيار</label>
+      <div class="field"><label for="item-karat-sel">العيار</label>
         <select name="karat" id="item-karat-sel" style="font-weight:700">
           <option value="21" ${curKarat === '21' ? 'selected' : ''}>عيار 21 (خاضع 15%)</option>
           <option value="18" ${curKarat === '18' ? 'selected' : ''}>عيار 18 (خاضع 15%)</option>
           <option value="22" ${curKarat === '22' ? 'selected' : ''}>عيار 22 (خاضع 15%)</option>
           <option value="24" ${curKarat === '24' ? 'selected' : ''}>عيار 24 (معفى 0%)</option>
         </select></div>
-      <div class="field"><label>أجور المصنعية الافتراضية للجرام</label>
-        <input type="number" name="wage" value="${v('wage', 0)}" step="0.01" min="0" placeholder="0.00" /></div>
-      <div class="field"><label>وحدة القياس</label>
-        <input type="text" name="unit" value="${v('unit', 'جرام')}" list="units-list" />
+      <div class="field"><label for="it-wage">أجور المصنعية الافتراضية للجرام</label>
+        <input type="number" id="it-wage" name="wage" value="${v('wage', 0)}" step="0.01" min="0" placeholder="0.00" /></div>
+      <div class="field"><label for="it-unit">وحدة القياس</label>
+        <input type="text" id="it-unit" name="unit" value="${v('unit', 'جرام')}" list="units-list" />
         <datalist id="units-list">${raw(UNITS.map((u) => `<option value="${esc(u)}"></option>`).join(''))}</datalist></div>
     </div>
     <div class="form-grid-2 mt">
-      <div class="field"><label>الاسم بالإنجليزية</label><input type="text" name="name_en" value="${v('name_en')}" class="ltr" /></div>
-      <div class="field"><label>المجموعة</label>
-        <select name="category_id">
+      <div class="field"><label for="it-name_en">الاسم بالإنجليزية</label><input type="text" id="it-name_en" name="name_en" value="${v('name_en')}" class="ltr" /></div>
+      <div class="field"><label for="it-category_id">المجموعة</label>
+        <select id="it-category_id" name="category_id">
           <option value="">— بدون مجموعة —</option>
           ${raw(categories.map((c) => `<option value="${esc(c.id)}" ${c.id === v('category_id') ? 'selected' : ''}>${esc(c.name)}</option>`).join(''))}
         </select></div>
     </div>
     <div class="form-grid-3 mt">
-      <div class="field"><label>سعر التكلفة للجرام</label><input type="number" name="cost_price" value="${v('cost_price', 0)}" step="0.01" min="0" /></div>
-      <div class="field"><label class="req">سعر البيع للجرام</label><input type="number" name="sale_price" value="${v('sale_price', 0)}" step="0.01" min="0" /></div>
-      <div class="field"><label>الضريبة %</label><input type="number" name="tax_rate" id="item-tax-inp" value="${v('tax_rate', defaultTax)}" step="0.01" min="0" max="100" /></div>
+      <div class="field"><label for="it-cost_price">سعر التكلفة للجرام</label><input type="number" id="it-cost_price" name="cost_price" value="${v('cost_price', 0)}" step="0.01" min="0" /></div>
+      <div class="field"><label class="req" for="it-sale_price">سعر البيع للجرام</label><input type="number" id="it-sale_price" name="sale_price" value="${v('sale_price', 0)}" step="0.01" min="0" /></div>
+      <div class="field"><label for="item-tax-inp">الضريبة %</label><input type="number" name="tax_rate" id="item-tax-inp" value="${v('tax_rate', defaultTax)}" step="0.01" min="0" max="100" /></div>
     </div>
     <div class="form-grid-2 mt">
-      <div class="field"><label>الباركود</label><input type="text" name="barcode" value="${v('barcode')}" class="ltr" /></div>
-      <div class="field"><label>ملاحظات</label><input type="text" name="notes" value="${v('notes')}" /></div>
+      <div class="field"><label for="it-barcode">الباركود</label><input type="text" id="it-barcode" name="barcode" value="${v('barcode')}" class="ltr" /></div>
+      <div class="field"><label for="it-notes">ملاحظات</label><input type="text" id="it-notes" name="notes" value="${v('notes')}" /></div>
     </div>
     <label class="check mt"><input type="checkbox" name="is_active" ${raw(v('is_active', true) ? 'checked' : '')} /> صنف نشط</label>`;
 }
@@ -318,6 +318,10 @@ export async function render(view, ctx) {
 
   const state = {
     ...initial,
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 1,
     items: [],
     categories: [],
   };
@@ -330,13 +334,29 @@ export async function render(view, ctx) {
       if (state.categoryId && !state.categories.some((c) => c.id === state.categoryId)) {
         state.categoryId = '';
       }
-      const params = { q: state.q, category_id: state.categoryId };
-      if (state.status) params.status = state.status;
+      const params = {
+        q: state.q,
+        category_id: state.categoryId,
+        page: state.page,
+        limit: state.limit,
+      };
+      if (state.status === 'active') params.active_only = 'true';
       const itemsRes = await api.get(qs('/api/items', params));
-      state.items = Array.isArray(itemsRes) ? itemsRes : [];
+      if (itemsRes && itemsRes.items) {
+        state.items = itemsRes.items;
+        state.total = itemsRes.total;
+        state.page = itemsRes.page;
+        state.totalPages = itemsRes.total_pages || 1;
+      } else {
+        state.items = Array.isArray(itemsRes) ? itemsRes : [];
+        state.total = state.items.length;
+        state.totalPages = 1;
+      }
     } catch {
       state.items = [];
       state.categories = [];
+      state.total = 0;
+      state.totalPages = 1;
     }
     store.items = state.items;
     store.categories = state.categories;
@@ -450,14 +470,14 @@ export async function render(view, ctx) {
       ${raw(state.tab === 'items' ? `
         <div class="card">
           <div class="row">
-            <div class="field" style="flex:2"><label>بحث الأصناف</label>
+            <div class="field" style="flex:2"><label for="q">بحث الأصناف</label>
               <input type="search" id="q" value="${esc(state.q)}" placeholder="اسم، كود، باركود…" /></div>
-            <div class="field" style="max-width:220px"><label>المجموعة</label>
+            <div class="field" style="max-width:220px"><label for="cat-filter">المجموعة</label>
               <select id="cat-filter">
                 <option value="">كل المجموعات</option>
                 ${catList.map((c) => `<option value="${esc(c.id)}" ${c.id === state.categoryId ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}
               </select></div>
-            <div class="field" style="max-width:160px"><label>الحالة</label>
+            <div class="field" style="max-width:160px"><label for="status-filter">الحالة</label>
               <select id="status-filter">
                 <option value="" ${!state.status ? 'selected' : ''}>كل الحالات</option>
                 <option value="active" ${state.status === 'active' ? 'selected' : ''}>نشط فقط</option>
@@ -486,6 +506,11 @@ export async function render(view, ctx) {
             </tr></thead>
             <tbody>${itemsRows()}</tbody>
           </table></div>
+          <div class="pager">
+            <button class="btn btn-sm" id="prev-items-page" ${raw(state.page <= 1 ? 'disabled' : '')} type="button">${raw(icon.arrowRight({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' }))}السابق</button>
+            <span class="tiny muted">صفحة ${state.page} من ${state.totalPages} — إجمالي ${num(state.total)} صنف</span>
+            <button class="btn btn-sm" id="next-items-page" ${raw(state.page >= state.totalPages ? 'disabled' : '')} type="button">التالي${raw(icon.arrowLeft({ size: 14, style: 'vertical-align:text-bottom;margin-right:3px' }))}</button>
+          </div>
         </div>` : `
         <div class="card pad0">
           <div class="table-wrap"><table class="tbl categories-tbl">
@@ -513,18 +538,35 @@ export async function render(view, ctx) {
     });
 
     if (state.tab === 'items') {
+      $('#prev-items-page', view)?.addEventListener('click', async () => {
+        if (state.page > 1) {
+          state.page--;
+          await load();
+          draw();
+        }
+      });
+      $('#next-items-page', view)?.addEventListener('click', async () => {
+        if (state.page < state.totalPages) {
+          state.page++;
+          await load();
+          draw();
+        }
+      });
       $('#q', view).addEventListener('input', debounce(async (e) => {
         state.q = e.target.value;
+        state.page = 1;
         await load();
         draw();
       }, 300));
       $('#cat-filter', view).addEventListener('change', async (e) => {
         state.categoryId = e.target.value;
+        state.page = 1;
         await load();
         draw();
       });
       $('#status-filter', view).addEventListener('change', async (e) => {
         state.status = e.target.value;
+        state.page = 1;
         await load();
         draw();
       });
@@ -533,6 +575,7 @@ export async function render(view, ctx) {
         state.q = '';
         state.categoryId = '';
         state.status = '';
+        state.page = 1;
         await load();
         draw();
       });

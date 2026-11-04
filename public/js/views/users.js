@@ -5,7 +5,7 @@ import { api } from '../core/api.js';
 import { store } from '../core/store.js';
 import {
   html, raw, esc, dateTimeAr, initials, toastOk, toastErr,
-  $, $$, delegate, modal, formValues, confirmDialog, icon,
+  $, $$, delegate, modal, formValues, confirmDialog, icon, num,
 } from '../core/util.js';
 
 const ROLE_TONE = { ADMIN: 'red', ACCOUNTANT: 'blue', VIEWER: 'gray' };
@@ -89,6 +89,8 @@ export async function render(view) {
   let userSearchQ = '';
   const isAdmin = store.user && (store.user.role === 'ADMIN');
   let currentTab = new URLSearchParams(location.hash.split('?')[1] || '').get('tab') || 'users';
+  let userPage = 1;
+  const USER_PAGE_SIZE = 15;
   let activeSessions = [];
   let syncHistory = [];
   let refreshTimer = null;
@@ -850,6 +852,10 @@ export async function render(view) {
     const admins = users.filter((u) => u.role === 'ADMIN' && u.is_active).length;
     const onlineCount = activeSessions.filter((s) => s.is_online).length || 1;
     const filteredUsers = filterUsers(userSearchQ);
+    const totalUsers = filteredUsers.length;
+    const totalUserPages = Math.max(1, Math.ceil(totalUsers / USER_PAGE_SIZE));
+    if (userPage > totalUserPages) userPage = totalUserPages;
+    const pagedUsers = filteredUsers.slice((userPage - 1) * USER_PAGE_SIZE, userPage * USER_PAGE_SIZE);
 
     view.innerHTML = html`
       <div class="page-head">
@@ -1024,9 +1030,18 @@ export async function render(view) {
               <thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>الصلاحيات الفعالة</th>
                 <th>آخر دخول</th><th>تاريخ الإنشاء</th><th></th></tr></thead>
               <tbody id="users-rows">
-                ${raw(renderUsersRows(filteredUsers))}
+                ${raw(renderUsersRows(pagedUsers))}
               </tbody>
             </table>
+          </div>
+          <div class="pager" style="border-top:1px solid var(--line);padding:0.75rem 1rem">
+            <button class="btn btn-sm" id="users-prev" ${userPage <= 1 ? 'disabled' : ''} type="button">
+              ${raw(icon.arrowRight({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' }))}السابق
+            </button>
+            <span class="tiny muted">صفحة ${userPage} من ${totalUserPages} — إجمالي ${num(totalUsers)} مستخدم</span>
+            <button class="btn btn-sm" id="users-next" ${userPage >= totalUserPages ? 'disabled' : ''} type="button">
+              التالي${raw(icon.arrowLeft({ size: 14, style: 'vertical-align:text-bottom;margin-right:3px' }))}
+            </button>
           </div>
         </div>
 
@@ -1130,16 +1145,27 @@ export async function render(view) {
       // أحداث المستخدمين
       $('#new-u', view)?.addEventListener('click', () => userForm(null));
 
+      $('#users-prev', view)?.addEventListener('click', () => {
+        if (userPage > 1) {
+          userPage--;
+          draw();
+        }
+      });
+      $('#users-next', view)?.addEventListener('click', () => {
+        userPage++;
+        draw();
+      });
+
       const searchInput = $('#users-search', view);
       if (searchInput) {
         searchInput.addEventListener('input', (e) => {
           userSearchQ = e.target.value;
-          const filtered = filterUsers(userSearchQ);
-          const tbody = $('#users-rows', view);
-          if (tbody) tbody.innerHTML = renderUsersRows(filtered);
-          const countEl = $('#users-count', view);
-          if (countEl) {
-            countEl.textContent = userSearchQ.trim() ? `${filtered.length} مطابقة من أصل ${users.length} مستخدم` : `${users.length} مستخدم`;
+          userPage = 1;
+          draw();
+          const inp = $('#users-search', view);
+          if (inp) {
+            inp.focus();
+            inp.setSelectionRange(inp.value.length, inp.value.length);
           }
         });
       }

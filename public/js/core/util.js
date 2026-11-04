@@ -183,24 +183,60 @@ export function modal({ title, body, footer, wide = false, slim = false, onClose
   if (root) {
     Array.from(root.querySelectorAll('.modal-backdrop:not(.confirm-dialog-active)')).forEach((el) => el.remove());
   }
+  const prevActiveElement = document.activeElement;
+  const titleId = 'modal-title-' + Math.random().toString(36).slice(2, 9);
+
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
   backdrop.innerHTML = html`
-    <div class="modal ${raw(wide ? 'wide' : slim ? 'slim' : '')}">
+    <div class="modal ${raw(wide ? 'wide' : slim ? 'slim' : '')}" role="dialog" aria-modal="true" aria-labelledby="${titleId}">
       <div class="modal-head">
-        <h3>${title || ''}</h3>
-        <button class="btn btn-ghost btn-icon" data-close type="button" aria-label="إغلاق">✕</button>
+        <h3 id="${titleId}">${title || ''}</h3>
+        <button class="btn btn-ghost btn-icon" data-close type="button" aria-label="إغلاق النافذة">✕</button>
       </div>
       <div class="modal-body">${raw(typeof body === 'string' ? body : '')}</div>
       ${raw(footer === null ? '' : `<div class="modal-foot">${footer || '<button class="btn" data-close type="button">إغلاق</button>'}</div>`)}
     </div>`;
   root.appendChild(backdrop);
+
   const close = () => {
     backdrop.remove();
     document.removeEventListener('keydown', onKey);
+    if (prevActiveElement && typeof prevActiveElement.focus === 'function') {
+      try { prevActiveElement.focus(); } catch (_) {}
+    }
     if (onClose) onClose();
   };
-  const onKey = (e) => { if (e.key === 'Escape') close(); };
+
+  const onKey = (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      close();
+      return;
+    }
+    // حبس التركيز (Focus Trap) لمنع تسرب التاب خارج النافذة
+    if (e.key === 'Tab') {
+      const focusableSelectors = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      const focusables = Array.from(backdrop.querySelectorAll(focusableSelectors))
+        .filter((el) => el.offsetWidth > 0 || el.offsetHeight > 0 || el === document.activeElement);
+      if (focusables.length === 0) return;
+      const firstEl = focusables[0];
+      const lastEl = focusables[focusables.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstEl || !backdrop.contains(document.activeElement)) {
+          e.preventDefault();
+          lastEl.focus();
+        }
+      } else {
+        if (document.activeElement === lastEl || !backdrop.contains(document.activeElement)) {
+          e.preventDefault();
+          firstEl.focus();
+        }
+      }
+    }
+  };
+
   document.addEventListener('keydown', onKey);
   backdrop.addEventListener('click', (e) => {
     if (e.target === backdrop) close();
@@ -211,7 +247,7 @@ export function modal({ title, body, footer, wide = false, slim = false, onClose
     bodyEl.innerHTML = '';
     bodyEl.appendChild(body);
   }
-  const first = backdrop.querySelector('input, select, textarea, button:not([data-close])');
+  const first = backdrop.querySelector('input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([data-close]):not([disabled])');
   if (first) setTimeout(() => first.focus(), 40);
   return { el: backdrop, body: backdrop.querySelector('.modal-body'), foot: backdrop.querySelector('.modal-foot'), close };
 }

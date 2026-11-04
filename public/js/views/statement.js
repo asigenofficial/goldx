@@ -5,7 +5,7 @@ import { api, qs } from '../core/api.js';
 import { store, loadClients, can, currencyLabel } from '../core/store.js';
 import {
   html, raw, esc, money, num, dateAr, dateTimeAr, monthStart, today, toastOk, toastErr,
-  $, delegate, exportCsv, exportExcel, printDoc, icon, downloadPdfFromHtml, clientPdfFilename,
+  $, delegate, debounce, exportCsv, exportExcel, printDoc, icon, downloadPdfFromHtml, clientPdfFilename,
   amount, sarSvg, loadStoredTemplate, fillStoredTemplate,
 } from '../core/util.js';
 
@@ -49,6 +49,8 @@ export async function render(view, ctx) {
     issuer_id: q0.issuer_id !== undefined ? q0.issuer_id : (store.activeIssuerId || ''),
     from: q0.from || '',
     to: q0.to || '',
+    page: 1,
+    pageSize: 50,
     data: null,
   };
   const cur = currencyLabel();
@@ -93,9 +95,9 @@ export async function render(view, ctx) {
       });
     };
 
-    const rowsHtml = (entries) => {
+    const rowsHtml = (entries, startIndex = 0) => {
       const isFiltered = Boolean((state.q || '').trim());
-      const showOpening = !isFiltered || 'الرصيد قبل'.includes((state.q || '').trim().toLowerCase()) || 'رصيد افتتاحي'.includes((state.q || '').trim().toLowerCase());
+      const showOpening = state.page === 1 && (!isFiltered || 'الرصيد قبل'.includes((state.q || '').trim().toLowerCase()) || 'رصيد افتتاحي'.includes((state.q || '').trim().toLowerCase()));
       let res = '';
       if (showOpening) {
         res += `
@@ -113,7 +115,7 @@ export async function render(view, ctx) {
       }
       if (entries.length) {
         res += entries.map((e, i) => `<tr>
-          <td class="tiny text-center muted">${i + 2}</td>
+          <td class="tiny text-center muted">${startIndex + i + 2}</td>
           <td class="mono tiny nowrap" style="white-space:nowrap;font-weight:700">
             ${e.doc_type === 'INVOICE' && e.doc_id
     ? `<a class="invoice-no-link" href="#/invoice-view/${esc(e.doc_id)}" title="عرض الفاتورة">${esc(e.doc_number || '')}</a>`
@@ -122,7 +124,7 @@ export async function render(view, ctx) {
       : esc(e.doc_number || '—')}
           </td>
           <td class="tiny nowrap text-center" style="white-space:nowrap">${esc(dateAr(e.transaction_date))}</td>
-          <td class="text-center nowrap"><span class="badge ${e.doc_type === 'INVOICE' ? 'amber' : e.doc_type === 'RECEIPT' ? 'teal' : 'gray'}">${esc(e.doc_type_label || (e.doc_type === 'INVOICE' ? 'فاتورة ذهب' : e.doc_type === 'RECEIPT' ? 'سند قبض' : e.doc_type))}</span></td>
+          <td class="text-center nowrap"><span class="badge ${e.doc_type === 'INVOICE' ? 'amber' : e.doc_type === 'RECEIPT' ? 'blue' : 'gray'}">${esc(e.doc_type_label || (e.doc_type === 'INVOICE' ? 'فاتورة ذهب' : e.doc_type === 'RECEIPT' ? 'سند قبض' : e.doc_type))}</span></td>
           <td class="cell-desc"><div style="line-height:1.4;word-break:normal">${esc(e.description || '—')}</div></td>
           <td class="text-end num nowrap" ${e.debit ? '' : 'style="color:var(--muted)"'}>${e.debit ? amount(e.debit) : '0.00'}</td>
           <td class="text-end num nowrap" ${e.credit ? '' : 'style="color:var(--muted)"'}>${e.credit ? amount(e.credit) : '0.00'}</td>
@@ -137,7 +139,12 @@ export async function render(view, ctx) {
       return res;
     };
 
-    const initialEntries = getFilteredEntries();
+    const allFiltered = getFilteredEntries();
+    const totalCount = allFiltered.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / state.pageSize));
+    if (state.page > totalPages) state.page = totalPages;
+    const startIndex = (state.page - 1) * state.pageSize;
+    const pagedEntries = allFiltered.slice(startIndex, startIndex + state.pageSize);
 
     view.innerHTML = html`
       <div class="page-head">
@@ -179,17 +186,17 @@ export async function render(view, ctx) {
 
       <div class="card">
         <div class="filter-row">
-          <div class="field flex-2"><label>العميل</label>
+          <div class="field flex-2"><label for="client_id">العميل</label>
             <select id="client_id">
               ${raw(store.clients.map((c) => `<option value="${esc(c.id)}" ${c.id === state.client_id ? 'selected' : ''}>${esc(c.name)} (${esc(c.client_code)})</option>`).join(''))}
             </select></div>
-          <div class="field flex-2"><label>الشركة / المنشأة</label>
+          <div class="field flex-2"><label for="issuer_id">الشركة / المنشأة</label>
             <select id="issuer_id">
               <option value="">كل الشركات (موحّد)</option>
               ${raw(store.issuers.map((i) => `<option value="${esc(i.id)}" ${i.id === state.issuer_id ? 'selected' : ''}>${esc(i.name_ar)}${i.name_en ? ` — ${esc(i.name_en)}` : ''}</option>`).join(''))}
             </select></div>
-          <div class="field field-date"><label>من تاريخ</label><input type="date" id="from" value="${state.from}" /></div>
-          <div class="field field-date"><label>إلى تاريخ</label><input type="date" id="to" value="${state.to}" /></div>
+          <div class="field field-date"><label for="from">من تاريخ</label><input type="date" id="from" value="${state.from}" /></div>
+          <div class="field field-date"><label for="to">إلى تاريخ</label><input type="date" id="to" value="${state.to}" /></div>
           <div class="filter-actions-col">
             <div class="filter-btn-group">
               <button class="btn btn-sm" data-quick="month" type="button">${raw(icon.calendar({ size: 13, style: 'vertical-align:text-bottom;margin-left:3px' }))}هذا الشهر</button>
@@ -221,7 +228,7 @@ export async function render(view, ctx) {
           <h3 style="margin:0">الحركات</h3>
           <div class="spacer"></div>
           <span class="tiny muted" id="statement-count">
-            ${state.q ? `<span class="badge blue tiny" style="margin-left:6px">${num(initialEntries.length)} مطابقة</span> من أصل ` : ''}${num(d.entries.length)} حركة — صدر ${dateTimeAr(d.generated_at)}
+            ${state.q ? `<span class="badge blue tiny" style="margin-left:6px">${num(totalCount)} مطابقة</span> من أصل ` : ''}${num(d.entries.length)} حركة — صدر ${dateTimeAr(d.generated_at)}
           </span>
         </div>
         <div class="table-wrap">
@@ -244,7 +251,7 @@ export async function render(view, ctx) {
               </tr>
             </thead>
             <tbody id="statement-rows">
-              ${raw(rowsHtml(initialEntries))}
+              ${raw(rowsHtml(pagedEntries, startIndex))}
             </tbody>
             <tfoot><tr>
               <td colspan="5" class="text-center"><b>الإجمالي</b></td>
@@ -255,24 +262,34 @@ export async function render(view, ctx) {
             </tr></tfoot>
           </table>
         </div>
+        <div class="pager">
+          <button class="btn btn-sm" id="prev-stmt-page" ${raw(state.page <= 1 ? 'disabled' : '')} type="button">${raw(icon.arrowRight({ size: 14, style: 'vertical-align:text-bottom;margin-left:3px' }))}السابق</button>
+          <span class="tiny muted">صفحة ${state.page} من ${totalPages} — إجمالي ${num(totalCount)} حركة</span>
+          <button class="btn btn-sm" id="next-stmt-page" ${raw(state.page >= totalPages ? 'disabled' : '')} type="button">التالي${raw(icon.arrowLeft({ size: 14, style: 'vertical-align:text-bottom;margin-right:3px' }))}</button>
+        </div>
       </div>`;
+
+    $('#prev-stmt-page', view)?.addEventListener('click', () => {
+      if (state.page > 1) {
+        state.page--;
+        draw();
+      }
+    });
+
+    $('#next-stmt-page', view)?.addEventListener('click', () => {
+      if (state.page < totalPages) {
+        state.page++;
+        draw();
+      }
+    });
 
     const qInput = $('#statement-q', view);
     if (qInput) {
-      qInput.addEventListener('input', (e) => {
+      qInput.addEventListener('input', debounce((e) => {
         state.q = e.target.value;
-        const filtered = getFilteredEntries();
-        const tbody = $('#statement-rows', view);
-        if (tbody) tbody.innerHTML = rowsHtml(filtered);
-        const countEl = $('#statement-count', view);
-        if (countEl) {
-          if (state.q.trim()) {
-            countEl.innerHTML = `<span class="badge blue tiny" style="margin-left:6px">${num(filtered.length)} مطابقة</span> من أصل ${num(d.entries.length)} حركة — صدر ${dateTimeAr(d.generated_at)}`;
-          } else {
-            countEl.textContent = `${num(d.entries.length)} حركة — صدر ${dateTimeAr(d.generated_at)}`;
-          }
-        }
-      });
+        state.page = 1;
+        draw();
+      }, 250));
     }
 
     const reload = async () => { await load(); draw(); };

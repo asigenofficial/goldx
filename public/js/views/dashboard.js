@@ -10,7 +10,7 @@ import { html, raw, esc, money, num, dateAr, statusBadge, icon, amount, sarSvg }
 function stat(iconContent, cls, value, label, sub) {
   return html`<div class="stat">
     ${iconContent ? raw(`<div class="stat-ico ${cls}">${iconContent}</div>`) : ''}
-    <div style="min-width:0">
+    <div style="min-width:0;flex:1">
       <div class="stat-val num">${raw(value)}</div>
       <div class="stat-lab">${label}</div>
       ${raw(sub ? `<div class="tiny muted">${esc(sub)}</div>` : '')}

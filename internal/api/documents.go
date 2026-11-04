@@ -160,22 +160,21 @@ func (s *Server) wakePDFWorker() {
 }
 
 func (s *Server) startPDFWorker() {
+	// Worker pool with max 2 workers and throttling between jobs to protect CPU & memory
+	sem := make(chan struct{}, 2)
 	go func() {
-		// Re-queue any previously failed PDFs on startup so they re-render cleanly
-		_, _ = s.db.Exec("UPDATE document_pdfs SET status='PENDING' WHERE status='FAILED'")
-		ticker := time.NewTicker(5 * time.Second)
-		defer ticker.Stop()
 		for {
-			s.processPendingPDFs()
 			select {
 			case <-s.pdfWake:
-			case <-ticker.C:
+				s.processPendingPDFsThrottled(sem)
+			case <-time.After(30 * time.Second):
+				s.processPendingPDFsThrottled(sem)
 			}
 		}
 	}()
 }
 
-func (s *Server) processPendingPDFs() {
+func (s *Server) processPendingPDFsThrottled(sem chan struct{}) {
 	for {
 		var kind, id string
 		var revision int64
@@ -184,7 +183,17 @@ func (s *Server) processPendingPDFs() {
 		if err != nil {
 			return
 		}
-		_, _ = s.renderAndSavePDF(kind, id, revision, "")
+		// Mark rendering to avoid picking up the same document in parallel
+		_, _ = s.db.Exec("UPDATE document_pdfs SET status='RENDERING' WHERE kind=? AND document_id=? AND revision=?", kind, id, revision)
+
+		sem <- struct{}{}
+		go func(k, docID string, rev int64) {
+			defer func() {
+				<-sem
+				time.Sleep(150 * time.Millisecond) // Throttling cooldown between document renderings
+			}()
+			_, _ = s.renderAndSavePDF(k, docID, rev, "")
+		}(kind, id, revision)
 	}
 }
 
