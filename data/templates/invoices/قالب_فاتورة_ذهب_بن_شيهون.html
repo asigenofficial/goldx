@@ -235,7 +235,7 @@
     }
 
     table.box-table th.box-header {
-      background: #dbe4ed;
+      background: #ffffff;
       border-bottom: 1px solid #000000;
       padding: 0 6px;
       font-weight: 800;
@@ -314,12 +314,15 @@
       box-sizing: border-box;
     }
 
-    /* أوزان أعمدة جدول الشركة (تسمية على اليسار 38% | قيمة على اليمين 62%) */
+    /* أوزان أعمدة جدول الشركة (تسمية على اليسار 38% | قيمة سوداء على اليمين 62%) */
     .party-col-company table.box-table td.cell-lbl { width: 38%; }
-    .party-col-company table.box-table td.cell-val { width: 62%; }
+    .party-col-company table.box-table td.cell-val { width: 62%; color: #000000; }
 
-    /* أوزان أعمدة جدول العميل (قيمة على اليسار 62% | تسمية على اليمين 38%) */
-    .party-col-customer table.box-table td.cell-val { width: 62%; }
+    /* أوزان أعمدة جدول العميل (قيمة زرقاء على اليسار 62% | تسمية سوداء على اليمين 38%) */
+    .party-col-customer table.box-table td.cell-val {
+      width: 62%;
+      color: #0f356c !important; /* لون الخط الأزرق الكحلي لبيانات العميل */
+    }
     .party-col-customer table.box-table td.cell-lbl { width: 38%; }
 
     .cell-flex-lbl {
@@ -348,7 +351,7 @@
 
     table.addr-table-company th,
     table.addr-table-customer th {
-      background: #dbe4ed;
+      background: #ffffff;
       border-bottom: 1px solid #000000;
       border-top: 1.5px solid #000000;
       padding: 0 6px;
@@ -357,6 +360,7 @@
       height: 22px;
       vertical-align: middle;
       box-sizing: border-box;
+      color: #000000;
     }
 
     table.addr-table-company td,
@@ -385,6 +389,7 @@
       background: #ffffff;
       font-weight: 700;
       color: #000000;
+      text-align: center;
     }
 
     .addr-val {
@@ -394,11 +399,18 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      text-align: center;
+    }
+
+    /* نصوص العميل باللون الأزرق المطابق للصورة (المنطقة، المدينة، الحي، الشارع) */
+    .cust-blue-val {
+      color: #0f356c !important;
+      font-weight: 700 !important;
     }
 
     /* العمود الأوسط: الفاتورة والباركود */
     .center-top-header {
-      background: #b2c6d9;
+      background: #b5c7d8;
       border-bottom: 1px solid #000000;
       padding: 2px 3px;
       text-align: center;
@@ -413,7 +425,7 @@
     .center-top-header .ar-type {
       font-size: 10px;
       font-weight: 800;
-      color: #000000;
+      color: #0d2850;
       line-height: 1.2;
     }
 
@@ -421,7 +433,7 @@
       font-size: 7.5px;
       font-weight: 600;
       font-family: Arial, sans-serif;
-      color: #2b3a4a;
+      color: #0d2850;
       line-height: 1.1;
       margin-top: 1px;
     }
@@ -592,13 +604,21 @@
       border-left: none !important;
     }
 
-    /* عمود البيان: محاذاة لليمين مع مساحة كافية */
-    table.main-items-grid tbody td:nth-child(3) {
+    /* رقم الصنف باللون الأزرق الداكن */
+    table.main-items-grid tbody tr td:nth-child(2) {
+      color: #0f356c !important;
+      font-weight: 700 !important;
+    }
+
+    /* عمود البيان: محاذاة لليمين ولون أزرق داكن مطابق للصورة */
+    table.main-items-grid tbody tr td:nth-child(3) {
       white-space: normal !important;
       text-align: right !important;
       padding: 1px 6px !important;
       font-size: 8.8px !important;
       line-height: 1.15 !important;
+      color: #0f356c !important;
+      font-weight: 700 !important;
     }
 
     /* تمديد الخطوط الرأسية للجدول لتصل بدقة إلى صندوق الإجماليات وتملأ الورقة بالكامل */
@@ -667,13 +687,24 @@
     }
 
     table.tot-grid-table th {
-      background: #d9d9d9;
       border-bottom: 1px solid #000000;
       border-right: 1px solid #000000;
       padding: 2.5px 2px;
       font-weight: 800;
       color: #000000;
       line-height: 1.2;
+    }
+
+    /* جدول عيارات الذهب 18 | 21 | 22 | 24 بخلفية بيضاء */
+    .karat-split-box table.tot-grid-table th {
+      background: #ffffff !important;
+      color: #000000 !important;
+    }
+
+    /* جدول إجماليات الذهب بخلفية زرقاء رمادية مطابقة للصورة */
+    .gold-totals-box table.tot-grid-table th {
+      background: #c2ccd6 !important;
+      color: #000000 !important;
     }
 
     table.tot-grid-table th:last-child {
@@ -687,6 +718,7 @@
       font-weight: 700;
       font-variant-numeric: tabular-nums;
       background: #ffffff;
+      color: #000000;
     }
 
     table.tot-grid-table td:last-child {
@@ -732,6 +764,7 @@
       padding: 1.5px 4px;
       height: 17px;
       vertical-align: middle;
+      color: #000000;
     }
 
     table.fin-table-grid tr:last-child td {
@@ -745,6 +778,7 @@
       font-variant-numeric: tabular-nums;
       background: #ffffff;
       border-right: 1px solid #000000;
+      color: #000000;
     }
 
     table.fin-table-grid td.fin-lbl {
@@ -753,10 +787,13 @@
       font-weight: 700;
       background: #ffffff;
       direction: rtl;
+      color: #000000;
     }
 
+    /* سطر الإجمالي شامل الضريبة بخلفية زرقاء رمادية بارزة */
     table.fin-table-grid tr.row-grand-highlight td {
-      background: #b8c2cc !important;
+      background: #c2ccd6 !important;
+      color: #000000 !important;
       font-weight: 900 !important;
     }
 
@@ -810,7 +847,7 @@
     .tafqeet-row-text {
       font-size: 9.5px;
       font-weight: 800;
-      color: #000000;
+      color: #0f356c !important; /* لون الخط الأزرق الكحلي للتفقيط كالأصل تماماً */
       text-align: center;
       width: 100%;
       line-height: 1.3;
@@ -907,7 +944,7 @@
       text-align: center;
       font-size: 8px;
       font-weight: 700;
-      color: #222222;
+      color: #0f356c !important; /* لون الخط الأزرق الداكن للتواصل في أسفل الفاتورة كالأصل تماماً */
       direction: rtl;
     }
 
@@ -1163,23 +1200,23 @@
               <tr>
                 <td class="addr-val" style="width:25%;" id="buyer-addr-bno">{{buyer_building_no}}</td>
                 <td class="addr-lbl" style="width:25%;">رقم المبنى</td>
-                <td class="addr-val" style="width:28%;" id="buyer-addr-reg">{{buyer_city}}</td>
+                <td class="addr-val cust-blue-val" style="width:28%;" id="buyer-addr-reg">{{buyer_city}}</td>
                 <td class="addr-lbl" style="width:22%;">المنطقة</td>
               </tr>
               <tr>
                 <td class="addr-val" id="buyer-addr-extra">{{buyer_postal_code}}</td>
                 <td class="addr-lbl">الرقم الإضافي</td>
-                <td class="addr-val" id="buyer-addr-city">{{buyer_city}}</td>
+                <td class="addr-val cust-blue-val" id="buyer-addr-city">{{buyer_city}}</td>
                 <td class="addr-lbl">المدينة</td>
               </tr>
               <tr>
                 <td class="addr-val" id="buyer-addr-post">{{buyer_postal_code}}</td>
                 <td class="addr-lbl">الرمز البريدي</td>
-                <td class="addr-val" id="buyer-addr-dist">{{buyer_district}}</td>
+                <td class="addr-val cust-blue-val" id="buyer-addr-dist">{{buyer_district}}</td>
                 <td class="addr-lbl">الحي</td>
               </tr>
               <tr>
-                <td colspan="3" class="addr-val" style="text-align:right;padding-right:6px;" id="buyer-addr-street">{{buyer_street}}</td>
+                <td colspan="3" class="addr-val cust-blue-val" style="text-align:right;padding-right:6px;" id="buyer-addr-street">{{buyer_street}}</td>
                 <td class="addr-lbl">الشارع</td>
               </tr>
             </tbody>
