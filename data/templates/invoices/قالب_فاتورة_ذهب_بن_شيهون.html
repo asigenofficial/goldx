@@ -4,6 +4,15 @@
 <head>
   <meta charset="utf-8">
   <title>{{seller_name}} — فاتورة ضريبية</title>
+  <style data-invoice-measurements>
+    /* حماية قياسات وأبعاد قالب بن شيهون لمنع الصعود */
+  </style>
+  <script data-invoice-layout-runtime>
+    window.goldxInvoiceLayout = {
+      run: function () {},
+      ready: function () { return Promise.resolve(); }
+    };
+  </script>
   <style>
     @page {
       size: A4 portrait;
@@ -1655,6 +1664,30 @@
         }
       };
       setCompanyAddrIfEmpty();
+
+      // ضمان أن الفراغ بين الجدول والإجماليات يملأ كامل الصفحة وأن الإجماليات والتواقيع مثبتة بالأسفل تماماً
+      var fixBottomPosition = function() {
+        var box = document.querySelector('.invoice-main-box');
+        var itemsCont = document.querySelector('.items-container');
+        var totals = document.querySelector('.totals-area');
+        if (box && itemsCont && totals) {
+          var boxH = box.clientHeight;
+          if (boxH > 400) {
+            var partiesH = document.querySelector('.parties-wrapper') ? document.querySelector('.parties-wrapper').offsetHeight : 0;
+            var totalsH = totals.offsetHeight;
+            var sigH = document.querySelector('.signatures-zone') ? document.querySelector('.signatures-zone').offsetHeight : 0;
+            var polH = document.querySelector('.policy-and-footer-zone') ? document.querySelector('.policy-and-footer-zone').offsetHeight : 0;
+            var availableForItems = boxH - partiesH - totalsH - sigH - polH;
+            if (availableForItems > itemsCont.offsetHeight) {
+              itemsCont.style.minHeight = availableForItems + 'px';
+            }
+          }
+        }
+      };
+      fixBottomPosition();
+      setTimeout(fixBottomPosition, 50);
+      setTimeout(fixBottomPosition, 250);
+      window.addEventListener('resize', fixBottomPosition);
     })();
   </script>
 </body>
