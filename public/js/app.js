@@ -10,9 +10,11 @@ import {
 import { html, raw, esc, initials, toastOk, toastErr, modal, formValues, $, delegate, icon } from './core/util.js';
 import * as theme from './core/theme.js';
 import { startSync, stopSync, openSyncStatusModal, sendHeartbeat } from './core/sync.js';
+import { initConnectivityListener } from './core/connectivity.js';
 
-// تهيئة الثيم فوراً عند تحميل الملف (قبل أي رسم)
+// تهيئة الثيم وفاحص الاتصال بالإنترنت فوراً عند تحميل الملف
 theme.init();
+initConnectivityListener();
 
 const app = document.getElementById('app');
 

@@ -2,6 +2,7 @@
 //  طبقة الاتصال مع الـ API.
 // ==========================================================================
 import { toastErr } from './util.js';
+import { showNoInternetModal } from './connectivity.js';
 
 class ApiError extends Error {
   constructor(status, message, details) {
@@ -24,7 +25,15 @@ async function request(method, path, body, { silent = false, rawText = false } =
       credentials: 'same-origin',
     });
   } catch (err) {
-    if (!silent) toastErr('تعذر الاتصال بالخادم');
+    if (!silent) {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        showNoInternetModal({
+          onRetry: () => request(method, path, body, { silent, rawText })
+        });
+      } else {
+        toastErr('تعذر الاتصال بالخادم');
+      }
+    }
     throw new ApiError(0, 'تعذر الاتصال بالخادم');
   }
 

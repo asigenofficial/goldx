@@ -1940,3 +1940,6 @@ export function generateNextItemCode(existingList = [], catalogItems = []) {
   return `ITM-${String(maxNum + 1).padStart(4, '0')}`;
 }
 
+
+// ------------------------------------------------------------- فحص الاتصال بالإنترنت
+export { showNoInternetModal, isOnline, pingConnection } from './connectivity.js';
