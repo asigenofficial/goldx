@@ -235,7 +235,7 @@
     }
 
     table.box-table th.box-header {
-      background: #ffffff;
+      background: #b2c6d9 !important; /* خلفية زرقاء رمادية مطابقة للصورة الأصلية */
       border-bottom: 1px solid #000000;
       padding: 0 6px;
       font-weight: 800;
@@ -351,7 +351,7 @@
 
     table.addr-table-company th,
     table.addr-table-customer th {
-      background: #ffffff;
+      background: #b2c6d9 !important; /* خلفية زرقاء رمادية مطابقة للصورة الأصلية */
       border-bottom: 1px solid #000000;
       border-top: 1.5px solid #000000;
       padding: 0 6px;
@@ -402,15 +402,16 @@
       text-align: center;
     }
 
-    /* نصوص العميل باللون الأزرق المطابق للصورة (المنطقة، المدينة، الحي، الشارع) */
-    .cust-blue-val {
+    /* نصوص العميل باللون الأزرق المطابق للصورة (المنطقة، المدينة، الحي، الشارع، وأرقام العنوان) */
+    .cust-blue-val,
+    .party-col-customer .addr-val {
       color: #0f356c !important;
       font-weight: 700 !important;
     }
 
     /* العمود الأوسط: الفاتورة والباركود */
     .center-top-header {
-      background: #b5c7d8;
+      background: #b2c6d9 !important;
       border-bottom: 1px solid #000000;
       padding: 2px 3px;
       text-align: center;
@@ -467,7 +468,7 @@
       font-weight: 800;
       font-size: 9.5px;
       font-variant-numeric: tabular-nums;
-      color: #000000;
+      color: #0f356c !important; /* لون الخط الأزرق الكحلي لرقم وتاريخ الفاتورة */
     }
 
     .center-qr-holder {
@@ -526,7 +527,7 @@
       border: 1px solid #000000 !important;
       border-top: none !important;
       padding: 1px 1px !important;
-      background: #d9d9d9 !important;
+      background: #b2c6d9 !important; /* خلفية زرقاء رمادية مطابقة للصورة الأصلية */
       color: #000000 !important;
       font-weight: 800 !important;
       text-align: center !important;
@@ -587,12 +588,13 @@
       text-align: center !important;
       vertical-align: middle !important;
       font-size: 8.8px !important;
-      font-weight: 600 !important;
+      font-weight: 700 !important;
       font-variant-numeric: tabular-nums !important;
       overflow: hidden !important;
       text-overflow: ellipsis !important;
       white-space: nowrap !important;
       background: #ffffff !important;
+      color: #0f356c !important; /* جميع قيم بيانات الأصناف باللون الأزرق الداكن */
     }
 
     /* إزالة الحدود الخارجية الجانبية حتى تلتحم بالإطار الخارجي المستمر */
@@ -695,15 +697,15 @@
       line-height: 1.2;
     }
 
-    /* جدول عيارات الذهب 18 | 21 | 22 | 24 بخلفية بيضاء */
+    /* جدول عيارات الذهب 18 | 21 | 22 | 24 بخلفية زرقاء رمادية */
     .karat-split-box table.tot-grid-table th {
-      background: #ffffff !important;
+      background: #b2c6d9 !important;
       color: #000000 !important;
     }
 
     /* جدول إجماليات الذهب بخلفية زرقاء رمادية مطابقة للصورة */
     .gold-totals-box table.tot-grid-table th {
-      background: #c2ccd6 !important;
+      background: #b2c6d9 !important;
       color: #000000 !important;
     }
 
@@ -718,7 +720,7 @@
       font-weight: 700;
       font-variant-numeric: tabular-nums;
       background: #ffffff;
-      color: #000000;
+      color: #0f356c !important; /* أرقام أوزان العيارات وإجماليات الذهب بالأزرق الداكن */
     }
 
     table.tot-grid-table td:last-child {
@@ -778,7 +780,7 @@
       font-variant-numeric: tabular-nums;
       background: #ffffff;
       border-right: 1px solid #000000;
-      color: #000000;
+      color: #0f356c !important; /* قيم المبالغ المالية بالأزرق الداكن */
     }
 
     table.fin-table-grid td.fin-lbl {
@@ -792,8 +794,8 @@
 
     /* سطر الإجمالي شامل الضريبة بخلفية زرقاء رمادية بارزة */
     table.fin-table-grid tr.row-grand-highlight td {
-      background: #c2ccd6 !important;
-      color: #000000 !important;
+      background: #b2c6d9 !important;
+      color: #0f356c !important; /* الإجمالي النهائي بالأزرق الداكن */
       font-weight: 900 !important;
     }
 
@@ -806,12 +808,13 @@
     }
 
     table.bags-row-table th {
-      background: #ffffff;
+      background: #b2c6d9 !important; /* خلفية زرقاء رمادية مطابقة للأصل */
       border-bottom: 1px solid #000000;
       border-right: 1px solid #000000;
       padding: 2px 3px;
       font-weight: 700;
       text-align: center;
+      color: #000000;
     }
 
     table.bags-row-table th:last-child {
@@ -826,6 +829,7 @@
       text-align: center;
       height: 17px;
       background: #ffffff;
+      color: #0f356c !important; /* قيم الأكياس بالأزرق الداكن */
     }
 
     table.bags-row-table td:last-child {
@@ -927,7 +931,7 @@
     .policy-box-list li {
       font-size: 7.8px;
       font-weight: 600;
-      color: #111111;
+      color: #0f356c !important; /* نصوص شروط وسياسة الاسترجاع باللون الأزرق الداكن كالأصل */
       margin-bottom: 1.5px;
     }
 
