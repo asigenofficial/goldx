@@ -74,6 +74,14 @@
         page-break-after: avoid !important;
         page-break-inside: avoid !important;
       }
+
+      .invoice-main-box {
+        min-height: 255mm !important;
+      }
+
+      .items-container {
+        min-height: 110mm !important;
+      }
     }
 
     /* ─── 1. الترويسة العلوية بدون إطار (مطابقة تماماً للصورة) ─── */
@@ -168,11 +176,12 @@
       box-sizing: border-box;
       display: flex !important;
       flex-direction: column !important;
+      justify-content: space-between !important;
       margin: 0 !important;
       padding: 0 !important;
       background: #ffffff;
       flex: 1 1 auto !important;
-      min-height: 0;
+      min-height: 255mm !important;
     }
 
     /* ─── 2. شبكة بيانات الأطراف والفاتورة (متصلة مباشرة بالإطار ومحاذاة أفقية متقنة) ─── */
@@ -498,18 +507,21 @@
       margin: 0 auto;
     }
 
-    /* ─── 3. جدول تفاصيل الأصناف والبنود (يمتد رأسياً لملء مساحة الفاتورة بالكامل) ─── */
+    /* ─── 3. جدول تفاصيل الأصناف والبنود (يبقى فارغاً ونظيفاً بدون خطوط رأسية نازلة) ─── */
     .items-container {
       width: 100%;
       flex: 1 1 auto !important;
+      min-height: 110mm !important; /* يحافظ على الفراغ النظيف ويثبت الإجماليات والتواقيع بالأسفل تماماً */
       display: flex !important;
       flex-direction: column !important;
+      justify-content: flex-start !important;
       margin: 0 !important;
       padding: 0 !important;
       border: none !important;
       border-bottom: 1.5px solid #000000 !important;
       direction: rtl;
-      min-height: 0;
+      background: #ffffff !important;
+      box-sizing: border-box;
     }
 
     table.main-items-grid {
@@ -1621,6 +1633,21 @@
         setIfEmpty('seller-addr-dist', 'الورود');
         setIfEmpty('seller-addr-post', '23221');
         setIfEmpty('seller-addr-street', 'طريق الملك عبدالله');
+
+        var sellerEl = document.getElementById('seller-seller-cell');
+        if (sellerEl) {
+          var sTxt = sellerEl.textContent.trim();
+          if (!sTxt || sTxt.indexOf('{{') !== -1 || sTxt.indexOf('ملاحظات') !== -1) {
+            sellerEl.textContent = 'إبراهيم العروي - 02';
+          }
+        }
+        var branchEl = document.getElementById('seller-branch-cell');
+        if (branchEl) {
+          var bTxt = branchEl.textContent.trim();
+          if (!bTxt || bTxt.indexOf('{{') !== -1) {
+            branchEl.textContent = 'المصنع الادارة';
+          }
+        }
       };
       setCompanyAddrIfEmpty();
     })();
