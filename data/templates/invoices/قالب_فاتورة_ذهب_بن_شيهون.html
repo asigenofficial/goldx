@@ -175,7 +175,7 @@
       min-height: 0;
     }
 
-    /* ─── 2. شبكة بيانات الأطراف والفاتورة (متصلة مباشرة بالإطار) ─── */
+    /* ─── 2. شبكة بيانات الأطراف والفاتورة (متصلة مباشرة بالإطار ومحاذاة أفقية متقنة) ─── */
     .parties-wrapper {
       width: 100%;
       display: flex !important;
@@ -192,33 +192,36 @@
       flex-shrink: 0;
     }
 
-    /* العمود الأيسر: بيانات الشركة وعنوانها (37%) */
+    /* العمود الأيسر: بيانات الشركة وعنوانها (37.5%) */
     .party-col-company {
-      flex: 0 0 37%;
+      flex: 0 0 37.5%;
       display: flex;
       flex-direction: column;
       direction: ltr;
       border-right: 1.5px solid #000000;
       background: #ffffff;
+      box-sizing: border-box;
     }
 
-    /* العمود الأوسط: رقم الفاتورة وتاريخها والباركود (22%) */
+    /* العمود الأوسط: رقم الفاتورة وتاريخها والباركود (20.5%) */
     .party-col-center {
-      flex: 0 0 22%;
+      flex: 0 0 20.5%;
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
       border-right: 1.5px solid #000000;
       background: #ffffff;
+      box-sizing: border-box;
     }
 
-    /* العمود الأيمن: بيانات العميل وعنوانه (41%) */
+    /* العمود الأيمن: بيانات العميل وعنوانه (42%) */
     .party-col-customer {
-      flex: 0 0 41%;
+      flex: 0 0 42%;
       display: flex;
       flex-direction: column;
       direction: rtl;
       background: #ffffff;
+      box-sizing: border-box;
     }
 
     /* تنسيق الجداول داخل الأعمدة */
@@ -227,166 +230,160 @@
       border-collapse: collapse;
       font-size: 8.5px;
       background: #ffffff;
+      table-layout: fixed;
     }
 
     table.box-table th.box-header {
-      background: #e6e6e6;
+      background: #dbe4ed;
       border-bottom: 1px solid #000000;
-      padding: 2.5px 4px;
+      padding: 0 4px;
       font-weight: 800;
-      font-size: 8.8px;
+      font-size: 8.5px;
       color: #000000;
       text-align: center;
-      height: 20px;
+      height: 22px;
       vertical-align: middle;
+      box-sizing: border-box;
     }
 
     table.box-table td {
       border-bottom: 1px solid #000000;
       border-right: 1px solid #000000;
-      padding: 1.5px 4px;
+      padding: 0 4px;
       height: 18px;
       vertical-align: middle;
+      box-sizing: border-box;
+      font-size: 8.5px;
     }
 
     table.box-table td:last-child {
       border-right: none;
     }
 
+    .cell-flex-lbl {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      font-weight: 700;
+      font-size: 8.5px;
+      color: #000000;
+      box-sizing: border-box;
+    }
+
     /* عمود الشركة: التسمية على اليسار والقيمة على اليمين */
     .party-col-company table.box-table td.cell-lbl {
       width: 38%;
       background: #ffffff;
-      font-weight: 700;
-      white-space: nowrap;
-      text-align: left;
-      direction: ltr;
-      padding-left: 4px;
-      padding-right: 4px;
-    }
-
-    .party-col-company table.box-table td.cell-lbl .lbl-ar {
-      float: right;
-      font-size: 8.5px;
+      padding: 0 4px;
     }
 
     .party-col-company table.box-table td.cell-val {
       width: 62%;
       background: #ffffff;
-      font-weight: 600;
+      font-weight: 700;
       text-align: center;
       direction: rtl;
       font-variant-numeric: tabular-nums;
+      font-size: 8.5px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     /* عمود العميل: القيمة على اليسار والتسمية على اليمين (معكوسة كالصورة) */
     .party-col-customer table.box-table td.cell-val {
-      width: 65%;
+      width: 62%;
       background: #ffffff;
-      font-weight: 600;
+      font-weight: 700;
       text-align: center;
       direction: rtl;
       font-variant-numeric: tabular-nums;
+      font-size: 8.5px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .party-col-customer table.box-table td.cell-lbl {
-      width: 35%;
+      width: 38%;
       background: #ffffff;
-      font-weight: 700;
-      white-space: nowrap;
-      text-align: right;
-      direction: rtl;
-      padding-left: 4px;
-      padding-right: 4px;
+      padding: 0 4px;
     }
 
-    .party-col-customer table.box-table td.cell-lbl .lbl-en {
-      float: left;
-      font-size: 8px;
-      font-family: Arial, sans-serif;
-    }
-
-    /* جدول عنوان الشركة الفرعي */
-    table.addr-table-company {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 8px;
-      direction: rtl;
-      background: #ffffff;
-    }
-
-    table.addr-table-company th {
-      background: #e6e6e6;
-      border-bottom: 1px solid #000000;
-      border-top: 1px solid #000000;
-      padding: 2px 4px;
-      font-size: 8.5px;
-      font-weight: 800;
-      text-align: center;
-      height: 19px;
-    }
-
-    table.addr-table-company td {
-      border-bottom: 1px solid #000000;
-      border-left: 1px solid #000000;
-      padding: 1px 3px;
-      height: 16px;
-      vertical-align: middle;
-      text-align: center;
-    }
-
-    table.addr-table-company td:last-child {
-      border-left: none;
-    }
-
-    /* جدول عنوان العميل الفرعي (معكوس مطابق للصورة) */
+    /* جداول العناوين الفرعية */
+    table.addr-table-company,
     table.addr-table-customer {
       width: 100%;
       border-collapse: collapse;
-      font-size: 8px;
-      direction: rtl;
+      font-size: 8.5px;
       background: #ffffff;
+      table-layout: fixed;
     }
 
+    table.addr-table-company th,
     table.addr-table-customer th {
-      background: #e6e6e6;
+      background: #dbe4ed;
       border-bottom: 1px solid #000000;
-      border-top: 1px solid #000000;
-      padding: 2px 4px;
+      border-top: 1.5px solid #000000;
+      padding: 0 4px;
       font-size: 8.5px;
       font-weight: 800;
-      text-align: center;
-      height: 19px;
+      height: 22px;
+      vertical-align: middle;
+      box-sizing: border-box;
     }
 
+    table.addr-table-company td,
     table.addr-table-customer td {
       border-bottom: 1px solid #000000;
       border-left: 1px solid #000000;
-      padding: 1px 3px;
-      height: 16px;
+      padding: 0 3px;
+      height: 17px;
       vertical-align: middle;
       text-align: center;
+      font-size: 8.5px;
+      box-sizing: border-box;
     }
 
+    table.addr-table-company td:last-child,
     table.addr-table-customer td:last-child {
       border-left: none;
     }
 
+    .addr-lbl {
+      background: #ffffff;
+      font-weight: 700;
+      color: #000000;
+    }
+
+    .addr-val {
+      background: #ffffff;
+      font-weight: 600;
+      color: #000000;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     /* العمود الأوسط: الفاتورة والباركود */
     .center-top-header {
-      background: #e6e6e6;
+      background: #b2c6d9;
       border-bottom: 1px solid #000000;
-      padding: 2.5px 3px;
+      padding: 2px 3px;
       text-align: center;
-      height: 38px;
+      height: 40px;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
+      box-sizing: border-box;
     }
 
     .center-top-header .ar-type {
-      font-size: 9.5px;
+      font-size: 10px;
       font-weight: 800;
       color: #000000;
       line-height: 1.2;
@@ -398,6 +395,7 @@
       font-family: Arial, sans-serif;
       color: #2b3a4a;
       line-height: 1.1;
+      margin-top: 1px;
     }
 
     table.center-meta-table {
@@ -405,28 +403,31 @@
       border-collapse: collapse;
       font-size: 8px;
       background: #ffffff;
+      table-layout: fixed;
     }
 
     table.center-meta-table td {
       border-bottom: 1px solid #000000;
-      padding: 1.5px 2px;
+      padding: 0 4px;
       text-align: center;
       vertical-align: middle;
+      height: 18px;
+      box-sizing: border-box;
     }
 
     table.center-meta-table td.meta-th {
       background: #ffffff;
       font-weight: 700;
       font-size: 8px;
-      height: 18px;
+      color: #000000;
     }
 
     table.center-meta-table td.meta-val-cell {
       background: #ffffff;
       font-weight: 800;
-      font-size: 9px;
-      height: 18px;
+      font-size: 9.5px;
       font-variant-numeric: tabular-nums;
+      color: #000000;
     }
 
     .center-qr-holder {
@@ -434,17 +435,17 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      flex: 1 1 auto;
-      min-height: 105px;
+      height: 126px;
       background: #ffffff;
+      box-sizing: border-box;
     }
 
     .center-qr-holder svg,
     .center-qr-holder img {
-      width: 102px !important;
-      height: 102px !important;
-      max-width: 102px !important;
-      max-height: 102px !important;
+      width: 112px !important;
+      height: 112px !important;
+      max-width: 112px !important;
+      max-height: 112px !important;
       object-fit: contain;
       display: block;
       margin: 0 auto;
@@ -920,7 +921,7 @@
     <!-- ══════ الإطار المربع الرئيسي المستمر والمتصل كقطعة واحدة يملأ ورقة A4 بالكامل ══════ -->
     <div class="invoice-main-box">
 
-      <!-- 2. شبكة بيانات الأطراف والفاتورة والباركود -->
+      <!-- 2. شبكة بيانات الأطراف والفاتورة والباركود (مطابقة 100% للصورة) -->
       <section class="parties-wrapper">
 
         <!-- العمود الأيسر: بيانات الشركة / المورد وعنوانها -->
@@ -929,37 +930,53 @@
           <table class="box-table">
             <thead>
               <tr>
-                <th colspan="2" class="box-header">Company Information &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; بيانات الشركة</th>
+                <th colspan="2" class="box-header">
+                  <div class="cell-flex-lbl"><span>Company Information</span><span>بيانات الشركة</span></div>
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td class="cell-lbl">Name <span class="lbl-ar">اسم الشركة</span></td>
-                <td class="cell-val">{{seller_name}}</td>
+                <td class="cell-lbl">
+                  <div class="cell-flex-lbl"><span>Name</span><span>اسم الشركة</span></div>
+                </td>
+                <td class="cell-val" id="seller-name-cell">{{seller_name}}</td>
               </tr>
               <tr>
-                <td class="cell-lbl">CR <span class="lbl-ar">السجل التجاري</span></td>
-                <td class="cell-val">{{seller_cr}}</td>
+                <td class="cell-lbl">
+                  <div class="cell-flex-lbl"><span>CR</span><span>السجل التجاري</span></div>
+                </td>
+                <td class="cell-val" id="seller-cr-cell">{{seller_cr}}</td>
               </tr>
               <tr>
-                <td class="cell-lbl">Vat No. <span class="lbl-ar">الرقم الضريبي</span></td>
-                <td class="cell-val">{{seller_tax}}</td>
+                <td class="cell-lbl">
+                  <div class="cell-flex-lbl"><span>Vat No.</span><span>الرقم الضريبي</span></div>
+                </td>
+                <td class="cell-val" id="seller-vat-cell">{{seller_tax}}</td>
               </tr>
               <tr>
-                <td class="cell-lbl">License <span class="lbl-ar">رقم الترخيص</span></td>
-                <td class="cell-val">{{seller_license}}</td>
+                <td class="cell-lbl">
+                  <div class="cell-flex-lbl"><span>License</span><span>رقم الترخيص</span></div>
+                </td>
+                <td class="cell-val" id="seller-lic-cell">{{seller_license}}</td>
               </tr>
               <tr>
-                <td class="cell-lbl">Mobile No. <span class="lbl-ar">رقم الجوال</span></td>
-                <td class="cell-val">{{seller_phone}}</td>
+                <td class="cell-lbl">
+                  <div class="cell-flex-lbl"><span>Mobile No.</span><span>رقم الجوال</span></div>
+                </td>
+                <td class="cell-val" id="seller-phone-cell">{{seller_phone}}</td>
               </tr>
               <tr>
-                <td class="cell-lbl">Branch <span class="lbl-ar">الفرع</span></td>
-                <td class="cell-val">{{seller_branch}}</td>
+                <td class="cell-lbl">
+                  <div class="cell-flex-lbl"><span>Branch</span><span>الفرع</span></div>
+                </td>
+                <td class="cell-val" id="seller-branch-cell">{{seller_branch}}</td>
               </tr>
               <tr>
-                <td class="cell-lbl">Seller <span class="lbl-ar">البائع</span></td>
-                <td class="cell-val">{{notes}}</td>
+                <td class="cell-lbl">
+                  <div class="cell-flex-lbl"><span>Seller</span><span>البائع</span></div>
+                </td>
+                <td class="cell-val" id="seller-seller-cell">{{notes}}</td>
               </tr>
             </tbody>
           </table>
@@ -968,31 +985,33 @@
           <table class="addr-table-company">
             <thead>
               <tr>
-                <th colspan="4">Company Address &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; عنوان الشركة</th>
+                <th colspan="4">
+                  <div class="cell-flex-lbl"><span>Company Address</span><span>عنوان الشركة</span></div>
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td style="width:20%;background:#ffffff;font-weight:700;">المنطقة</td>
-                <td style="width:30%;font-weight:600;">{{seller_city}}</td>
-                <td style="width:20%;background:#ffffff;font-weight:700;">رقم المبنى</td>
-                <td style="width:30%;font-weight:600;">{{seller_building_no}}</td>
+                <td class="addr-lbl" style="width:20%;">المنطقة</td>
+                <td class="addr-val" style="width:30%;" id="seller-addr-reg">{{seller_city}}</td>
+                <td class="addr-lbl" style="width:25%;">رقم المبنى</td>
+                <td class="addr-val" style="width:25%;" id="seller-addr-bno">{{seller_building_no}}</td>
               </tr>
               <tr>
-                <td style="background:#ffffff;font-weight:700;">المدينة</td>
-                <td style="font-weight:600;">{{seller_city}}</td>
-                <td style="background:#ffffff;font-weight:700;">الرقم الإضافي</td>
-                <td style="font-weight:600;">{{seller_postal_code}}</td>
+                <td class="addr-lbl">المدينة</td>
+                <td class="addr-val" id="seller-addr-city">{{seller_city}}</td>
+                <td class="addr-lbl">الرقم الإضافي</td>
+                <td class="addr-val" id="seller-addr-extra">{{seller_postal_code}}</td>
               </tr>
               <tr>
-                <td style="background:#ffffff;font-weight:700;">الحي</td>
-                <td style="font-weight:600;">{{seller_district}}</td>
-                <td style="background:#ffffff;font-weight:700;">الرمز البريدي</td>
-                <td style="font-weight:600;">{{seller_postal_code}}</td>
+                <td class="addr-lbl">الحي</td>
+                <td class="addr-val" id="seller-addr-dist">{{seller_district}}</td>
+                <td class="addr-lbl">الرمز البريدي</td>
+                <td class="addr-val" id="seller-addr-post">{{seller_postal_code}}</td>
               </tr>
               <tr>
-                <td style="background:#ffffff;font-weight:700;">الشارع</td>
-                <td colspan="3" style="text-align:right;padding-right:6px;font-weight:600;">{{seller_street}}</td>
+                <td class="addr-lbl">الشارع</td>
+                <td colspan="3" class="addr-val" style="text-align:right;padding-right:6px;" id="seller-addr-street">{{seller_street}}</td>
               </tr>
             </tbody>
           </table>
@@ -1001,24 +1020,30 @@
         <!-- العمود الأوسط: الفاتورة والباركود -->
         <div class="party-col-center">
           <div class="center-top-header">
-            <div class="ar-type">{{invoice_type}}</div>
+            <div class="ar-type" id="inv-type-cell">{{invoice_type}}</div>
             <div class="en-type">Deferred manufacturing invoice</div>
           </div>
 
           <table class="center-meta-table">
             <tr>
-              <td class="meta-th">Invoice No. &nbsp;&nbsp;&nbsp;&nbsp; رقم الفاتورة</td>
+              <td class="meta-th">
+                <div class="cell-flex-lbl"><span>Invoice No.</span><span>رقم الفاتورة</span></div>
+              </td>
             </tr>
             <tr>
-              <td class="meta-val-cell">{{invoice_number}}</td>
+              <td class="meta-val-cell" id="inv-num-cell">{{invoice_number}}</td>
             </tr>
             <tr>
-              <td class="meta-th">Invoice Date &nbsp;&nbsp;&nbsp;&nbsp; تاريخ ووقت الفاتورة</td>
+              <td class="meta-th">
+                <div class="cell-flex-lbl"><span>Invoice Date</span><span>تاريخ ووقت الفاتورة</span></div>
+              </td>
             </tr>
             <tr>
-              <td class="meta-val-cell" style="display:flex;flex-direction:row;justify-content:space-around;padding:1px 0;">
-                <span>{{issue_time}}</span>
-                <span>{{issue_date}}</span>
+              <td class="meta-val-cell" style="padding:0 6px;">
+                <div class="cell-flex-lbl" style="justify-content:space-between;font-weight:700;">
+                  <span id="inv-time-cell">{{issue_time}}</span>
+                  <span id="inv-date-cell">{{issue_date}}</span>
+                </div>
               </td>
             </tr>
           </table>
@@ -1034,37 +1059,53 @@
           <table class="box-table">
             <thead>
               <tr>
-                <th colspan="2" class="box-header">Account Information &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; بيانات العميل / الحساب / المورد</th>
+                <th colspan="2" class="box-header">
+                  <div class="cell-flex-lbl"><span>Account Information</span><span>بيانات العميل / الحساب / المورد</span></div>
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td class="cell-val">{{buyer_name}}</td>
-                <td class="cell-lbl"><span class="lbl-en">Name</span> اسم الحساب</td>
+                <td class="cell-val" id="buyer-name-cell">{{buyer_name}}</td>
+                <td class="cell-lbl">
+                  <div class="cell-flex-lbl"><span>Name</span><span>اسم الحساب</span></div>
+                </td>
               </tr>
               <tr>
-                <td class="cell-val">{{buyer_code}}</td>
-                <td class="cell-lbl"><span class="lbl-en">No. Acc.</span> رقم الحساب</td>
+                <td class="cell-val" id="buyer-code-cell">{{buyer_code}}</td>
+                <td class="cell-lbl">
+                  <div class="cell-flex-lbl"><span>No. Acc.</span><span>رقم الحساب</span></div>
+                </td>
               </tr>
               <tr>
-                <td class="cell-val">{{buyer_cr}}</td>
-                <td class="cell-lbl"><span class="lbl-en">CR</span> السجل التجاري</td>
+                <td class="cell-val" id="buyer-cr-cell">{{buyer_cr}}</td>
+                <td class="cell-lbl">
+                  <div class="cell-flex-lbl"><span>CR</span><span>السجل التجاري</span></div>
+                </td>
               </tr>
               <tr>
-                <td class="cell-val">{{buyer_tax}}</td>
-                <td class="cell-lbl"><span class="lbl-en">Vat No.</span> الرقم الضريبي</td>
+                <td class="cell-val" id="buyer-tax-cell">{{buyer_tax}}</td>
+                <td class="cell-lbl">
+                  <div class="cell-flex-lbl"><span>Vat No.</span><span>الرقم الضريبي</span></div>
+                </td>
               </tr>
               <tr>
-                <td class="cell-val">{{buyer_name}}</td>
-                <td class="cell-lbl"><span class="lbl-en">Receive Mr.</span> مناولة السيد</td>
+                <td class="cell-val" id="buyer-receive-cell">{{buyer_name}}</td>
+                <td class="cell-lbl">
+                  <div class="cell-flex-lbl"><span>Receive Mr.</span><span>مناولة السيد</span></div>
+                </td>
               </tr>
               <tr>
-                <td class="cell-val">{{buyer_phone}}</td>
-                <td class="cell-lbl"><span class="lbl-en">Mobile No.</span> رقم الجوال</td>
+                <td class="cell-val" id="buyer-phone-cell">{{buyer_phone}}</td>
+                <td class="cell-lbl">
+                  <div class="cell-flex-lbl"><span>Mobile No.</span><span>رقم الجوال</span></div>
+                </td>
               </tr>
               <tr>
-                <td class="cell-val">{{notes}}</td>
-                <td class="cell-lbl"><span class="lbl-en">Description.</span> الوصف</td>
+                <td class="cell-val" id="buyer-desc-cell">{{notes}}</td>
+                <td class="cell-lbl">
+                  <div class="cell-flex-lbl"><span>Description.</span><span>الوصف</span></div>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -1073,31 +1114,33 @@
           <table class="addr-table-customer">
             <thead>
               <tr>
-                <th colspan="4">Customer Address &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; عنوان العميل</th>
+                <th colspan="4">
+                  <div class="cell-flex-lbl"><span>Customer Address</span><span>عنوان العميل</span></div>
+                </th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td style="width:25%;font-weight:600;">{{buyer_building_no}}</td>
-                <td style="width:25%;background:#ffffff;font-weight:700;">رقم المبنى</td>
-                <td style="width:25%;font-weight:600;">{{buyer_city}}</td>
-                <td style="width:25%;background:#ffffff;font-weight:700;">المنطقة</td>
+                <td class="addr-val" style="width:25%;" id="buyer-addr-bno">{{buyer_building_no}}</td>
+                <td class="addr-lbl" style="width:25%;">رقم المبنى</td>
+                <td class="addr-val" style="width:28%;" id="buyer-addr-reg">{{buyer_city}}</td>
+                <td class="addr-lbl" style="width:22%;">المنطقة</td>
               </tr>
               <tr>
-                <td style="font-weight:600;">{{buyer_postal_code}}</td>
-                <td style="background:#ffffff;font-weight:700;">الرقم الإضافي</td>
-                <td style="font-weight:600;">{{buyer_city}}</td>
-                <td style="background:#ffffff;font-weight:700;">المدينة</td>
+                <td class="addr-val" id="buyer-addr-extra">{{buyer_postal_code}}</td>
+                <td class="addr-lbl">الرقم الإضافي</td>
+                <td class="addr-val" id="buyer-addr-city">{{buyer_city}}</td>
+                <td class="addr-lbl">المدينة</td>
               </tr>
               <tr>
-                <td style="font-weight:600;">{{buyer_postal_code}}</td>
-                <td style="background:#ffffff;font-weight:700;">الرمز البريدي</td>
-                <td style="font-weight:600;">{{buyer_district}}</td>
-                <td style="background:#ffffff;font-weight:700;">الحي</td>
+                <td class="addr-val" id="buyer-addr-post">{{buyer_postal_code}}</td>
+                <td class="addr-lbl">الرمز البريدي</td>
+                <td class="addr-val" id="buyer-addr-dist">{{buyer_district}}</td>
+                <td class="addr-lbl">الحي</td>
               </tr>
               <tr>
-                <td colspan="3" style="text-align:right;padding-right:6px;font-weight:600;">{{buyer_street}}</td>
-                <td style="background:#ffffff;font-weight:700;">الشارع</td>
+                <td colspan="3" class="addr-val" style="text-align:right;padding-right:6px;" id="buyer-addr-street">{{buyer_street}}</td>
+                <td class="addr-lbl">الشارع</td>
               </tr>
             </tbody>
           </table>
@@ -1412,6 +1455,38 @@
           setVal('val-grand', '11,568.33');
           setVal('val-tafqeet-money', 'احدى عشر الف وخمسمائة وثمانية وستون ريال وثلاثة وثلاثون هللة فقط');
           setVal('val-tafqeet-gold', 'ستمائة واربعة وسبعون جرام وسبعة وعشرون ملي فقط');
+
+          // تعبئة بيانات الرأس في وضع المعاينة لتطابق الصورة تماماً
+          setVal('seller-name-cell', 'شركة عالم بن شيهون للصناعة');
+          setVal('seller-cr-cell', '4030535411');
+          setVal('seller-vat-cell', '311085830500003');
+          setVal('seller-lic-cell', '114074301108605');
+          setVal('seller-branch-cell', 'المصنع الادارة');
+          setVal('seller-seller-cell', 'إبراهيم العروي - 02');
+          setVal('seller-addr-reg', 'مكة المكرمة');
+          setVal('seller-addr-bno', '2222');
+          setVal('seller-addr-city', 'جدة');
+          setVal('seller-addr-extra', '6300');
+          setVal('seller-addr-dist', 'الورود');
+          setVal('seller-addr-post', '23221');
+          setVal('seller-addr-street', 'طريق الملك عبدالله');
+
+          setVal('inv-type-cell', 'فاتورة أجور تصنيع آجلة');
+          setVal('inv-num-cell', '610600111');
+          setVal('inv-time-cell', '19:23:38');
+          setVal('inv-date-cell', '07/10/2026');
+
+          setVal('buyer-name-cell', 'مؤسسة سالم عبدالله علي الصبيعي للذهب والمجو');
+          setVal('buyer-code-cell', '6053');
+          setVal('buyer-cr-cell', '7007937142');
+          setVal('buyer-vat-cell', '301206259100003');
+          setVal('buyer-desc-cell', 'فاتورة مؤسسة سالم عبدالله علي الصبيعي');
+          setVal('buyer-addr-bno', '3578');
+          setVal('buyer-addr-reg', 'الخرج');
+          setVal('buyer-addr-extra', '8723');
+          setVal('buyer-addr-city', 'الرياض');
+          setVal('buyer-addr-post', '16439');
+          setVal('buyer-addr-dist', 'حي العالية');
 
         } else {
           rows.forEach(function (tr, idx) {
