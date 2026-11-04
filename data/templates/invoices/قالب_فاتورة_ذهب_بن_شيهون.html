@@ -247,17 +247,76 @@
     }
 
     table.box-table td {
-      border-bottom: 1px solid #000000;
-      border-right: 1px solid #000000;
-      padding: 0 4px;
+      border: 1px solid #000000;
+      padding: 0 3px;
       height: 18px;
       vertical-align: middle;
       box-sizing: border-box;
       font-size: 8.5px;
     }
 
-    table.box-table td:last-child {
+    table.box-table td.cell-en-lbl {
+      background: #ffffff;
+      font-weight: 700;
+      font-size: 8px;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 0 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      color: #000000;
+    }
+
+    table.box-table td.cell-ar-lbl {
+      background: #ffffff;
+      font-weight: 700;
+      font-size: 8.5px;
+      text-align: center;
+      padding: 0 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      color: #000000;
+    }
+
+    table.box-table td.cell-val {
+      background: #ffffff;
+      font-weight: 700;
+      font-size: 8.5px;
+      text-align: center;
+      direction: rtl;
+      font-variant-numeric: tabular-nums;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #000000;
+    }
+
+    /* أوزان الأعمدة لجدول الشركة (إنجليزي | عربي | قيمة) */
+    .party-col-company table.box-table td.cell-en-lbl { width: 19%; }
+    .party-col-company table.box-table td.cell-ar-lbl { width: 23%; }
+    .party-col-company table.box-table td.cell-val    { width: 58%; }
+
+    .party-col-company table.box-table tr td:first-child,
+    .party-col-company table.box-table tr th:first-child {
+      border-left: none;
+    }
+    .party-col-company table.box-table tr td:last-child,
+    .party-col-company table.box-table tr th:last-child {
       border-right: none;
+    }
+
+    /* أوزان الأعمدة لجدول العميل (قيمة | إنجليزي | عربي) */
+    .party-col-customer table.box-table td.cell-val    { width: 56%; }
+    .party-col-customer table.box-table td.cell-en-lbl { width: 22%; }
+    .party-col-customer table.box-table td.cell-ar-lbl { width: 22%; }
+
+    .party-col-customer table.box-table tr td:first-child,
+    .party-col-customer table.box-table tr th:first-child {
+      border-right: none;
+    }
+    .party-col-customer table.box-table tr td:last-child,
+    .party-col-customer table.box-table tr th:last-child {
+      border-left: none;
     }
 
     .cell-flex-lbl {
@@ -271,46 +330,6 @@
       font-size: 8.5px;
       color: #000000;
       box-sizing: border-box;
-    }
-
-    /* عمود الشركة: التسمية على اليسار والقيمة على اليمين */
-    .party-col-company table.box-table td.cell-lbl {
-      width: 38%;
-      background: #ffffff;
-      padding: 0 4px;
-    }
-
-    .party-col-company table.box-table td.cell-val {
-      width: 62%;
-      background: #ffffff;
-      font-weight: 700;
-      text-align: center;
-      direction: rtl;
-      font-variant-numeric: tabular-nums;
-      font-size: 8.5px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    /* عمود العميل: القيمة على اليسار والتسمية على اليمين (معكوسة كالصورة) */
-    .party-col-customer table.box-table td.cell-val {
-      width: 62%;
-      background: #ffffff;
-      font-weight: 700;
-      text-align: center;
-      direction: rtl;
-      font-variant-numeric: tabular-nums;
-      font-size: 8.5px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .party-col-customer table.box-table td.cell-lbl {
-      width: 38%;
-      background: #ffffff;
-      padding: 0 4px;
     }
 
     /* جداول العناوين الفرعية */
@@ -930,52 +949,45 @@
           <table class="box-table">
             <thead>
               <tr>
-                <th colspan="2" class="box-header">
+                <th colspan="3" class="box-header">
                   <div class="cell-flex-lbl"><span>Company Information</span><span>بيانات الشركة</span></div>
                 </th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td class="cell-lbl">
-                  <div class="cell-flex-lbl"><span>Name</span><span>اسم الشركة</span></div>
-                </td>
+                <td class="cell-en-lbl">Name</td>
+                <td class="cell-ar-lbl">اسم الشركة</td>
                 <td class="cell-val" id="seller-name-cell">{{seller_name}}</td>
               </tr>
               <tr>
-                <td class="cell-lbl">
-                  <div class="cell-flex-lbl"><span>CR</span><span>السجل التجاري</span></div>
-                </td>
+                <td class="cell-en-lbl">CR</td>
+                <td class="cell-ar-lbl">السجل التجاري</td>
                 <td class="cell-val" id="seller-cr-cell">{{seller_cr}}</td>
               </tr>
               <tr>
-                <td class="cell-lbl">
-                  <div class="cell-flex-lbl"><span>Vat No.</span><span>الرقم الضريبي</span></div>
-                </td>
+                <td class="cell-en-lbl">Vat No.</td>
+                <td class="cell-ar-lbl">الرقم الضريبي</td>
                 <td class="cell-val" id="seller-vat-cell">{{seller_tax}}</td>
               </tr>
               <tr>
-                <td class="cell-lbl">
-                  <div class="cell-flex-lbl"><span>License</span><span>رقم الترخيص</span></div>
-                </td>
+                <td class="cell-en-lbl">License</td>
+                <td class="cell-ar-lbl">رقم الترخيص</td>
                 <td class="cell-val" id="seller-lic-cell">{{seller_license}}</td>
               </tr>
               <tr>
-                <td class="cell-lbl">
-                  <div class="cell-flex-lbl"><span>Mobile No.</span><span>رقم الجوال</span></div>
-                </td>
+                <td class="cell-en-lbl">Mobile No.</td>
+                <td class="cell-ar-lbl">رقم الجوال</td>
                 <td class="cell-val" id="seller-phone-cell">{{seller_phone}}</td>
               </tr>
               <tr>
-                <td class="cell-lbl">
-                  <div class="cell-flex-lbl"><span>Branch</span><span>الفرع</span></div>
-                </td>
+                <td class="cell-en-lbl">Branch</td>
+                <td class="cell-ar-lbl">الفرع</td>
                 <td class="cell-val" id="seller-branch-cell">{{seller_branch}}</td>
               </tr>
               <tr>
-                <td class="cell-lbl">
-                  <div class="cell-flex-lbl"><span>Seller</span><span>البائع</span></div>
-                </td>
+                <td class="cell-en-lbl">Seller</td>
+                <td class="cell-ar-lbl">البائع</td>
                 <td class="cell-val" id="seller-seller-cell">{{notes}}</td>
               </tr>
             </tbody>
@@ -1059,53 +1071,49 @@
           <table class="box-table">
             <thead>
               <tr>
-                <th colspan="2" class="box-header">
-                  <div class="cell-flex-lbl"><span>Account Information</span><span>بيانات العميل / الحساب / المورد</span></div>
+                <th colspan="3" class="box-header">
+                  <div class="cell-flex-lbl">
+                    <span>Account Information</span>
+                    <span>بيانات العميل / الحساب / المورد</span>
+                  </div>
                 </th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td class="cell-val" id="buyer-name-cell">{{buyer_name}}</td>
-                <td class="cell-lbl">
-                  <div class="cell-flex-lbl"><span>Name</span><span>اسم الحساب</span></div>
-                </td>
+                <td class="cell-en-lbl">Name</td>
+                <td class="cell-ar-lbl">اسم الحساب</td>
               </tr>
               <tr>
                 <td class="cell-val" id="buyer-code-cell">{{buyer_code}}</td>
-                <td class="cell-lbl">
-                  <div class="cell-flex-lbl"><span>No. Acc.</span><span>رقم الحساب</span></div>
-                </td>
+                <td class="cell-en-lbl">.No. Acc</td>
+                <td class="cell-ar-lbl">رقم الحساب</td>
               </tr>
               <tr>
                 <td class="cell-val" id="buyer-cr-cell">{{buyer_cr}}</td>
-                <td class="cell-lbl">
-                  <div class="cell-flex-lbl"><span>CR</span><span>السجل التجاري</span></div>
-                </td>
+                <td class="cell-en-lbl">CR</td>
+                <td class="cell-ar-lbl">السجل التجاري</td>
               </tr>
               <tr>
                 <td class="cell-val" id="buyer-tax-cell">{{buyer_tax}}</td>
-                <td class="cell-lbl">
-                  <div class="cell-flex-lbl"><span>Vat No.</span><span>الرقم الضريبي</span></div>
-                </td>
+                <td class="cell-en-lbl">.Vat No</td>
+                <td class="cell-ar-lbl">الرقم الضريبي</td>
               </tr>
               <tr>
                 <td class="cell-val" id="buyer-receive-cell">{{buyer_name}}</td>
-                <td class="cell-lbl">
-                  <div class="cell-flex-lbl"><span>Receive Mr.</span><span>مناولة السيد</span></div>
-                </td>
+                <td class="cell-en-lbl">.Receive Mr</td>
+                <td class="cell-ar-lbl">مناولة السيد</td>
               </tr>
               <tr>
                 <td class="cell-val" id="buyer-phone-cell">{{buyer_phone}}</td>
-                <td class="cell-lbl">
-                  <div class="cell-flex-lbl"><span>Mobile No.</span><span>رقم الجوال</span></div>
-                </td>
+                <td class="cell-en-lbl">.Mobile No</td>
+                <td class="cell-ar-lbl">رقم الجوال</td>
               </tr>
               <tr>
                 <td class="cell-val" id="buyer-desc-cell">{{notes}}</td>
-                <td class="cell-lbl">
-                  <div class="cell-flex-lbl"><span>Description.</span><span>الوصف</span></div>
-                </td>
+                <td class="cell-en-lbl">.Description</td>
+                <td class="cell-ar-lbl">الوصف</td>
               </tr>
             </tbody>
           </table>
