@@ -82,6 +82,10 @@
       .items-container {
         min-height: 110mm !important;
       }
+
+      .totals-area {
+        margin-top: auto !important;
+      }
     }
 
     /* ─── 1. الترويسة العلوية بدون إطار (مطابقة تماماً للصورة) ─── */
@@ -642,14 +646,15 @@
 
 
 
-    /* ─── 4. ملخص الإجماليات وأوزان العيارات والتفقيط (متصلة مباشرة بأسفل الجدول) ─── */
+    /* ─── 4. ملخص الإجماليات وأوزان العيارات والتفقيط (مثبتة ومحكمة دائماً في أسفل الصفحة) ─── */
     .totals-area {
       width: 100%;
       margin: 0 !important;
+      margin-top: auto !important; /* يضمن الارتكاز التام والدائم في أسفل الورقة */
       padding: 0 !important;
       border: none !important;
       box-sizing: border-box;
-      flex-shrink: 0;
+      flex-shrink: 0 !important;
     }
 
     /* الشريط 1: توزيع العيارات 18 | 21 | 22 | 24 على اليسار، وإجماليات الذهب على اليمين */
@@ -861,7 +866,7 @@
       border-bottom: 1.5px solid #000000 !important;
       box-sizing: border-box;
       background: #ffffff;
-      flex-shrink: 0;
+      flex-shrink: 0 !important;
     }
 
     .signatures-flex-row {
@@ -908,7 +913,7 @@
       direction: rtl;
       box-sizing: border-box;
       background: #ffffff;
-      flex-shrink: 0;
+      flex-shrink: 0 !important;
     }
 
     .policy-box-title {
