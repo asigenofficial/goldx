@@ -1,5 +1,7 @@
 package models
 
+import "strings"
+
 type User struct {
 	ID          string  `json:"id"`
 	Username    string  `json:"username"`
@@ -152,6 +154,7 @@ type Invoice struct {
 	Signature           string        `json:"signature"`
 	SignatureMode       string        `json:"signature_mode"`
 	GoldInvoiceType     string        `json:"gold_invoice_type"`
+	ShowSarSymbol       *bool         `json:"show_sar_symbol"`
 	Notes               string        `json:"notes"`
 	CreatedBy           string        `json:"created_by"`
 	CreatedAt           string        `json:"created_at"`
@@ -162,23 +165,27 @@ type Invoice struct {
 }
 
 type InvoiceItem struct {
-	ID          string  `json:"id"`
-	InvoiceID   string  `json:"invoice_id"`
-	ItemID      *string `json:"item_id"`
-	LineNo      int     `json:"line_no"`
-	ItemCode    string  `json:"item_code"`
-	ItemName    string  `json:"item_name"`
-	Unit        string  `json:"unit"`
-	Karat       string  `json:"karat"`
-	GramPrice   int64   `json:"gram_price"` // halalas
-	Wage        int64   `json:"wage"`       // halalas
-	Quantity    float64 `json:"quantity"`
-	UnitPrice   int64   `json:"unit_price"`
-	Discount    int64   `json:"discount"`
-	TaxRate     float64 `json:"tax_rate"`
-	Taxable     int64   `json:"taxable"`
-	TaxAmount   int64   `json:"tax_amount"`
-	TotalLine   int64   `json:"total_line"`
+	ID            string  `json:"id"`
+	InvoiceID     string  `json:"invoice_id"`
+	ItemID        *string `json:"item_id"`
+	LineNo        int     `json:"line_no"`
+	ItemCode      string  `json:"item_code"`
+	ItemName      string  `json:"item_name"`
+	Unit          string  `json:"unit"`
+	Karat         string  `json:"karat"`
+	GramPrice     int64   `json:"gram_price"` // halalas (net pre-tax)
+	Wage          int64   `json:"wage"`       // halalas (net pre-tax)
+	Quantity      float64 `json:"quantity"`
+	UnitPrice     int64   `json:"unit_price"`
+	Discount      int64   `json:"discount"`
+	UnitPriceIncl int64   `json:"unit_price_incl"`
+	DiscountIncl  int64   `json:"discount_incl"`
+	GramPriceIncl int64   `json:"gram_price_incl"`
+	WageIncl      int64   `json:"wage_incl"`
+	TaxRate       float64 `json:"tax_rate"`
+	Taxable       int64   `json:"taxable"`
+	TaxAmount     int64   `json:"tax_amount"`
+	TotalLine     int64   `json:"total_line"`
 }
 
 type ReceiptVoucher struct {
@@ -249,4 +256,20 @@ type ExcelTemplate struct {
 	HeadersJSON string `json:"headers_json"`
 	IsActive    int    `json:"is_active"`
 	UpdatedAt   string `json:"updated_at"`
+}
+
+// BoolPtr returns a pointer copy of b.
+func BoolPtr(b bool) *bool { return &b }
+
+// ShouldShowSarSymbol reports whether an invoice should display the 2025 Saudi
+// Riyal symbol, defaulting to false for pre-2025 dates when unset.
+func ShouldShowSarSymbol(issueDate string, explicit *bool) bool {
+	if explicit != nil {
+		return *explicit
+	}
+	d := strings.TrimSpace(issueDate)
+	if d != "" && d < "2025-01-01" {
+		return false
+	}
+	return true
 }

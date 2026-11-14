@@ -100,9 +100,18 @@ func (d *DB) initSchema() error {
 
 	// Migrate gold invoices and items columns
 	_, _ = d.Exec("ALTER TABLE invoices ADD COLUMN gold_invoice_type TEXT DEFAULT 'PRICE_AND_WAGE'")
+	_, _ = d.Exec("ALTER TABLE invoices ADD COLUMN prices_include_tax INTEGER NOT NULL DEFAULT 0")
+	if _, err := d.Exec("ALTER TABLE invoices ADD COLUMN show_sar_symbol INTEGER NOT NULL DEFAULT 1"); err == nil {
+		// Invoices issued before 2025 predated the official 2025 Saudi Riyal symbol.
+		_, _ = d.Exec("UPDATE invoices SET show_sar_symbol = 0 WHERE issue_date < '2025-01-01'")
+	}
 	_, _ = d.Exec("ALTER TABLE invoice_items ADD COLUMN karat TEXT DEFAULT '21'")
 	_, _ = d.Exec("ALTER TABLE invoice_items ADD COLUMN gram_price INTEGER DEFAULT 0")
 	_, _ = d.Exec("ALTER TABLE invoice_items ADD COLUMN wage INTEGER DEFAULT 0")
+	_, _ = d.Exec("ALTER TABLE invoice_items ADD COLUMN unit_price_incl INTEGER NOT NULL DEFAULT 0")
+	_, _ = d.Exec("ALTER TABLE invoice_items ADD COLUMN discount_incl INTEGER NOT NULL DEFAULT 0")
+	_, _ = d.Exec("ALTER TABLE invoice_items ADD COLUMN gram_price_incl INTEGER NOT NULL DEFAULT 0")
+	_, _ = d.Exec("ALTER TABLE invoice_items ADD COLUMN wage_incl INTEGER NOT NULL DEFAULT 0")
 	_, _ = d.Exec("ALTER TABLE items ADD COLUMN karat TEXT DEFAULT '21'")
 	_, _ = d.Exec("ALTER TABLE items ADD COLUMN wage INTEGER DEFAULT 0")
 

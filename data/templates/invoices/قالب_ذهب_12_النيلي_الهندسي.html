@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>الذهب — النيلي الهندسي</title>
+<style>
+  @page { size: A4 portrait; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 11px/1.5 Tahoma, Arial, sans-serif; color: #1e1b4b; background: #ffffff; direction: rtl; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  h1, h2, h3, p { margin: 0 0 4px; }
+  .invoice-container { width: 210mm; min-height: 297mm; padding: 11mm 11mm; background: #ffffff; position: relative; display: flex; flex-direction: column; overflow: visible; }
+  .page-frame-svg { position: absolute; inset: 2mm; width: calc(100% - 4mm); height: calc(100% - 4mm); pointer-events: none; z-index: 0; }
+  .invoice-container > *:not(.page-frame-svg) { position: relative; z-index: 1; }
+  .geo-header { display: grid; grid-template-columns: 1.25fr 92px 1fr; gap: 14px; align-items: center; padding-bottom: 12px; border-bottom: 2px solid #d97706; margin-bottom: 14px; }
+  .seller-box h2 { font-size: 16px; color: #1e1b4b; }
+  .seller-box p { font-size: 10px; color: #4338ca; margin-bottom: 2px; }
+  .logo { width: 88px; height: 78px; margin: 0 auto; clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 12px), 0 12px); background: #f4f6fb; border: 1px solid #c7d2fe; display: flex; align-items: center; justify-content: center; padding: 6px; }
+  .logo img, .logo svg { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .inv-box { border: 2px solid #1e1b4b; padding: 8px 12px; text-align: center; background: #f4f6fb; }
+  .inv-box h1 { font-size: 16px; color: #1e1b4b; }
+  .inv-box p { font-size: 10px; color: #b45309; font-weight: bold; }
+  .inv-box .serial { font-size: 14px; font-weight: bold; color: #1e1b4b; }
+  .grid-meta { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .grid-card { border: 1px solid #c7d2fe; background: #f9faff; padding: 9px 11px; }
+  .grid-card h3 { font-size: 11px; color: #1e1b4b; border-bottom: 2px solid #d97706; display: inline-block; padding-bottom: 2px; margin-bottom: 5px; }
+  .grid-card p { font-size: 10px; margin-bottom: 2px; }
+  .items-main-table { width: 100%; border-collapse: collapse; table-layout: fixed; height: auto; }
+  .items-main-table th { background: #1e1b4b; color: #fef3c7; font-size: 10px; padding: 7px 3px; border: 1px solid #312e81; }
+  .items-main-table td { height: auto; padding: 6px 3px; border: 1px solid #d8def2; font-size: 10px; vertical-align: top; overflow-wrap: anywhere; text-align: center; }
+  .items-main-table td:nth-child(2) { text-align: right; }
+  .items-main-table tbody tr:nth-child(even) { background: #f4f6fb; }
+  .bottom-content { margin-top: auto; padding-top: 14px; flex-shrink: 0; }
+  .summary-wrap { display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; align-items: start; }
+  .totals { border: 1.5px solid #1e1b4b; }
+  .totals p { display: flex; justify-content: space-between; gap: 10px; margin: 0; padding: 5px 10px; border-bottom: 1px solid #e0e7ff; font-size: 10px; }
+  .totals p.grand { background: #1e1b4b; color: #fcd34d; border-bottom: 0; font-size: 12.5px; font-weight: bold; padding: 8px 10px; }
+  .totals small { display: block; padding: 6px 10px; background: #f4f6fb; font-size: 9px; color: #312e81; }
+  .right-foot { display: grid; grid-template-columns: 1fr 120px; gap: 12px; align-items: stretch; }
+  .notes { border: 1px solid #c7d2fe; padding: 9px; background: #f9faff; }
+  .notes h3 { font-size: 11px; color: #1e1b4b; }
+  .notes p { font-size: 10px; min-height: 36px; }
+  .notes small { display: block; font-size: 8.5px; color: #4338ca; margin-top: 6px; }
+  .qr { width: 120px; height: 120px; min-width: 120px; min-height: 120px; background: #ffffff; border: 2px solid #d97706; padding: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .qr img, .qr svg { width: 100% !important; height: 100% !important; object-fit: contain; display: block; }
+  footer { margin-top: 12px; padding-top: 6px; border-top: 1px solid #d97706; display: flex; justify-content: space-between; font-size: 9px; color: #312e81; }
+  .sar-amount { display: inline-flex !important; flex-direction: row !important; direction: rtl !important; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; vertical-align: middle; }
+  .sar-amount bdi { direction: ltr; unicode-bidi: isolate; }
+  .sar-amount svg { width: 11px !important; height: 13px !important; min-width: 11px; flex: 0 0 11px; display: block !important; margin: 0 !important; fill: currentColor; }
+  .invoice-page-label { width: fit-content; align-self: center; background: #ffffff; padding: 2mm 14px 0 !important; position: relative; z-index: 2; }
+  @media print { * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+  <div class="invoice-container" data-gold-design="قالب_ذهب_12_النيلي_الهندسي" data-gold-invoice-type="{{gold_invoice_type}}">
+    <svg class="page-frame-svg" viewBox="0 0 760 1080" preserveAspectRatio="none" fill="none" aria-hidden="true">
+      <polygon points="28,6 732,6 754,28 754,1052 732,1074 28,1074 6,1052 6,28" stroke="#1e1b4b" stroke-width="2.2"/>
+      <polygon points="34,13 726,13 747,34 747,1046 726,1067 34,1067 13,1046 13,34" stroke="#d97706" stroke-width="1"/>
+    </svg>
+
+    <header class="geo-header">
+      <div class="seller-box">
+        <h2>{{seller_name}}</h2>
+        <p>{{seller_address}}</p>
+        <p>الرقم الضريبي: {{seller_tax}} · سجل تجاري: {{seller_cr}}</p>
+        <p>هاتف: {{seller_phone}}</p>
+      </div>
+      <div class="logo">{{logo}}</div>
+      <div class="inv-box">
+        <h1>فاتورة مبيعات ذهب</h1>
+        <p>{{gold_type_label}}</p>
+        <div class="serial">{{invoice_number}}</div>
+      </div>
+    </header>
+
+    <section class="grid-meta">
+      <div class="grid-card">
+        <h3>المشتري</h3>
+        <p><b>{{buyer_name}}</b></p>
+        <p>الرقم الضريبي: {{buyer_tax}}</p>
+        <p>العنوان: {{buyer_address}} · هاتف: {{buyer_phone}}</p>
+      </div>
+      <div class="grid-card">
+        <h3>بيانات الفاتورة</h3>
+        <p>تاريخ الإصدار: {{issue_date}} {{issue_time}}</p>
+        <p>طريقة السداد: {{payment_method}}</p>
+        <p>إجمالي الوزن: <b>{{total_weight}}</b> جرام</p>
+      </div>
+    </section>
+
+    <table class="items-main-table">
+      <thead>
+        <tr>
+          <th style="width:4%">#</th>
+          <th style="width:26%">اسم الصنف والوصف</th>
+          <th style="width:7%">العيار</th>
+          <th style="width:9%">الوزن (جرام)</th>
+          <th style="width:10%">سعر الجرام</th>
+          <th style="width:9%">الأجور</th>
+          <th style="width:11%">قبل الضريبة</th>
+          <th style="width:8%">نسبة الضريبة</th>
+          <th style="width:12%">شامل الضريبة</th>
+        </tr>
+      </thead>
+      <tbody>{{items_rows}}</tbody>
+    </table>
+
+    <div class="bottom-content">
+      <section class="summary-wrap">
+        <div class="totals">
+          <p><span>الإجمالي قبل الخصم</span><b><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{subtotal}}</bdi>{{sar_symbol}}</span></b></p>
+          <p><span>الخصم</span><b><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{discount}}</bdi>{{sar_symbol}}</span></b></p>
+          <p><span>قبل الضريبة</span><b><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{taxable_amount}}</bdi>{{sar_symbol}}</span></b></p>
+          <p><span>ضريبة القيمة المضافة</span><b><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{tax_amount}}</bdi>{{sar_symbol}}</span></b></p>
+          <p class="grand"><span>المستحق بالريال السعودي</span><b><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{grand_total}}</bdi>{{sar_symbol}}</span></b></p>
+          <small>{{total_in_words}}</small>
+        </div>
+        <div class="right-foot">
+          <div class="notes">
+            <h3>ملاحظات الفاتورة</h3>
+            <p>{{notes}}</p>
+            <small>عيار 24: ضريبة 0% · عيارات 18 و21 و22: ضريبة 15%</small>
+          </div>
+          <div class="qr">{{qr_code}}</div>
+        </div>
+      </section>
+      <footer>
+        <span>{{seller_name}} · {{seller_phone}}</span>
+        <span>فاتورة {{invoice_number}} · جميع المبالغ بالريال السعودي</span>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

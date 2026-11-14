@@ -3,6 +3,9 @@ package services
 import "errors"
 
 func normalizeGoldInvoice(input *CreateInvoiceInput) error {
+	if input.DiscountPercent < 0 || input.DiscountPercent > 100 {
+		return errors.New("نسبة الخصم العام غير صالحة")
+	}
 	if input.GoldInvoiceType == "" {
 		input.GoldInvoiceType = "PRICE_AND_WAGE"
 	}
@@ -11,6 +14,9 @@ func normalizeGoldInvoice(input *CreateInvoiceInput) error {
 	}
 	for i := range input.Lines {
 		l := &input.Lines[i]
+		if l.Discount == 0 && l.DiscountPercent == 0 && input.DiscountPercent > 0 {
+			l.DiscountPercent = input.DiscountPercent
+		}
 		l.Unit = "جرام"
 		switch input.GoldInvoiceType {
 		case "PRICE_ONLY":

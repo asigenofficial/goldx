@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>الذهب — الفيروز الملكي</title>
+<style>
+  @page { size: A4 portrait; margin: 0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 11px/1.5 Tahoma, Arial, sans-serif; color: #163038; background: #ffffff; direction: rtl; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  h1, h2, h3, p { margin: 0 0 4px; }
+  .invoice-container { width: 210mm; min-height: 297mm; padding: 10mm 11mm; background: #ffffff; position: relative; display: flex; flex-direction: column; overflow: visible; }
+  .page-frame-svg { position: absolute; inset: 2mm; width: calc(100% - 4mm); height: calc(100% - 4mm); pointer-events: none; z-index: 0; }
+  .invoice-container > *:not(.page-frame-svg) { position: relative; z-index: 1; }
+  .top-header { display: grid; grid-template-columns: 1.35fr 1fr; gap: 16px; align-items: center; padding-bottom: 12px; border-bottom: 2px solid #0f4c5c; margin-bottom: 14px; }
+  .seller-wrap { display: flex; gap: 12px; align-items: center; }
+  .logo { width: 78px; height: 78px; flex: 0 0 78px; border: 1.5px solid #c49a6c; border-radius: 50%; padding: 6px; display: flex; align-items: center; justify-content: center; background: #f8fbfb; }
+  .logo img, .logo svg { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .seller-info h2 { font-size: 16px; color: #0f4c5c; margin-bottom: 3px; }
+  .seller-info p { font-size: 10px; color: #47636b; margin-bottom: 2px; }
+  .invoice-banner { background: #0f4c5c; color: #ffffff; padding: 12px 16px; border-radius: 8px; border-right: 5px solid #c49a6c; text-align: left; }
+  .invoice-banner h1 { font-size: 17px; color: #f5dfb8; margin-bottom: 2px; }
+  .invoice-banner .type-tag { font-size: 10px; color: #d6ecef; margin-bottom: 4px; }
+  .invoice-banner .serial { font-size: 15px; font-weight: bold; letter-spacing: 0.5px; color: #ffffff; }
+  .meta-cards { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .meta-card { background: #f1f7f8; border: 1px solid #bfd7dd; border-top: 3px solid #c49a6c; border-radius: 6px; padding: 10px 12px; }
+  .meta-card h3 { font-size: 11px; color: #0f4c5c; border-bottom: 1px dashed #b2cdd4; padding-bottom: 4px; margin-bottom: 6px; }
+  .meta-card p { font-size: 10.5px; margin-bottom: 3px; }
+  .items-main-table { width: 100%; border-collapse: collapse; table-layout: fixed; height: auto; }
+  .items-main-table th { background: #0f4c5c; color: #ffffff; font-size: 10px; padding: 7px 3px; border: 1px solid #0b3a47; font-weight: bold; }
+  .items-main-table td { height: auto; padding: 6px 3px; border: 1px solid #d5e4e8; font-size: 10px; vertical-align: top; overflow-wrap: anywhere; text-align: center; }
+  .items-main-table td:nth-child(2) { text-align: right; }
+  .items-main-table tbody tr:nth-child(even) { background: #f5fafb; }
+  .bottom-content { margin-top: auto; padding-top: 14px; flex-shrink: 0; }
+  .summary-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 16px; align-items: start; }
+  .totals { border: 1px solid #bfd7dd; border-radius: 6px; overflow: hidden; }
+  .totals p { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 0; padding: 6px 10px; border-bottom: 1px solid #e1eef1; font-size: 10.5px; }
+  .totals p.grand { background: #0f4c5c; color: #ffffff; border-bottom: 0; padding: 9px 10px; font-size: 12.5px; font-weight: bold; }
+  .totals .words-row { padding: 7px 10px; background: #f8fbfb; font-size: 9.5px; color: #36525a; border-top: 1px solid #d5e4e8; }
+  .side-box { display: grid; grid-template-columns: 1fr 122px; gap: 12px; align-items: stretch; }
+  .notes { border: 1px solid #bfd7dd; border-radius: 6px; padding: 9px; background: #fcfefe; }
+  .notes h3 { font-size: 11px; color: #0f4c5c; margin-bottom: 4px; }
+  .notes p { font-size: 10px; min-height: 28px; color: #334e57; }
+  .notes small { display: block; font-size: 8.5px; color: #5b7880; margin-top: 6px; border-top: 1px dashed #d5e4e8; padding-top: 4px; }
+  .qr { width: 122px; height: 122px; min-width: 122px; min-height: 122px; background: #ffffff; border: 1.5px solid #c49a6c; border-radius: 6px; padding: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .qr img, .qr svg { width: 100% !important; height: 100% !important; object-fit: contain; display: block; }
+  footer { margin-top: 12px; padding-top: 6px; border-top: 1.5px solid #c49a6c; display: flex; justify-content: space-between; font-size: 9px; color: #47636b; }
+  .sar-amount { display: inline-flex !important; flex-direction: row !important; direction: rtl !important; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; vertical-align: middle; }
+  .sar-amount bdi { direction: ltr; unicode-bidi: isolate; }
+  .sar-amount svg { width: 11px !important; height: 13px !important; min-width: 11px; flex: 0 0 11px; display: block !important; margin: 0 !important; fill: currentColor; }
+  .invoice-page-label { width: fit-content; align-self: center; background: #ffffff; padding: 2mm 14px 0 !important; position: relative; z-index: 2; }
+  @media print { * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+  <div class="invoice-container" data-gold-design="قالب_ذهب_09_الفيروز_الملكي" data-gold-invoice-type="{{gold_invoice_type}}">
+    <svg class="page-frame-svg" viewBox="0 0 760 1080" preserveAspectRatio="none" fill="none" aria-hidden="true">
+      <path d="M68 6H8V68 M22 20H20V22" stroke="#0f4c5c" stroke-width="3"/>
+      <path d="M692 6H752V68" stroke="#0f4c5c" stroke-width="3"/>
+      <path d="M8 1012V1074H68" stroke="#0f4c5c" stroke-width="3"/>
+      <path d="M752 1012V1074H692" stroke="#0f4c5c" stroke-width="3"/>
+      <path d="M90 11H670 M90 1071H670 M12 90V990 M748 90V990" stroke="#c49a6c" stroke-width="1.2" stroke-dasharray="6 4"/>
+      <polygon points="18,16 28,16 28,26 18,26" stroke="#c49a6c" stroke-width="1.5"/>
+      <polygon points="732,16 742,16 742,26 732,26" stroke="#c49a6c" stroke-width="1.5"/>
+      <polygon points="18,1054 28,1054 28,1064 18,1064" stroke="#c49a6c" stroke-width="1.5"/>
+      <polygon points="732,1054 742,1054 742,1064 732,1064" stroke="#c49a6c" stroke-width="1.5"/>
+    </svg>
+
+    <header class="top-header">
+      <div class="seller-wrap">
+        <div class="logo">{{logo}}</div>
+        <div class="seller-info">
+          <h2>{{seller_name}}</h2>
+          <p>{{seller_address}}</p>
+          <p>الرقم الضريبي: {{seller_tax}} · سجل تجاري: {{seller_cr}}</p>
+          <p>هاتف: {{seller_phone}}</p>
+        </div>
+      </div>
+      <div class="invoice-banner">
+        <h1>فاتورة مبيعات ذهب</h1>
+        <div class="type-tag">{{gold_type_label}}</div>
+        <div class="serial">{{invoice_number}}</div>
+      </div>
+    </header>
+
+    <section class="meta-cards">
+      <div class="meta-card">
+        <h3>بيانات المشتري</h3>
+        <p><strong>{{buyer_name}}</strong></p>
+        <p>الرقم الضريبي: {{buyer_tax}}</p>
+        <p>العنوان: {{buyer_address}}</p>
+        <p>هاتف: {{buyer_phone}}</p>
+      </div>
+      <div class="meta-card">
+        <h3>تفاصيل الفاتورة</h3>
+        <p>تاريخ الإصدار: {{issue_date}} {{issue_time}}</p>
+        <p>طريقة السداد: {{payment_method}}</p>
+        <p>إجمالي الوزن: <strong>{{total_weight}}</strong> جرام</p>
+      </div>
+    </section>
+
+    <table class="items-main-table">
+      <thead>
+        <tr>
+          <th style="width:4%">#</th>
+          <th style="width:26%">اسم الصنف والوصف</th>
+          <th style="width:7%">العيار</th>
+          <th style="width:9%">الوزن (جرام)</th>
+          <th style="width:10%">سعر الجرام</th>
+          <th style="width:9%">الأجور</th>
+          <th style="width:11%">قبل الضريبة</th>
+          <th style="width:8%">نسبة الضريبة</th>
+          <th style="width:12%">شامل الضريبة</th>
+        </tr>
+      </thead>
+      <tbody>{{items_rows}}</tbody>
+    </table>
+
+    <div class="bottom-content">
+      <section class="summary-grid">
+        <div class="totals">
+          <p><span>الإجمالي قبل الخصم</span><b><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{subtotal}}</bdi>{{sar_symbol}}</span></b></p>
+          <p><span>الخصم</span><b><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{discount}}</bdi>{{sar_symbol}}</span></b></p>
+          <p><span>قبل الضريبة</span><b><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{taxable_amount}}</bdi>{{sar_symbol}}</span></b></p>
+          <p><span>ضريبة القيمة المضافة</span><b><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{tax_amount}}</bdi>{{sar_symbol}}</span></b></p>
+          <p class="grand"><span>المستحق بالريال السعودي</span><b><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{grand_total}}</bdi>{{sar_symbol}}</span></b></p>
+          <div class="words-row">{{total_in_words}}</div>
+        </div>
+        <div class="side-box">
+          <div class="notes">
+            <h3>ملاحظات الفاتورة</h3>
+            <p>{{notes}}</p>
+            <small>عيار 24: ضريبة 0% · عيارات 18 و21 و22: ضريبة 15%</small>
+          </div>
+          <div class="qr">{{qr_code}}</div>
+        </div>
+      </section>
+      <footer>
+        <span>{{seller_name}} · {{seller_phone}}</span>
+        <span>فاتورة {{invoice_number}} · جميع المبالغ بالريال السعودي</span>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

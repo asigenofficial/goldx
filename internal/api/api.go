@@ -1526,7 +1526,10 @@ func (s *Server) Handler() http.Handler {
 				GrandTotal      float64 `json:"grand_total"`
 				PaidAmount      float64 `json:"paid_amount"`
 				RemainingAmount float64 `json:"remaining_amount"`
-				GoldInvoiceType string  `json:"gold_invoice_type"`
+				GoldInvoiceType  string  `json:"gold_invoice_type"`
+				PricesIncludeTax bool    `json:"prices_include_tax"`
+				DiscountPercent  float64 `json:"discount_percent"`
+				ShowSarSymbol    *bool   `json:"show_sar_symbol"`
 				Lines           []struct {
 					LineNo        int     `json:"line_no"`
 					ItemCode      string  `json:"item_code"`
@@ -1576,17 +1579,24 @@ func (s *Server) Handler() http.Handler {
 			goldInvType = "PRICE_AND_WAGE"
 		}
 
+		pricesIncInt := 0
+		if req.Invoice.PricesIncludeTax {
+			pricesIncInt = 1
+		}
+
 		invView := &services.InvoiceView{
 			Invoice: models.Invoice{
-				InvoiceNumber:   invNum,
-				InvoiceType:     it,
-				ZatcaPhase:      zp,
-				QrPayload:       req.Invoice.QrPayload,
-				InvoiceHash:     req.Invoice.InvoiceHash,
-				IssueDate:       issDate,
-				IssueTime:       issTime,
-				PaymentMethod:   req.Invoice.PaymentMethod,
-				GoldInvoiceType: goldInvType,
+				InvoiceNumber:    invNum,
+				InvoiceType:      it,
+				ZatcaPhase:       zp,
+				QrPayload:        req.Invoice.QrPayload,
+				InvoiceHash:      req.Invoice.InvoiceHash,
+				IssueDate:        issDate,
+				IssueTime:        issTime,
+				PaymentMethod:    req.Invoice.PaymentMethod,
+				PricesIncludeTax: pricesIncInt,
+				GoldInvoiceType:  goldInvType,
+				ShowSarSymbol:    req.Invoice.ShowSarSymbol,
 				Notes:           req.Invoice.Notes,
 				Subtotal:        models.ToMinor(req.Invoice.Subtotal),
 				DiscountAmount:  models.ToMinor(req.Invoice.DiscountAmount),
@@ -1663,21 +1673,40 @@ func (s *Server) Handler() http.Handler {
 				uPrice = l.GramPrice + l.Wage
 			}
 
-			taxable := l.TaxableAmount
-			if taxable == 0 && l.Quantity > 0 {
-				taxable = (l.Quantity * uPrice) - l.Discount
-			}
-			taxAmt := l.TaxAmount
-			if taxAmt == 0 {
-				taxAmt = taxable * (taxRate / 100.0)
-			}
-			tot := l.GrandTotal
-			if tot == 0 {
-				tot = taxable + taxAmt
+			var gramMinor, wageMinor, unitMinor, discMinor int64
+			var gramInclMinor, wageInclMinor, unitInclMinor, discInclMinor int64
+			var taxableMinor, taxMinor, totMinor int64
+			var gpMajor, wgMajor, uMajor, dMajor, gpInclMajor, wgInclMajor, uInclMajor, dInclMajor float64
+			var taxable, taxAmt, tot float64
+
+			if l.TaxableAmount > 0 || l.GrandTotal > 0 {
+				taxable = l.TaxableAmount
+				taxAmt = l.TaxAmount
+				tot = l.GrandTotal
+				if tot == 0 {
+					tot = taxable + taxAmt
+				}
+				gramMinor = models.ToMinor(l.GramPrice)
+				wageMinor = models.ToMinor(l.Wage)
+				unitMinor = models.ToMinor(uPrice)
+				discMinor = models.ToMinor(l.Discount)
+				taxableMinor = models.ToMinor(taxable)
+				taxMinor = models.ToMinor(taxAmt)
+				totMinor = models.ToMinor(tot)
+				gpMajor, wgMajor, uMajor, dMajor = l.GramPrice, l.Wage, uPrice, l.Discount
+				calcSubtotal += l.Quantity * uPrice
+				calcDiscount += l.Discount
+			} else if calc, err := models.ComputeInvoiceLineAmounts(l.Quantity, l.GramPrice, l.Wage, uPrice, l.Discount, req.Invoice.DiscountPercent, taxRate, req.Invoice.PricesIncludeTax); err == nil {
+				gramMinor, wageMinor, unitMinor, discMinor = calc.GramPriceNet, calc.WageNet, calc.UnitPriceNet, calc.DiscountNet
+				gramInclMinor, wageInclMinor, unitInclMinor, discInclMinor = calc.GramPriceIncl, calc.WageIncl, calc.UnitPriceIncl, calc.DiscountIncl
+				taxableMinor, taxMinor, totMinor = calc.Taxable, calc.TaxAmount, calc.TotalLine
+				gpMajor, wgMajor, uMajor, dMajor = models.ToMajor(gramMinor), models.ToMajor(wageMinor), models.ToMajor(unitMinor), models.ToMajor(discMinor)
+				gpInclMajor, wgInclMajor, uInclMajor, dInclMajor = models.ToMajor(gramInclMinor), models.ToMajor(wageInclMinor), models.ToMajor(unitInclMinor), models.ToMajor(discInclMinor)
+				taxable, taxAmt, tot = models.ToMajor(taxableMinor), models.ToMajor(taxMinor), models.ToMajor(totMinor)
+				calcSubtotal += models.ToMajor(calc.GrossNet)
+				calcDiscount += dMajor
 			}
 
-			calcSubtotal += l.Quantity * uPrice
-			calcDiscount += l.Discount
 			calcTaxable += taxable
 			calcTax += taxAmt
 			calcGrand += tot
@@ -1689,28 +1718,36 @@ func (s *Server) Handler() http.Handler {
 
 			iv := services.InvoiceItemView{
 				InvoiceItem: models.InvoiceItem{
-					LineNo:    lineNo,
-					ItemCode:  l.ItemCode,
-					ItemName:  l.ItemName,
-					Unit:      unit,
-					Karat:     karat,
-					GramPrice: models.ToMinor(l.GramPrice),
-					Wage:      models.ToMinor(l.Wage),
-					Quantity:  l.Quantity,
-					UnitPrice: models.ToMinor(uPrice),
-					Discount:  models.ToMinor(l.Discount),
-					TaxRate:   taxRate,
-					Taxable:   models.ToMinor(taxable),
-					TaxAmount: models.ToMinor(taxAmt),
-					TotalLine: models.ToMinor(tot),
+					LineNo:        lineNo,
+					ItemCode:      l.ItemCode,
+					ItemName:      l.ItemName,
+					Unit:          unit,
+					Karat:         karat,
+					GramPrice:     gramMinor,
+					Wage:          wageMinor,
+					Quantity:      l.Quantity,
+					UnitPrice:     unitMinor,
+					Discount:      discMinor,
+					UnitPriceIncl: unitInclMinor,
+					DiscountIncl:  discInclMinor,
+					GramPriceIncl: gramInclMinor,
+					WageIncl:      wageInclMinor,
+					TaxRate:       taxRate,
+					Taxable:       taxableMinor,
+					TaxAmount:     taxMinor,
+					TotalLine:     totMinor,
 				},
-				GramPriceMajor: l.GramPrice,
-				WageMajor:      l.Wage,
-				UnitPriceMajor: uPrice,
-				DiscountMajor:  l.Discount,
-				TaxableMajor:   taxable,
-				TaxAmountMajor: taxAmt,
-				TotalLineMajor: tot,
+				GramPriceMajor:     gpMajor,
+				WageMajor:          wgMajor,
+				UnitPriceMajor:     uMajor,
+				DiscountMajor:      dMajor,
+				UnitPriceInclMajor: uInclMajor,
+				DiscountInclMajor:  dInclMajor,
+				GramPriceInclMajor: gpInclMajor,
+				WageInclMajor:      wgInclMajor,
+				TaxableMajor:       taxable,
+				TaxAmountMajor:     taxAmt,
+				TotalLineMajor:     tot,
 			}
 			invView.Lines = append(invView.Lines, iv)
 		}

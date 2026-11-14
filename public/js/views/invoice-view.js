@@ -7,7 +7,7 @@ import * as router from '../core/router.js';
 import {
   html, raw, esc, money, num, dateAr, dateTimeAr, qrSvg, printDoc, toastOk, toastErr,
   $, modal, formValues, confirmDialog, copyText, download, statusBadge, today, icon,
-  amount, sarSvg, shareDocument, choosePdfDestination, savePdfFile, clientPdfFilename,
+  amount, sarSvg, shouldShowSarSymbol, shareDocument, choosePdfDestination, savePdfFile, clientPdfFilename,
 } from '../core/util.js';
 import { tafqeet } from '../print/templates.js';
 import {goldReceiptModal} from './vouchers.js';
@@ -367,6 +367,10 @@ export async function render(view, ctx) {
       };
     };
 
+    const showSar = shouldShowSarSymbol(invoice);
+    const invAmount = (val, cur = 'SAR', opt = {}) => amount(val, cur, { ...opt, noSymbol: !showSar });
+    const colSarIcon = (sz = 11) => (showSar ? `<span class="cur-sym">${sarSvg({ size: sz })}</span>` : '');
+
     view.innerHTML = html`
       <div class="page-head">
         <div class="titles">
@@ -377,6 +381,8 @@ export async function render(view, ctx) {
             ${raw(invoice.gold_invoice_type === 'PRICE_ONLY' ? '<span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #d97706;font-size:.78rem;vertical-align:middle">ذهب (سعر فقط)</span>'
               : invoice.gold_invoice_type === 'WAGE_ONLY' ? '<span class="badge" style="background:#e0e7ff;color:#3730a3;border:1px solid #6366f1;font-size:.78rem;vertical-align:middle">ذهب (أجور ومصنعية فقط)</span>'
               : '<span class="badge" style="background:#fef9c3;color:#854d0e;border:1px solid #ca8a04;font-size:.78rem;vertical-align:middle">ذهب (سعر وأجور)</span>')}
+            <span class="badge ${showSar ? 'teal' : 'gray'}" style="font-size:.78rem;vertical-align:middle">${showSar ? 'بشعار الريال' : 'بدون شعار الريال'}</span>
+            ${raw(invoice.prices_include_tax ? '<span class="badge blue" style="font-size:.78rem;vertical-align:middle">شامل الضريبة</span>' : '')}
           </h1>
           <p>${issuer.name_ar} — ${client.name} — ${dateAr(invoice.issue_date)} ${invoice.issue_time}</p>
         </div>
@@ -481,14 +487,14 @@ export async function render(view, ctx) {
                     <th>الصنف والوصف</th>
                     <th class="text-center">العيار</th>
                     <th class="text-end">الوزن (جرام)</th>
-                    <th class="text-end">سعر الجرام <span class="cur-sym">${sarSvg({ size: 11 })}</span></th>
-                    <th class="text-end">الأجور <span class="cur-sym">${sarSvg({ size: 11 })}</span></th>
-                    <th class="text-end">الإجمالي للجرام <span class="cur-sym">${sarSvg({ size: 11 })}</span></th>
-                    <th class="text-end">الخصم <span class="cur-sym">${sarSvg({ size: 11 })}</span></th>
-                    <th class="text-end">قبل الضريبة <span class="cur-sym">${sarSvg({ size: 11 })}</span></th>
+                    <th class="text-end">سعر الجرام ${raw(colSarIcon(11))}</th>
+                    <th class="text-end">الأجور ${raw(colSarIcon(11))}</th>
+                    <th class="text-end">الإجمالي للجرام ${raw(colSarIcon(11))}</th>
+                    <th class="text-end">الخصم ${raw(colSarIcon(11))}</th>
+                    <th class="text-end">قبل الضريبة ${raw(colSarIcon(11))}</th>
                     <th class="text-center">الضريبة</th>
-                    <th class="text-end">مبلغ الضريبة <span class="cur-sym">${sarSvg({ size: 11 })}</span></th>
-                    <th class="text-end">الإجمالي <span class="cur-sym">${sarSvg({ size: 11 })}</span></th>
+                    <th class="text-end">مبلغ الضريبة ${raw(colSarIcon(11))}</th>
+                    <th class="text-end">الإجمالي ${raw(colSarIcon(11))}</th>
                   </tr></thead>
                   <tbody>
                     ${(invoice.lines || []).map((l, i) => {
@@ -498,16 +504,16 @@ export async function render(view, ctx) {
                         <td><b>${esc(l.item_name)}</b></td>
                         <td class="text-center"><span class="badge gray" style="font-weight:700">عيار ${esc(l.karat || '21')}</span></td>
                         <td class="text-end num"><b>${num(l.quantity)}</b> <small class="muted">جم</small></td>
-                        <td class="text-end num">${l.gram_price ? amount(l.gram_price) : (invoice.gold_invoice_type === 'WAGE_ONLY' ? '—' : amount(l.unit_price))}</td>
-                        <td class="text-end num">${l.wage ? amount(l.wage) : (invoice.gold_invoice_type === 'PRICE_ONLY' ? '—' : '—')}</td>
-                        <td class="text-end num" style="color:var(--primary);font-weight:700">${amount(l.unit_price)}</td>
-                        <td class="text-end num">${l.discount > 0 ? amount(l.discount) : '—'}</td>
-                        <td class="text-end num">${amount(l.taxable)}</td>
+                        <td class="text-end num">${l.gram_price ? invAmount(l.gram_price) : (invoice.gold_invoice_type === 'WAGE_ONLY' ? '—' : invAmount(l.unit_price))}</td>
+                        <td class="text-end num">${l.wage ? invAmount(l.wage) : (invoice.gold_invoice_type === 'PRICE_ONLY' ? '—' : '—')}</td>
+                        <td class="text-end num" style="color:var(--primary);font-weight:700">${invAmount(l.unit_price)}</td>
+                        <td class="text-end num">${l.discount > 0 ? invAmount(l.discount) : '—'}</td>
+                        <td class="text-end num">${invAmount(l.taxable)}</td>
                         <td class="text-center tiny num">
                           ${is24k ? '<span class="badge green" style="font-size:10.5px;font-weight:700">معفى 0%</span>' : `<span class="badge blue" style="font-size:10.5px">${num(l.tax_rate)}%</span>`}
                         </td>
-                        <td class="text-end num">${amount(l.tax_amount)}</td>
-                        <td class="text-end num"><b>${amount(l.total_line)}</b></td>
+                        <td class="text-end num">${invAmount(l.tax_amount)}</td>
+                        <td class="text-end num"><b>${invAmount(l.total_line)}</b></td>
                       </tr>`);
                     })}
                   </tbody>
@@ -560,13 +566,13 @@ export async function render(view, ctx) {
             <h3>الإجماليات</h3>
             <div class="totals-box">
               <div class="line" style="color:#b8860b;font-weight:700"><span>إجمالي الوزن</span><span class="num">${Math.round((invoice.lines || []).reduce((s, l) => s + (Number(l.quantity) || 0), 0) * 1000) / 1000} جرام</span></div>
-              <div class="line"><span>الإجمالي قبل الخصم</span><span class="num">${amount(invoice.subtotal)}</span></div>
-              <div class="line"><span>الخصم</span><span class="num">${amount(invoice.discount_amount)}</span></div>
-              <div class="line"><span>الخاضع للضريبة</span><span class="num">${amount(invoice.taxable_amount)}</span></div>
-              <div class="line"><span>ضريبة القيمة المضافة</span><span class="num">${amount(invoice.tax_amount)}</span></div>
-              <div class="line grand"><span>الإجمالي</span><span class="num">${amount(invoice.grand_total, 'SAR', { size: 16 })}</span></div>
-              <div class="line"><span>المسدد</span><span class="num">${amount(invoice.paid_amount)}</span></div>
-              <div class="line" style="font-weight:700;color:var(--danger)"><span>المتبقي</span><span class="num">${amount(invoice.remaining_amount)}</span></div>
+              <div class="line"><span>الإجمالي قبل الخصم</span><span class="num">${invAmount(invoice.subtotal)}</span></div>
+              <div class="line"><span>الخصم</span><span class="num">${invAmount(invoice.discount_amount)}</span></div>
+              <div class="line"><span>الخاضع للضريبة</span><span class="num">${invAmount(invoice.taxable_amount)}</span></div>
+              <div class="line"><span>ضريبة القيمة المضافة</span><span class="num">${invAmount(invoice.tax_amount)}</span></div>
+              <div class="line grand"><span>الإجمالي</span><span class="num">${invAmount(invoice.grand_total, 'SAR', { size: 16 })}</span></div>
+              <div class="line"><span>المسدد</span><span class="num">${invAmount(invoice.paid_amount)}</span></div>
+              <div class="line" style="font-weight:700;color:var(--danger)"><span>المتبقي</span><span class="num">${invAmount(invoice.remaining_amount)}</span></div>
             </div>
             <div class="alert alert-info mt tiny mb0">${tafqeet(invoice.grand_total, invoice.currency === 'SAR' ? 'ر.س' : invoice.currency)}</div>
           </div>

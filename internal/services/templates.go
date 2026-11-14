@@ -22,6 +22,7 @@ import (
 
 	"goldx/internal/crypto"
 	"goldx/internal/db"
+	"goldx/internal/models"
 	"goldx/internal/zatca"
 )
 
@@ -114,6 +115,18 @@ func (s *TemplateService) SARSymbolSVG() string {
 		return s.sarSymbolSVG[start:]
 	}
 	return ""
+}
+
+var inlineSvgRegex = regexp.MustCompile(`(?is)<svg\b[^>]*>[\s\S]*?</svg>`)
+
+// normalizeInlineSARSymbol replaces embedded inline Saudi Riyal SVGs with {{sar_symbol}}.
+func normalizeInlineSARSymbol(tpl string) string {
+	return inlineSvgRegex.ReplaceAllStringFunc(tpl, func(svg string) string {
+		if strings.Contains(svg, "sar-sym") || strings.Contains(svg, "M699.62,1113.02") || strings.Contains(svg, "1124.14 1256.39") {
+			return "{{sar_symbol}}"
+		}
+		return svg
+	})
 }
 
 func NewTemplateService(d *db.DB, dataDir string) *TemplateService {
@@ -1437,6 +1450,12 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 	tpl = strings.ReplaceAll(tpl, "&#xFDFB;", "{{sar_symbol}}")
 	tpl = strings.ReplaceAll(tpl, "&#xfdfb;", "{{sar_symbol}}")
 	tpl = strings.ReplaceAll(tpl, "\uFDFB", "{{sar_symbol}}")
+	tpl = normalizeInlineSARSymbol(tpl)
+
+	sarSymbol := s.sarSymbolSVG
+	if !models.ShouldShowSarSymbol(inv.IssueDate, inv.ShowSarSymbol) {
+		sarSymbol = ""
+	}
 
 	sellerCityEn := ""
 	if inv.IssuerSnapshot != nil {
@@ -1526,8 +1545,8 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 			return fmt.Sprintf("%.2f", totalQty)
 		}(),
 		"{{currency}}", "SAR",
-		"{{sar_symbol}}", s.sarSymbolSVG,
-		"{{currency_symbol}}", s.sarSymbolSVG,
+		"{{sar_symbol}}", sarSymbol,
+		"{{currency_symbol}}", sarSymbol,
 
 		// ─── مرحلة الفوترة وبيانات الزكاة ───
 		"{{zatca_phase}}", inv.ZatcaPhase,

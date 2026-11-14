@@ -205,6 +205,7 @@ CREATE TABLE IF NOT EXISTS invoices (
   signature             TEXT NOT NULL DEFAULT '',
   signature_mode        TEXT NOT NULL DEFAULT 'NONE',     -- NONE | LOCAL | PRODUCTION
   gold_invoice_type     TEXT NOT NULL DEFAULT 'PRICE_AND_WAGE', -- PRICE_ONLY | WAGE_ONLY | PRICE_AND_WAGE
+  show_sar_symbol       INTEGER NOT NULL DEFAULT 1,       -- 1 = إضافة شعار الريال السعودي، 0 = بدون شعار الريال
   notes                 TEXT NOT NULL DEFAULT '',
   created_by            TEXT NOT NULL DEFAULT '',
   created_at            TEXT NOT NULL,
@@ -233,13 +234,17 @@ CREATE TABLE IF NOT EXISTS invoice_items (
   karat       TEXT NOT NULL DEFAULT '21',
   gram_price  INTEGER NOT NULL DEFAULT 0,
   wage        INTEGER NOT NULL DEFAULT 0,
-  quantity    REAL NOT NULL DEFAULT 1,
-  unit_price  INTEGER NOT NULL DEFAULT 0,
-  discount    INTEGER NOT NULL DEFAULT 0,
-  tax_rate    REAL NOT NULL DEFAULT 15,
-  taxable     INTEGER NOT NULL DEFAULT 0,
-  tax_amount  INTEGER NOT NULL DEFAULT 0,
-  total_line  INTEGER NOT NULL DEFAULT 0
+  quantity        REAL NOT NULL DEFAULT 1,
+  unit_price      INTEGER NOT NULL DEFAULT 0,
+  discount        INTEGER NOT NULL DEFAULT 0,
+  unit_price_incl INTEGER NOT NULL DEFAULT 0,
+  discount_incl   INTEGER NOT NULL DEFAULT 0,
+  gram_price_incl INTEGER NOT NULL DEFAULT 0,
+  wage_incl       INTEGER NOT NULL DEFAULT 0,
+  tax_rate        REAL NOT NULL DEFAULT 15,
+  taxable         INTEGER NOT NULL DEFAULT 0,
+  tax_amount      INTEGER NOT NULL DEFAULT 0,
+  total_line      INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON invoice_items(invoice_id);
 CREATE INDEX IF NOT EXISTS idx_invoice_items_search ON invoice_items(invoice_id, item_name);

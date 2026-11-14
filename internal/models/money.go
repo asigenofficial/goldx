@@ -48,22 +48,19 @@ func FmtMoney(minor int64) string {
 	return fmt.Sprintf("%.2f", ToMajor(minor))
 }
 
-// MulQty multiplies a quantity (float64) by unit price in minor units (int64).
+// MulQty multiplies a quantity (float64) by unit price in minor units (int64) with Round Half Up.
 func MulQty(qty float64, unitPriceMinor int64) int64 {
-	return int64(math.Round(qty * float64(unitPriceMinor)))
+	return mulQtyMinorHalfUp(qty, unitPriceMinor)
 }
 
-// Pct calculates percentage of minor amount: round((amount * rate) / 100).
+// Pct calculates percentage of minor amount using exact rational Round Half Up: round((amount * rate) / 100).
 func Pct(amountMinor int64, ratePercent float64) int64 {
-	return int64(math.Round((float64(amountMinor) * ratePercent) / 100.0))
+	return pctMinorHalfUp(amountMinor, ratePercent)
 }
 
-// NetFromInclusive extracts net taxable amount from inclusive amount: net = incl / (1 + r/100).
+// NetFromInclusive extracts net taxable amount from inclusive amount using exact rational Round Half Up.
 func NetFromInclusive(inclusiveMinor int64, ratePercent float64) int64 {
-	if ratePercent <= 0 {
-		return inclusiveMinor
-	}
-	return int64(math.Round(float64(inclusiveMinor) / (1.0 + ratePercent/100.0)))
+	return netFromInclusiveMinor(inclusiveMinor, ratePercent)
 }
 
 // SumMinor sums a slice of minor units.

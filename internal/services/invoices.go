@@ -72,6 +72,8 @@ type CreateInvoiceInput struct {
 	ChequeDate       *string                  `json:"cheque_date"`
 	ChequeNo         string                   `json:"cheque_no"`
 	PricesIncludeTax bool                     `json:"prices_include_tax"`
+	ShowSarSymbol    *bool                    `json:"show_sar_symbol"`
+	DiscountPercent  float64                  `json:"discount_percent"`
 	Notes            string                   `json:"notes"`
 	AutoReceipt      bool                     `json:"auto_receipt"`
 	Lines            []CreateInvoiceLineInput `json:"lines"`
@@ -125,13 +127,17 @@ type InvoiceView struct {
 
 type InvoiceItemView struct {
 	models.InvoiceItem
-	GramPriceMajor float64 `json:"gram_price"`
-	WageMajor      float64 `json:"wage"`
-	UnitPriceMajor float64 `json:"unit_price"`
-	DiscountMajor  float64 `json:"discount"`
-	TaxableMajor   float64 `json:"taxable"`
-	TaxAmountMajor float64 `json:"tax_amount"`
-	TotalLineMajor float64 `json:"total_line"`
+	GramPriceMajor     float64 `json:"gram_price"`
+	WageMajor          float64 `json:"wage"`
+	UnitPriceMajor     float64 `json:"unit_price"`
+	DiscountMajor      float64 `json:"discount"`
+	UnitPriceInclMajor float64 `json:"unit_price_incl"`
+	DiscountInclMajor  float64 `json:"discount_incl"`
+	GramPriceInclMajor float64 `json:"gram_price_incl"`
+	WageInclMajor      float64 `json:"wage_incl"`
+	TaxableMajor       float64 `json:"taxable"`
+	TaxAmountMajor     float64 `json:"tax_amount"`
+	TotalLineMajor     float64 `json:"total_line"`
 }
 
 func (s *InvoiceService) CreateInvoice(input CreateInvoiceInput, actor, ip string) (*InvoiceView, error) {
@@ -405,6 +411,10 @@ func (s *InvoiceService) createInvoiceTx(tx *sql.Tx, input CreateInvoiceInput, a
 	if goldInvoiceType == "" {
 		goldInvoiceType = "PRICE_AND_WAGE"
 	}
+	showSarInt := 0
+	if models.ShouldShowSarSymbol(issueDate, input.ShowSarSymbol) {
+		showSarInt = 1
+	}
 
 	_, err = tx.Exec(`
 		INSERT INTO invoices (
@@ -416,7 +426,7 @@ func (s *InvoiceService) createInvoiceTx(tx *sql.Tx, input CreateInvoiceInput, a
 			seller_name, seller_tax_number, seller_cr, seller_address, seller_address_en,
 			buyer_name, buyer_tax_number, buyer_cr, buyer_address,
 			qr_payload, invoice_hash, previous_invoice_hash, signature, signature_mode,
-			gold_invoice_type, notes, created_by, created_at, updated_at
+			gold_invoice_type, show_sar_symbol, notes, created_by, created_at, updated_at
 		) VALUES (
 			?, ?, ?, ?, ?, ?, ?,
 			?, ?, ?, ?, ?,
@@ -426,7 +436,7 @@ func (s *InvoiceService) createInvoiceTx(tx *sql.Tx, input CreateInvoiceInput, a
 			?, ?, ?, ?, ?,
 			?, ?, ?, ?,
 			?, ?, ?, ?, ?,
-			?, ?, ?, ?, ?
+			?, ?, ?, ?, ?, ?
 		)
 	`,
 		invoiceID, issuer.ID, client.ID, invoiceNumber, sequenceNo, invoiceType, zatcaPhase,
@@ -437,7 +447,7 @@ func (s *InvoiceService) createInvoiceTx(tx *sql.Tx, input CreateInvoiceInput, a
 		issuer.NameAr, issuer.TaxNumber, issuer.CommercialRegister, sellerAddr, sellerAddressEn,
 		client.Name, client.TaxNumber, client.CommercialRegister, buyerAddr,
 		qrPayload, invHash, pih, signature, signatureMode,
-		goldInvoiceType, input.Notes, actor, nowIso, nowIso,
+		goldInvoiceType, showSarInt, input.Notes, actor, nowIso, nowIso,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert invoice: %w", err)
@@ -459,12 +469,16 @@ func (s *InvoiceService) createInvoiceTx(tx *sql.Tx, input CreateInvoiceInput, a
 			INSERT INTO invoice_items (
 				id, invoice_id, item_id, line_no, item_code, item_name, unit,
 				karat, gram_price, wage,
-				quantity, unit_price, discount, tax_rate, taxable, tax_amount, total_line
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				quantity, unit_price, discount,
+				unit_price_incl, discount_incl, gram_price_incl, wage_incl,
+				tax_rate, taxable, tax_amount, total_line
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`,
 			cl.ID, invoiceID, itemID, cl.LineNo, cl.ItemCode, cl.ItemName, cl.Unit,
 			cl.Karat, cl.GramPrice, cl.Wage,
-			cl.Quantity, cl.UnitPrice, cl.Discount, cl.TaxRate, cl.Taxable, cl.TaxAmount, cl.TotalLine,
+			cl.Quantity, cl.UnitPrice, cl.Discount,
+			cl.UnitPriceIncl, cl.DiscountIncl, cl.GramPriceIncl, cl.WageIncl,
+			cl.TaxRate, cl.Taxable, cl.TaxAmount, cl.TotalLine,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to insert invoice item: %w", err)
@@ -533,6 +547,7 @@ func (s *InvoiceService) GetInvoice(id string) (*InvoiceView, error) {
 	var inv models.Invoice
 	var dueDate, chequeDate sql.NullString
 	var batchID sql.NullString
+	var showSarInt int
 
 	err := s.db.QueryRow(`
 		SELECT id, issuer_id, client_id, invoice_number, sequence_no, invoice_type, zatca_phase,
@@ -543,7 +558,9 @@ func (s *InvoiceService) GetInvoice(id string) (*InvoiceView, error) {
 		       seller_name, seller_tax_number, seller_cr, seller_address, seller_address_en,
 		       buyer_name, buyer_tax_number, buyer_cr, buyer_address,
 		       qr_payload, invoice_hash, previous_invoice_hash, signature, signature_mode,
-		       COALESCE(gold_invoice_type, 'PRICE_AND_WAGE'), notes, created_by, created_at, updated_at
+		       COALESCE(gold_invoice_type, 'PRICE_AND_WAGE'),
+		       COALESCE(show_sar_symbol, CASE WHEN issue_date < '2025-01-01' THEN 0 ELSE 1 END),
+		       notes, created_by, created_at, updated_at
 		FROM invoices WHERE id = ?
 	`, id).Scan(
 		&inv.ID, &inv.IssuerID, &inv.ClientID, &inv.InvoiceNumber, &inv.SequenceNo, &inv.InvoiceType, &inv.ZatcaPhase,
@@ -554,11 +571,12 @@ func (s *InvoiceService) GetInvoice(id string) (*InvoiceView, error) {
 		&inv.SellerName, &inv.SellerTaxNumber, &inv.SellerCr, &inv.SellerAddress, &inv.SellerAddressEn,
 		&inv.BuyerName, &inv.BuyerTaxNumber, &inv.BuyerCr, &inv.BuyerAddress,
 		&inv.QrPayload, &inv.InvoiceHash, &inv.PreviousInvoiceHash, &inv.Signature, &inv.SignatureMode,
-		&inv.GoldInvoiceType, &inv.Notes, &inv.CreatedBy, &inv.CreatedAt, &inv.UpdatedAt,
+		&inv.GoldInvoiceType, &showSarInt, &inv.Notes, &inv.CreatedBy, &inv.CreatedAt, &inv.UpdatedAt,
 	)
 	if err != nil {
 		return nil, errors.New("الفاتورة غير موجودة")
 	}
+	inv.ShowSarSymbol = models.BoolPtr(showSarInt != 0)
 
 	if dueDate.Valid {
 		inv.DueDate = &dueDate.String
@@ -626,7 +644,9 @@ func (s *InvoiceService) GetInvoice(id string) (*InvoiceView, error) {
 	rows, err := s.db.Query(`
 		SELECT id, invoice_id, item_id, line_no, item_code, item_name, unit,
 		       COALESCE(karat, '21'), COALESCE(gram_price, 0), COALESCE(wage, 0),
-		       quantity, unit_price, discount, tax_rate, taxable, tax_amount, total_line
+		       quantity, unit_price, discount,
+		       COALESCE(unit_price_incl, 0), COALESCE(discount_incl, 0), COALESCE(gram_price_incl, 0), COALESCE(wage_incl, 0),
+		       tax_rate, taxable, tax_amount, total_line
 		FROM invoice_items WHERE invoice_id = ? ORDER BY line_no ASC
 	`, id)
 	if err == nil {
@@ -637,20 +657,26 @@ func (s *InvoiceService) GetInvoice(id string) (*InvoiceView, error) {
 			if err := rows.Scan(
 				&itm.ID, &itm.InvoiceID, &itemID, &itm.LineNo, &itm.ItemCode, &itm.ItemName, &itm.Unit,
 				&itm.Karat, &itm.GramPrice, &itm.Wage,
-				&itm.Quantity, &itm.UnitPrice, &itm.Discount, &itm.TaxRate, &itm.Taxable, &itm.TaxAmount, &itm.TotalLine,
+				&itm.Quantity, &itm.UnitPrice, &itm.Discount,
+				&itm.UnitPriceIncl, &itm.DiscountIncl, &itm.GramPriceIncl, &itm.WageIncl,
+				&itm.TaxRate, &itm.Taxable, &itm.TaxAmount, &itm.TotalLine,
 			); err == nil {
 				if itemID.Valid {
 					itm.ItemID = &itemID.String
 				}
 				view.Items = append(view.Items, InvoiceItemView{
-					InvoiceItem:    itm,
-					GramPriceMajor: models.ToMajor(itm.GramPrice),
-					WageMajor:      models.ToMajor(itm.Wage),
-					UnitPriceMajor: models.ToMajor(itm.UnitPrice),
-					DiscountMajor:  models.ToMajor(itm.Discount),
-					TaxableMajor:   models.ToMajor(itm.Taxable),
-					TaxAmountMajor: models.ToMajor(itm.TaxAmount),
-					TotalLineMajor: models.ToMajor(itm.TotalLine),
+					InvoiceItem:        itm,
+					GramPriceMajor:     models.ToMajor(itm.GramPrice),
+					WageMajor:          models.ToMajor(itm.Wage),
+					UnitPriceMajor:     models.ToMajor(itm.UnitPrice),
+					DiscountMajor:      models.ToMajor(itm.Discount),
+					UnitPriceInclMajor: models.ToMajor(itm.UnitPriceIncl),
+					DiscountInclMajor:  models.ToMajor(itm.DiscountIncl),
+					GramPriceInclMajor: models.ToMajor(itm.GramPriceIncl),
+					WageInclMajor:      models.ToMajor(itm.WageIncl),
+					TaxableMajor:       models.ToMajor(itm.Taxable),
+					TaxAmountMajor:     models.ToMajor(itm.TaxAmount),
+					TotalLineMajor:     models.ToMajor(itm.TotalLine),
 				})
 			}
 		}
@@ -806,7 +832,9 @@ func (s *InvoiceService) ListInvoices(f ListInvoicesFilter) (*ListInvoicesResult
 		       i.subtotal, i.discount_amount, i.taxable_amount, i.tax_amount, i.grand_total,
 		       i.paid_amount, i.remaining_amount, i.status, i.payment_method,
 		       i.seller_name, i.buyer_name, i.buyer_tax_number, i.created_at, i.batch_id,
+		       i.prices_include_tax,
 		       COALESCE(i.gold_invoice_type, 'PRICE_AND_WAGE'),
+		       COALESCE(i.show_sar_symbol, CASE WHEN i.issue_date < '2025-01-01' THEN 0 ELSE 1 END),
 		       COALESCE(s.name_ar, i.seller_name),
 		       COALESCE(c.name, i.buyer_name),
 		       COALESCE(c.client_code, '')
@@ -847,15 +875,17 @@ func (s *InvoiceService) ListInvoices(f ListInvoicesFilter) (*ListInvoicesResult
 	for rows.Next() {
 		var inv models.Invoice
 		var issName, cName, cCode string
+		var showSarInt int
 		if err := rows.Scan(
 			&inv.ID, &inv.IssuerID, &inv.ClientID, &inv.InvoiceNumber, &inv.SequenceNo, &inv.InvoiceType, &inv.ZatcaPhase,
 			&inv.UUID, &inv.IssueDate, &inv.IssueTime, &inv.IssueDatetime, &inv.Currency,
 			&inv.Subtotal, &inv.DiscountAmount, &inv.TaxableAmount, &inv.TaxAmount, &inv.GrandTotal,
 			&inv.PaidAmount, &inv.RemainingAmount, &inv.Status, &inv.PaymentMethod,
 			&inv.SellerName, &inv.BuyerName, &inv.BuyerTaxNumber, &inv.CreatedAt, &inv.BatchID,
-			&inv.GoldInvoiceType,
+			&inv.PricesIncludeTax, &inv.GoldInvoiceType, &showSarInt,
 			&issName, &cName, &cCode,
 		); err == nil {
+			inv.ShowSarSymbol = models.BoolPtr(showSarInt != 0)
 			inv.IssuerName = issName
 			inv.ClientName = cName
 			pLabel := invoicePaymentLabels[inv.PaymentMethod]
@@ -1158,37 +1188,15 @@ func computeInvoiceLines(lines []CreateInvoiceLineInput, pricesIncludeTax bool, 
 			return nil, 0, 0, 0, 0, 0, errors.New("قيمة البند أو نسبة الضريبة غير صالحة")
 		}
 
-		gramPriceMinor := models.ToMinor(l.GramPrice)
-		wageMinor := models.ToMinor(l.Wage)
-
-		unitPriceMinor := models.ToMinor(l.UnitPrice)
-		if unitPriceMinor == 0 && (gramPriceMinor > 0 || wageMinor > 0) {
-			unitPriceMinor = gramPriceMinor + wageMinor
-		}
-		if pricesIncludeTax {
-			unitPriceMinor = models.NetFromInclusive(unitPriceMinor, taxRate)
+		calc, err := models.ComputeInvoiceLineAmounts(qty, l.GramPrice, l.Wage, l.UnitPrice, l.Discount, l.DiscountPercent, taxRate, pricesIncludeTax)
+		if err != nil {
+			return nil, 0, 0, 0, 0, 0, err
 		}
 
-		gross := models.MulQty(qty, unitPriceMinor)
-		discountMinor := models.ToMinor(l.Discount)
-		if pricesIncludeTax && discountMinor > 0 {
-			discountMinor = models.NetFromInclusive(discountMinor, taxRate)
-		}
-		if l.DiscountPercent > 0 {
-			discountMinor = models.Pct(gross, l.DiscountPercent)
-		}
-		if discountMinor > gross {
-			return nil, 0, 0, 0, 0, 0, errors.New("الخصم يتجاوز قيمة البند")
-		}
-
-		taxable := gross - discountMinor
-		taxAmount := models.Pct(taxable, taxRate)
-		totalLine := taxable + taxAmount
-
-		subtotalMinor += gross
-		discountTotalMinor += discountMinor
-		taxableTotalMinor += taxable
-		taxTotalMinor += taxAmount
+		subtotalMinor += calc.GrossNet
+		discountTotalMinor += calc.DiscountNet
+		taxableTotalMinor += calc.Taxable
+		taxTotalMinor += calc.TaxAmount
 
 		unit := l.Unit
 		if unit == "" {
@@ -1206,22 +1214,26 @@ func computeInvoiceLines(lines []CreateInvoiceLineInput, pricesIncludeTax bool, 
 
 		cl := computedInvoiceLine{
 			InvoiceItem: models.InvoiceItem{
-				ID:        crypto.UUID(),
-				ItemID:    itemID,
-				LineNo:    idx + 1,
-				ItemCode:  l.ItemCode,
-				ItemName:  l.ItemName,
-				Unit:      unit,
-				Karat:     karat,
-				GramPrice: gramPriceMinor,
-				Wage:      wageMinor,
-				Quantity:  qty,
-				UnitPrice: unitPriceMinor,
-				Discount:  discountMinor,
-				TaxRate:   taxRate,
-				Taxable:   taxable,
-				TaxAmount: taxAmount,
-				TotalLine: totalLine,
+				ID:            crypto.UUID(),
+				ItemID:        itemID,
+				LineNo:        idx + 1,
+				ItemCode:      l.ItemCode,
+				ItemName:      l.ItemName,
+				Unit:          unit,
+				Karat:         karat,
+				GramPrice:     calc.GramPriceNet,
+				Wage:          calc.WageNet,
+				Quantity:      qty,
+				UnitPrice:     calc.UnitPriceNet,
+				Discount:      calc.DiscountNet,
+				UnitPriceIncl: calc.UnitPriceIncl,
+				DiscountIncl:  calc.DiscountIncl,
+				GramPriceIncl: calc.GramPriceIncl,
+				WageIncl:      calc.WageIncl,
+				TaxRate:       taxRate,
+				Taxable:       calc.Taxable,
+				TaxAmount:     calc.TaxAmount,
+				TotalLine:     calc.TotalLine,
 			},
 			taxRateDisplay: fmt.Sprintf("%.2f", taxRate),
 		}
@@ -1530,6 +1542,14 @@ func (s *InvoiceService) UpdateInvoice(id string, input CreateInvoiceInput, acto
 	if goldInvoiceType == "" {
 		goldInvoiceType = "PRICE_AND_WAGE"
 	}
+	showSarBool := models.ShouldShowSarSymbol(issueDate, inv.ShowSarSymbol)
+	if input.ShowSarSymbol != nil {
+		showSarBool = *input.ShowSarSymbol
+	}
+	showSarInt := 0
+	if showSarBool {
+		showSarInt = 1
+	}
 
 	_, err = tx.Exec(`
 		UPDATE invoices SET
@@ -1543,7 +1563,7 @@ func (s *InvoiceService) UpdateInvoice(id string, input CreateInvoiceInput, acto
 			seller_name = ?, seller_tax_number = ?, seller_cr = ?, seller_address = ?, seller_address_en = ?,
 			buyer_name = ?, buyer_tax_number = ?, buyer_cr = ?, buyer_address = ?,
 			qr_payload = ?, invoice_hash = ?, previous_invoice_hash = ?, sequence_no = ?, signature = ?, signature_mode = ?,
-			gold_invoice_type = ?, notes = ?, updated_at = ?
+			gold_invoice_type = ?, show_sar_symbol = ?, notes = ?, updated_at = ?
 		WHERE id = ?
 	`,
 		invoiceNumber,
@@ -1556,7 +1576,7 @@ func (s *InvoiceService) UpdateInvoice(id string, input CreateInvoiceInput, acto
 		issuer.NameAr, issuer.TaxNumber, issuer.CommercialRegister, sellerAddr, sellerAddressEn,
 		client.Name, client.TaxNumber, client.CommercialRegister, buyerAddr,
 		qrPayload, invHash, inv.PreviousInvoiceHash, inv.SequenceNo, signature, signatureMode,
-		goldInvoiceType, input.Notes, nowIso, id,
+		goldInvoiceType, showSarInt, input.Notes, nowIso, id,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update invoice: %w", err)
@@ -1593,12 +1613,16 @@ func (s *InvoiceService) UpdateInvoice(id string, input CreateInvoiceInput, acto
 			INSERT INTO invoice_items (
 				id, invoice_id, item_id, line_no, item_code, item_name, unit,
 				karat, gram_price, wage,
-				quantity, unit_price, discount, tax_rate, taxable, tax_amount, total_line
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				quantity, unit_price, discount,
+				unit_price_incl, discount_incl, gram_price_incl, wage_incl,
+				tax_rate, taxable, tax_amount, total_line
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`,
 			crypto.UUID(), id, itemID, cl.LineNo, cl.ItemCode, cl.ItemName, cl.Unit,
 			cl.Karat, cl.GramPrice, cl.Wage,
-			cl.Quantity, cl.UnitPrice, cl.Discount, cl.TaxRate, cl.Taxable, cl.TaxAmount, cl.TotalLine,
+			cl.Quantity, cl.UnitPrice, cl.Discount,
+			cl.UnitPriceIncl, cl.DiscountIncl, cl.GramPriceIncl, cl.WageIncl,
+			cl.TaxRate, cl.Taxable, cl.TaxAmount, cl.TotalLine,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to insert invoice line: %w", err)

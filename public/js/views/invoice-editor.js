@@ -9,6 +9,7 @@ const syncNotify = (entity, action, payload) => (typeof store.syncNotify === 'fu
 import {
   html, raw, esc, money, toNum, today, nowTime, toastOk, toastErr,
   $, $$, delegate, debounce, modal, formValues, confirmDialog, icon, generateNextItemCode,
+  sarSvg, shouldShowSarSymbol,
 } from '../core/util.js';
 
 const emptyLine = () => ({
@@ -23,14 +24,96 @@ const emptyLine = () => ({
   tax_rate: 15,
 });
 
-function lineTotals(line, percent = 0) {
+function roundHalfUp(n) {
+  const num = Number(n);
+  if (!Number.isFinite(num) || num === 0) return 0;
+  const sign = num < 0 ? -1 : 1;
+  const abs = Math.abs(num);
+  return (sign * Math.round(abs * 100 + 1e-9)) / 100;
+}
+
+function lineTotals(line, percent = 0, pricesIncludeTax = false) {
+  const qty = Number(line.quantity) || 0;
+  const unitPrice = Number(line.unit_price) || 0;
+  const gp = Number(line.gram_price) || 0;
+  const wg = Number(line.wage) || 0;
   const is24k = String(line.karat || '').trim() === '24';
-  const effectiveTaxRate = is24k ? 0 : (line.tax_rate !== undefined ? line.tax_rate : 15);
-  const gross = Math.round(line.quantity * line.unit_price * 100) / 100;
-  const discount = line.discount || Math.round(gross * percent) / 100;
-  const taxable = Math.max(0, Math.round((gross - discount) * 100) / 100);
-  const tax = Math.round(taxable * (effectiveTaxRate / 100) * 100) / 100;
-  return { gross, taxable, tax, total: Math.round((taxable + tax) * 100) / 100 };
+  const effectiveTaxRate = is24k ? 0 : (line.tax_rate !== undefined ? Number(line.tax_rate) : 15);
+  const discInput = Number(line.discount) || 0;
+  const pct = Number(percent) || 0;
+
+  if (!pricesIncludeTax) {
+    const gross = roundHalfUp(qty * unitPrice);
+    const discount = discInput > 0 ? roundHalfUp(discInput) : (pct > 0 ? roundHalfUp((gross * pct) / 100) : 0);
+    const taxable = Math.max(0, roundHalfUp(gross - discount));
+    const tax = roundHalfUp(taxable * (effectiveTaxRate / 100));
+    return {
+      gross,
+      discount,
+      taxable,
+      tax,
+      total: roundHalfUp(taxable + tax),
+      unitPreTax: roundHalfUp(unitPrice),
+      gramPreTax: roundHalfUp(gp),
+      wagePreTax: roundHalfUp(wg),
+    };
+  }
+
+  // Keep full unrounded precision across (qty * inclusive_price) and division before 2-decimal Round Half Up
+  const inclGross = qty * unitPrice;
+  const inclDiscount = discInput > 0 ? discInput : (pct > 0 ? (inclGross * pct) / 100 : 0);
+  const inclTotal = Math.max(0, inclGross - inclDiscount);
+  const total = roundHalfUp(inclTotal);
+
+  if (effectiveTaxRate <= 0) {
+    const discountNet = roundHalfUp(inclDiscount);
+    const taxable = total;
+    return {
+      gross: roundHalfUp(taxable + discountNet),
+      discount: discountNet,
+      taxable,
+      tax: 0,
+      total,
+      unitPreTax: roundHalfUp(unitPrice),
+      gramPreTax: roundHalfUp(gp),
+      wagePreTax: roundHalfUp(wg),
+    };
+  }
+
+  const rateFrac = effectiveTaxRate / 100;
+  const divisor = 1 + rateFrac;
+  const taxableExact = inclTotal / divisor;
+  const taxExact = taxableExact * rateFrac;
+
+  let taxable = roundHalfUp(taxableExact);
+  let tax = roundHalfUp(taxExact);
+  const diffCents = Math.round((total - taxable - tax) * 100);
+  if (diffCents !== 0) {
+    const taxableMinorExact = taxableExact * 100;
+    const taxMinorExact = taxExact * 100;
+    const taxableMinor = Math.round(taxable * 100);
+    const taxMinor = Math.round(tax * 100);
+    const errTaxAdj = Math.abs(taxableMinor - taxableMinorExact) + Math.abs((taxMinor + diffCents) - taxMinorExact);
+    const errTaxableAdj = Math.abs((taxableMinor + diffCents) - taxableMinorExact) + Math.abs(taxMinor - taxMinorExact);
+    if (taxableMinor + diffCents >= 0 && (taxMinor + diffCents < 0 || errTaxableAdj < errTaxAdj)) {
+      taxable = (taxableMinor + diffCents) / 100;
+    } else {
+      tax = (taxMinor + diffCents) / 100;
+    }
+  }
+
+  const discountNet = roundHalfUp(inclDiscount / divisor);
+  const gross = roundHalfUp(taxable + discountNet);
+  return {
+    gross,
+    discount: discountNet,
+    taxable,
+    tax,
+    total,
+    unitPreTax: roundHalfUp(unitPrice / divisor),
+    gramPreTax: roundHalfUp(gp / divisor),
+    wagePreTax: roundHalfUp(wg / divisor),
+  };
 }
 
 const DRAFT_KEY = 'zs.invoice_draft';
@@ -49,6 +132,9 @@ function saveDraft(state) {
       issue_date: state.issue_date,
       issue_time: can('invoices.backdate') ? state.issue_time : undefined,
       gold_invoice_type: state.gold_invoice_type || 'PRICE_AND_WAGE',
+      prices_include_tax: Boolean(state.prices_include_tax),
+      show_sar_symbol: Boolean(state.show_sar_symbol),
+      sar_symbol_manual: Boolean(state.sar_symbol_manual),
       invoice_type: state.invoice_type,
       payment_method: state.payment_method,
       invoice_number: state.invoice_number,
@@ -107,6 +193,9 @@ export async function render(view, ctx) {
     issue_date: editInvoice.issue_date,
     issue_time: editInvoice.issue_time || nowTime(),
     gold_invoice_type: editInvoice.gold_invoice_type || 'PRICE_AND_WAGE',
+    prices_include_tax: Boolean(editInvoice.prices_include_tax),
+    show_sar_symbol: shouldShowSarSymbol(editInvoice),
+    sar_symbol_manual: true,
     invoice_type: editInvoice.invoice_type || 'STANDARD',
     payment_method: editInvoice.payment_method || 'CASH',
     invoice_number: editInvoice.invoice_number,
@@ -117,20 +206,42 @@ export async function render(view, ctx) {
     header_discount_percent: editInvoice.discount_percent || 0,
     zatca_phase: editInvoice.zatca_phase || 'PHASE1',
     lines: ((editInvoice.items || editInvoice.lines) && (editInvoice.items || editInvoice.lines).length)
-      ? (editInvoice.items || editInvoice.lines).map((l) => ({
-        key: Math.random().toString(36).slice(2),
-        item_id: l.item_id || '',
-        item_code: l.item_code || '',
-        item_name: l.item_name || '',
-        unit: l.unit || 'جرام',
-        karat: l.karat || '21',
-        gram_price: Number(l.gram_price) || 0,
-        wage: Number(l.wage) || 0,
-        quantity: Number(l.quantity) || 1,
-        unit_price: Number(l.unit_price) || 0,
-        discount: Number(l.discount) || 0,
-        tax_rate: (l.karat === '24') ? 0 : (l.tax_rate !== undefined ? Number(l.tax_rate) : 15),
-      }))
+      ? (editInvoice.items || editInvoice.lines).map((l) => {
+        const incl = Boolean(editInvoice.prices_include_tax);
+        const is24k = String(l.karat || '').trim() === '24';
+        const taxRate = is24k ? 0 : (l.tax_rate !== undefined ? Number(l.tax_rate) : 15);
+        const divisor = (incl && taxRate > 0) ? (1 + taxRate / 100) : 1;
+        const unitPrice = incl
+          ? (Number(l.unit_price_incl) > 0 ? Number(l.unit_price_incl) : roundHalfUp((Number(l.unit_price) || 0) * divisor))
+          : (Number(l.unit_price) || 0);
+        let gramPrice = incl
+          ? (Number(l.gram_price_incl) > 0 ? Number(l.gram_price_incl) : (Number(l.gram_price) > 0 ? roundHalfUp(Number(l.gram_price) * divisor) : 0))
+          : (Number(l.gram_price) || 0);
+        let wage = incl
+          ? (Number(l.wage_incl) > 0 ? Number(l.wage_incl) : (Number(l.wage) > 0 ? roundHalfUp(Number(l.wage) * divisor) : 0))
+          : (Number(l.wage) || 0);
+        if (incl && gramPrice === 0 && wage === 0 && unitPrice > 0) {
+          if (editInvoice.gold_invoice_type === 'WAGE_ONLY') wage = unitPrice;
+          else gramPrice = unitPrice;
+        }
+        const discount = incl
+          ? (Number(l.discount_incl) > 0 ? Number(l.discount_incl) : roundHalfUp((Number(l.discount) || 0) * divisor))
+          : (Number(l.discount) || 0);
+        return {
+          key: Math.random().toString(36).slice(2),
+          item_id: l.item_id || '',
+          item_code: l.item_code || '',
+          item_name: l.item_name || '',
+          unit: l.unit || 'جرام',
+          karat: l.karat || '21',
+          gram_price: gramPrice,
+          wage,
+          quantity: Number(l.quantity) || 1,
+          unit_price: unitPrice,
+          discount,
+          tax_rate: taxRate,
+        };
+      })
       : [emptyLine()],
   } : {
     is_edit: false,
@@ -139,6 +250,9 @@ export async function render(view, ctx) {
     issue_date: today(),
     issue_time: nowTime(),
     gold_invoice_type: (draft && draft.gold_invoice_type) || 'PRICE_AND_WAGE',
+    prices_include_tax: Boolean(draft && draft.prices_include_tax),
+    show_sar_symbol: (draft && typeof draft.show_sar_symbol === 'boolean') ? draft.show_sar_symbol : (today() >= '2025-01-01'),
+    sar_symbol_manual: Boolean(draft && draft.sar_symbol_manual),
     invoice_type: 'STANDARD',
     payment_method: 'CASH',
     invoice_number: '',
@@ -212,16 +326,31 @@ export async function render(view, ctx) {
   if (state.lines[0].tax_rate === undefined) state.lines[0].tax_rate = defaultRate();
 
   const totals = () => {
-    let subtotal = 0; let discount = 0; let taxable = 0; let tax = 0;
+    let subtotal = 0; let discount = 0; let taxable = 0; let tax = 0; let grand = 0;
     for (const l of state.lines) {
-      const t = lineTotals(l, state.header_discount_percent);
+      const t = lineTotals(l, state.header_discount_percent, state.prices_include_tax);
       subtotal += t.gross;
-      discount += t.gross - t.taxable;
+      discount += t.discount;
       taxable += t.taxable;
       tax += t.tax;
+      grand += t.total;
     }
-    const round = (n) => Math.round(n * 100) / 100;
-    return { subtotal: round(subtotal), discount: round(discount), taxable: round(taxable), tax: round(tax), grand: round(taxable + tax) };
+    return {
+      subtotal: roundHalfUp(subtotal),
+      discount: roundHalfUp(discount),
+      taxable: roundHalfUp(taxable),
+      tax: roundHalfUp(tax),
+      grand: roundHalfUp(grand),
+    };
+  };
+
+  const preTaxHintHtml = (amountVal, is24k, roleCls) => {
+    if (!state.prices_include_tax) return '';
+    const v = Number(amountVal) || 0;
+    const text = v > 0
+      ? (is24k ? 'معفى 0%' : `قبل الضريبة: <b>${money(amountVal)}</b>`)
+      : '';
+    return `<div class="tiny muted tax-excl-hint ${roleCls}" style="font-size:10.5px;margin-top:3px;white-space:nowrap;line-height:1.2">${text}</div>`;
   };
 
   const linesHtml = () => state.lines.map((l, i) => {
@@ -239,16 +368,31 @@ export async function render(view, ctx) {
     } else {
       l.unit_price = (gp || wg) ? (gp + wg) : (l.unit_price || 0);
     }
-    const t = lineTotals(l, state.header_discount_percent);
+    const t = lineTotals(l, state.header_discount_percent, state.prices_include_tax);
 
     const priceCols = state.gold_invoice_type === 'PRICE_AND_WAGE' ? `
-      <td style="width:105px"><input type="number" data-f="gram_price" value="${l.gram_price ?? ''}" placeholder="0.00" step="0.01" min="0" title="سعر جرام الذهب" /></td>
-      <td style="width:100px"><input type="number" data-f="wage" value="${l.wage ?? ''}" placeholder="0.00" step="0.01" min="0" title="أجور المصنعية للجرام" /></td>
-      <td class="text-end num col-unit-price" style="width:105px;white-space:nowrap;font-weight:700;color:var(--primary);padding-inline:6px" title="إجمالي سعر الجرام">${money(l.unit_price)}</td>
+      <td style="width:115px">
+        <input type="number" data-f="gram_price" value="${l.gram_price ?? ''}" placeholder="0.00" step="0.01" min="0" title="سعر جرام الذهب" />
+        ${preTaxHintHtml(t.gramPreTax, is24k, 'tax-excl-gram')}
+      </td>
+      <td style="width:110px">
+        <input type="number" data-f="wage" value="${l.wage ?? ''}" placeholder="0.00" step="0.01" min="0" title="أجور المصنعية للجرام" />
+        ${preTaxHintHtml(t.wagePreTax, is24k, 'tax-excl-wage')}
+      </td>
+      <td class="text-end num col-unit-price" style="width:120px;white-space:nowrap;font-weight:700;color:var(--primary);padding-inline:6px" title="إجمالي سعر الجرام">
+        <div class="unit-price-val">${money(l.unit_price)}</div>
+        ${preTaxHintHtml(l.unit_price > 0 ? t.unitPreTax : 0, is24k, 'tax-excl-unit')}
+      </td>
     ` : state.gold_invoice_type === 'PRICE_ONLY' ? `
-      <td style="width:120px"><input type="number" data-f="gram_price" value="${l.gram_price || l.unit_price || ''}" placeholder="0.00" step="0.01" min="0" title="سعر جرام الذهب" /></td>
+      <td style="width:145px">
+        <input type="number" data-f="gram_price" value="${l.gram_price || l.unit_price || ''}" placeholder="0.00" step="0.01" min="0" title="${state.prices_include_tax ? 'السعر (شامل الضريبة)' : 'سعر جرام الذهب'}" />
+        ${preTaxHintHtml((gp || l.unit_price) > 0 ? t.unitPreTax : 0, is24k, 'tax-excl-unit')}
+      </td>
     ` : `
-      <td style="width:120px"><input type="number" data-f="wage" value="${l.wage || l.unit_price || ''}" placeholder="0.00" step="0.01" min="0" title="أجور المصنعية للجرام" /></td>
+      <td style="width:145px">
+        <input type="number" data-f="wage" value="${l.wage || l.unit_price || ''}" placeholder="0.00" step="0.01" min="0" title="${state.prices_include_tax ? 'السعر (شامل الضريبة)' : 'أجور المصنعية للجرام'}" />
+        ${preTaxHintHtml((wg || l.unit_price) > 0 ? t.unitPreTax : 0, is24k, 'tax-excl-unit')}
+      </td>
     `;
 
     return `<tr data-key="${l.key}">
@@ -339,16 +483,35 @@ export async function render(view, ctx) {
               <div class="muted tiny">اختر نوع الفاتورة: سعر ذهب وأجور مصنعية، أو سعر فقط، أو أجور مصنعية فقط</div>
             </div>
           </div>
-          <div class="gold-type-tabs" role="group" aria-label="أجور الفاتورة" style="display:flex;gap:8px;flex-wrap:wrap">
-            <button type="button" class="btn btn-sm ${state.gold_invoice_type === 'PRICE_AND_WAGE' ? 'btn-primary' : ''}" data-gold-type="PRICE_AND_WAGE" aria-pressed="${state.gold_invoice_type === 'PRICE_AND_WAGE'}" style="border-radius:20px;padding:.45rem 1rem;">
-              ${raw(icon.diamond({ size: 14, style: 'vertical-align:text-bottom;margin-left:4px' }))}بأجور
-            </button>
-            <button type="button" class="btn btn-sm ${state.gold_invoice_type === 'PRICE_ONLY' ? 'btn-primary' : ''}" data-gold-type="PRICE_ONLY" aria-pressed="${state.gold_invoice_type === 'PRICE_ONLY'}" style="border-radius:20px;padding:.45rem 1rem;">
-              ${raw(icon.goldBar({ size: 14, style: 'vertical-align:text-bottom;margin-left:4px' }))}بدون أجور
-            </button>
-            <button type="button" class="btn btn-sm ${state.gold_invoice_type === 'WAGE_ONLY' ? 'btn-primary' : ''}" data-gold-type="WAGE_ONLY" aria-pressed="${state.gold_invoice_type === 'WAGE_ONLY'}" style="border-radius:20px;padding:.45rem 1rem;">
-              ${raw(icon.stamp({ size: 14, style: 'vertical-align:text-bottom;margin-left:4px' }))}أجور فقط
-            </button>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div class="gold-type-tabs" role="group" aria-label="أجور الفاتورة" style="display:flex;gap:8px;flex-wrap:wrap">
+              <button type="button" class="btn btn-sm ${state.gold_invoice_type === 'PRICE_AND_WAGE' ? 'btn-primary' : ''}" data-gold-type="PRICE_AND_WAGE" aria-pressed="${state.gold_invoice_type === 'PRICE_AND_WAGE'}" style="border-radius:20px;padding:.45rem 1rem;">
+                ${raw(icon.diamond({ size: 14, style: 'vertical-align:text-bottom;margin-left:4px' }))}بأجور
+              </button>
+              <button type="button" class="btn btn-sm ${state.gold_invoice_type === 'PRICE_ONLY' ? 'btn-primary' : ''}" data-gold-type="PRICE_ONLY" aria-pressed="${state.gold_invoice_type === 'PRICE_ONLY'}" style="border-radius:20px;padding:.45rem 1rem;">
+                ${raw(icon.goldBar({ size: 14, style: 'vertical-align:text-bottom;margin-left:4px' }))}بدون أجور
+              </button>
+              <button type="button" class="btn btn-sm ${state.gold_invoice_type === 'WAGE_ONLY' ? 'btn-primary' : ''}" data-gold-type="WAGE_ONLY" aria-pressed="${state.gold_invoice_type === 'WAGE_ONLY'}" style="border-radius:20px;padding:.45rem 1rem;">
+                ${raw(icon.stamp({ size: 14, style: 'vertical-align:text-bottom;margin-left:4px' }))}أجور فقط
+              </button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding-inline-start:12px;border-inline-start:1px solid rgba(212,175,55,0.35);flex-wrap:wrap">
+              <label for="prices_include_tax" id="toggle-prices-include-tax"
+                class="btn btn-sm ${state.prices_include_tax ? 'btn-primary' : ''}"
+                title="تفعيل احتساب الأسعار المدخلة شاملة لضريبة القيمة المضافة 15% بدون فقدان أي هللة"
+                style="border-radius:20px;padding:.45rem .95rem;display:inline-flex;align-items:center;gap:7px;cursor:pointer;margin:0;user-select:none">
+                <input type="checkbox" id="prices_include_tax" ${raw(state.prices_include_tax ? 'checked' : '')} style="width:15px;height:15px;accent-color:currentColor;cursor:pointer;margin:0" />
+                <span style="font-weight:700">الأسعار شاملة الضريبة</span>
+              </label>
+              <button type="button" id="toggle-sar-symbol"
+                class="btn btn-sm ${state.show_sar_symbol ? 'btn-primary' : ''}"
+                aria-pressed="${state.show_sar_symbol}"
+                title="تفعيل أو إيقاف إضافة شعار الريال السعودي في الفاتورة (للفواتير ما قبل 2025 أو الحالية)"
+                style="border-radius:20px;padding:.45rem 1rem;display:inline-flex;align-items:center;gap:6px">
+                ${raw(sarSvg({ size: 13 }))}
+                <span id="toggle-sar-symbol-label">${state.show_sar_symbol ? 'إضافة شعار الريال: نعم' : 'إضافة شعار الريال: لا'}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -506,16 +669,20 @@ export async function render(view, ctx) {
               <th style="min-width:200px">الصنف / الوصف</th>
               <th style="width:125px;min-width:125px">العيار</th>
               <th style="width:100px">الوزن (جرام)</th>
-              ${raw(state.gold_invoice_type === 'PRICE_AND_WAGE' ? `
+              ${raw(state.gold_invoice_type === 'PRICE_AND_WAGE' ? (state.prices_include_tax ? `
+                <th style="width:115px">سعر الجرام (شامل)</th>
+                <th style="width:110px">الأجور (شامل)</th>
+                <th style="width:120px">السعر (شامل الضريبة)</th>
+              ` : `
                 <th style="width:105px">سعر الجرام</th>
                 <th style="width:100px">الأجور</th>
                 <th style="width:105px">الإجمالي للجرام</th>
-              ` : state.gold_invoice_type === 'PRICE_ONLY' ? `
-                <th style="width:120px">سعر الجرام</th>
+              `) : state.gold_invoice_type === 'PRICE_ONLY' ? `
+                <th style="width:145px">${state.prices_include_tax ? 'السعر (شامل الضريبة)' : 'سعر الجرام'}</th>
               ` : `
-                <th style="width:120px">الأجور (المصنعية)</th>
+                <th style="width:145px">${state.prices_include_tax ? 'السعر (شامل الضريبة)' : 'الأجور (المصنعية)'}</th>
               `)}
-              <th style="width:85px">الخصم</th>
+              <th style="width:85px">${state.prices_include_tax ? 'الخصم (شامل)' : 'الخصم'}</th>
               <th class="text-center" style="width:85px">الضريبة</th>
               <th class="text-end" style="width:100px;white-space:nowrap">قبل الضريبة</th>
               <th class="text-end" style="width:90px;white-space:nowrap">الضريبة</th>
@@ -617,6 +784,27 @@ export async function render(view, ctx) {
         saveDraft(state);
         draw();
       });
+    });
+
+    $('#prices_include_tax', view)?.addEventListener('change', (e) => {
+      state.prices_include_tax = Boolean(e.target.checked);
+      saveDraft(state);
+      draw();
+    });
+
+    const updateSarToggleUi = () => {
+      const btn = $('#toggle-sar-symbol', view);
+      const lbl = $('#toggle-sar-symbol-label', view);
+      if (!btn || !lbl) return;
+      btn.classList.toggle('btn-primary', Boolean(state.show_sar_symbol));
+      btn.setAttribute('aria-pressed', String(Boolean(state.show_sar_symbol)));
+      lbl.textContent = state.show_sar_symbol ? 'إضافة شعار الريال: نعم' : 'إضافة شعار الريال: لا';
+    };
+    $('#toggle-sar-symbol', view)?.addEventListener('click', () => {
+      state.show_sar_symbol = !state.show_sar_symbol;
+      state.sar_symbol_manual = true;
+      updateSarToggleUi();
+      saveDraft(state);
     });
 
     const curClient = store.clients.find(c => c.id === state.client_id);
@@ -722,7 +910,14 @@ export async function render(view, ctx) {
         hint.textContent = state.zatca_phase === 'PHASE2' ? 'يتضمن الهاش والتوقيع الرقمي وسلسلة الفواتير' : 'يتضمن الحقول الخمسة الأساسية فقط';
       }
     });
-    $('#issue_date', view).addEventListener('change', (e) => { state.issue_date = e.target.value; saveDraft(state); });
+    $('#issue_date', view).addEventListener('change', (e) => {
+      state.issue_date = e.target.value;
+      if (!state.sar_symbol_manual && !state.is_edit && state.issue_date) {
+        state.show_sar_symbol = state.issue_date >= '2025-01-01';
+        updateSarToggleUi();
+      }
+      saveDraft(state);
+    });
     $('#issue_time', view).addEventListener('change', (e) => { state.issue_time = e.target.value; saveDraft(state); });
     $('#payment_method', view).addEventListener('change', (e) => { state.payment_method = e.target.value; view.querySelectorAll('[data-cheque]').forEach(el => el.classList.toggle('hidden', state.payment_method !== 'CHEQUE')); saveDraft(state); });
     $('#due_date', view)?.addEventListener('change', (e) => { state.due_date = e.target.value; saveDraft(state); });
@@ -751,6 +946,9 @@ export async function render(view, ctx) {
       state.lines[0].tax_rate = defaultRate();
       state.notes = '';
       state.invoice_number = '';
+      state.sar_symbol_manual = false;
+      state.show_sar_symbol = (state.issue_date || today()) >= '2025-01-01';
+      state.prices_include_tax = false;
       draw();
     });
     const newClientBtn = $('#new-client', view);
@@ -887,15 +1085,26 @@ export async function render(view, ctx) {
           line.unit_price = gp + wg;
         }
         const tr = input.closest('tr');
-        const cellUnitPrice = tr?.querySelector('.col-unit-price');
-        if (cellUnitPrice) cellUnitPrice.textContent = money(line.unit_price);
+        const cellUnitVal = tr?.querySelector('.col-unit-price .unit-price-val') || tr?.querySelector('.col-unit-price');
+        if (cellUnitVal) cellUnitVal.textContent = money(line.unit_price);
       } else {
         line[field] = toNum(input.value);
       }
 
-      // تحديث خلايا الإجماليات لهذا الصف فقط
-      const t = lineTotals(line, state.header_discount_percent);
+      // تحديث خلايا الإجماليات وتلميح قبل الضريبة لهذا الصف فقط
+      const t = lineTotals(line, state.header_discount_percent, state.prices_include_tax);
       const tr = input.closest('tr');
+      const is24kLine = String(line.karat || '').trim() === '24';
+      const setHint = (cls, val, active) => {
+        const el = tr?.querySelector('.' + cls);
+        if (!el) return;
+        if (!state.prices_include_tax || !active) el.textContent = '';
+        else el.innerHTML = is24kLine ? 'معفى 0%' : `قبل الضريبة: <b>${money(val)}</b>`;
+      };
+      setHint('tax-excl-gram', t.gramPreTax, (Number(line.gram_price) || 0) > 0);
+      setHint('tax-excl-wage', t.wagePreTax, (Number(line.wage) || 0) > 0);
+      setHint('tax-excl-unit', t.unitPreTax, (Number(line.unit_price) || 0) > 0);
+
       const cellTaxable = tr.querySelector('.col-taxable');
       const cellTax = tr.querySelector('.col-tax');
       const cellTotal = tr.querySelector('.col-total');
@@ -1189,6 +1398,7 @@ export async function render(view, ctx) {
           quantity: Number(l.quantity) || 1,
           unit_price: unitPrice,
           discount: Number(l.discount) || 0,
+          discount_percent: (!(Number(l.discount) > 0) && Number(state.header_discount_percent) > 0) ? Number(state.header_discount_percent) : 0,
           tax_rate: taxRate,
         };
       });
@@ -1210,6 +1420,8 @@ export async function render(view, ctx) {
           cheque_date: chequeDateVal,
           cheque_no: chequeNoVal,
           gold_invoice_type: state.gold_invoice_type || 'PRICE_AND_WAGE',
+          prices_include_tax: Boolean(state.prices_include_tax),
+          show_sar_symbol: Boolean(state.show_sar_symbol),
           invoice_type: state.invoice_type,
           zatca_phase: state.zatca_phase,
           payment_method: state.payment_method,
@@ -1236,6 +1448,8 @@ export async function render(view, ctx) {
         cheque_date: chequeDateVal,
         cheque_no: chequeNoVal,
         gold_invoice_type: state.gold_invoice_type || 'PRICE_AND_WAGE',
+        prices_include_tax: Boolean(state.prices_include_tax),
+        show_sar_symbol: Boolean(state.show_sar_symbol),
         invoice_type: state.invoice_type,
         zatca_phase: state.zatca_phase,
         payment_method: state.payment_method,
