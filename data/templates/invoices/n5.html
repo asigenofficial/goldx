@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<title>n5 — التجاري المصرفي (المزدوج الاحترافي)</title>
+<title>n5 — التجاري المصرفي (الشهادة المعمارية المزدوجة)</title>
 <style>
   @page { size: A4 portrait; margin: 0; }
   * { box-sizing: border-box; }
@@ -11,8 +11,8 @@
     padding: 0;
     direction: rtl;
     background: #ffffff;
-    color: #1e293b;
-    font: 10.5px/1.4 'goldx Document', Tahoma, Arial, sans-serif;
+    color: #1e1035;
+    font: 10px/1.36 'goldx Document', Tahoma, Arial, sans-serif;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -20,13 +20,26 @@
   .invoice-container {
     width: 210mm;
     min-height: 297mm;
-    padding: 8mm;
+    padding: 7mm 8mm;
     background: #ffffff;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
     position: relative;
     overflow: visible;
+  }
+
+  /* ── إطار مزدوج هندسي (شهادة مصرفية رسمية بالبنفسجي الداكن والذهبي) ── */
+  .n5-cert-frame {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    border: 2px solid #3b0f54;
+    outline: 1px solid #b8862d;
+    outline-offset: 2.5px;
+    padding: 6px 8px;
+    background: #ffffff;
+    min-height: 0;
   }
   .top-content-wrap {
     flex: 1 1 auto;
@@ -35,44 +48,45 @@
     min-height: 0;
   }
   .n5-header {
-    background: #5c162e;
+    background: #3b0f54;
     color: #ffffff;
-    padding: 10px 14px;
-    border-bottom: 3px solid #cbd5e1;
+    padding: 8px 12px;
+    border-bottom: 3px solid #b8862d;
     display: grid;
-    grid-template-columns: 1fr 96px 1fr;
+    grid-template-columns: 1fr 90px 1fr;
     gap: 10px;
     align-items: center;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
     flex-shrink: 0;
   }
   .n5-ar h2 {
-    font-size: 14.5px;
+    font-size: 14px;
     font-weight: 800;
-    color: #ffffff;
+    color: #f6e3b4;
     margin-bottom: 2px;
   }
   .n5-ar p, .n5-en p {
-    font-size: 9px;
-    color: #f3dce2;
-    line-height: 1.4;
+    font-size: 8.8px;
+    color: #e9d8f5;
+    line-height: 1.38;
   }
   .n5-en {
     direction: ltr;
     text-align: left;
   }
   .n5-en h2 {
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 800;
-    color: #ffffff;
+    color: #f6e3b4;
     margin-bottom: 2px;
   }
   .logo-shell {
-    width: 82px;
-    height: 60px;
+    width: 78px;
+    height: 54px;
     margin: 0 auto;
     background: #ffffff;
-    border-radius: 6px;
+    border: 1.5px solid #b8862d;
+    border-radius: 4px;
     padding: 4px;
     display: flex;
     align-items: center;
@@ -87,15 +101,15 @@
   .n5-bank-ribbon {
     display: grid;
     grid-template-columns: 1.1fr 1.2fr 0.9fr;
-    border: 1px solid #cbd5e1;
-    background: #f8fafc;
-    margin-bottom: 8px;
-    font-size: 9px;
+    border: 1px solid #b8862d;
+    background: #faf7fd;
+    margin-bottom: 7px;
+    font-size: 8.8px;
     flex-shrink: 0;
   }
   .n5-bank-ribbon > div {
-    padding: 4px 8px;
-    border-left: 1px solid #cbd5e1;
+    padding: 3.5px 8px;
+    border-left: 1px solid #d9c9e8;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -105,74 +119,74 @@
     border-left: 0;
   }
   .n5-bank-ribbon span {
-    color: #64748b;
+    color: #6b4e84;
     font-weight: 700;
   }
   .n5-bank-ribbon b {
-    color: #0f172a;
+    color: #240938;
     font-variant-numeric: tabular-nums;
   }
   .n5-bank-ribbon b:empty::after {
     content: '—';
-    color: #94a3b8;
+    color: #9e87b3;
   }
   .n5-meta-frame {
-    border: 1.5px solid #334155;
+    border: 1.5px solid #3b0f54;
     display: grid;
-    grid-template-columns: 1fr 134px;
+    grid-template-columns: 1fr 122px;
     gap: 0;
-    margin-bottom: 8px;
+    margin-bottom: 7px;
     flex-shrink: 0;
   }
   .n5-meta-inner {
     display: grid;
-    grid-template-columns: 1.25fr 0.95fr;
-    border-left: 1.5px solid #334155;
+    grid-template-columns: 1.2fr 1fr;
+    border-left: 1.5px solid #3b0f54;
   }
   .n5-meta-block {
-    border-left: 1px solid #cbd5e1;
+    border-left: 1px solid #d9c9e8;
   }
   .n5-meta-block:last-child {
     border-left: 0;
   }
   .n5-meta-block-head {
-    background: #334155;
-    color: #ffffff;
+    background: #3b0f54;
+    color: #f6e3b4;
     padding: 3px 8px;
-    font-size: 9px;
+    font-size: 8.8px;
     font-weight: 800;
   }
   .n5-meta-block table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 9.5px;
+    font-size: 9px;
   }
   .n5-meta-block th, .n5-meta-block td {
-    border-bottom: 1px solid #e2e8f0;
-    padding: 3.5px 6px;
+    border-bottom: 1px solid #ebe2f3;
+    padding: 3.2px 6px;
   }
   .n5-meta-block tr:last-child th, .n5-meta-block tr:last-child td {
     border-bottom: 0;
   }
   .n5-meta-block th {
     width: 34%;
-    background: #faf5f7;
-    color: #5c162e;
+    background: #faf7fd;
+    color: #3b0f54;
     text-align: right;
     font-weight: 700;
   }
   .n5-meta-block td {
-    color: #0f172a;
+    color: #1e1035;
     font-weight: 600;
     overflow-wrap: anywhere;
   }
   .qr-box {
-    width: 132px;
-    height: 132px;
-    min-width: 132px;
-    min-height: 132px;
+    width: 120px;
+    height: 120px;
+    min-width: 120px;
+    min-height: 120px;
     background: #ffffff;
-    padding: 5px;
+    padding: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -196,23 +210,23 @@
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
-    border: 1.5px solid #334155;
+    border: 1.5px solid #3b0f54;
   }
   .items-main-table thead th {
-    background: #334155;
-    color: #ffffff;
-    border: 1px solid #475569;
-    border-bottom: 2px solid #5c162e;
-    padding: 5px 3px;
+    background: #3b0f54;
+    color: #f6e3b4;
+    border: 1px solid #532070;
+    border-bottom: 2px solid #b8862d;
+    padding: 4.5px 3px;
     text-align: center;
-    font-size: 9.5px;
+    font-size: 9px;
     font-weight: 700;
   }
   .items-main-table tbody td {
-    border: 1px solid #cbd5e1;
-    padding: 5px 3px;
+    border: 1px solid #d9c9e8;
+    padding: 4.5px 3px;
     text-align: center;
-    font-size: 9.5px;
+    font-size: 9px;
     vertical-align: top;
     font-variant-numeric: tabular-nums;
     overflow-wrap: anywhere;
@@ -221,22 +235,22 @@
     text-align: right;
   }
   .items-main-table tbody tr:nth-child(even) {
-    background: #faf5f7;
+    background: #faf7fd;
   }
   .items-main-table tfoot td {
-    background: #f1f5f9;
-    color: #0f172a;
-    border: 1px solid #94a3b8;
-    border-top: 2px solid #5c162e;
-    padding: 5px 3px;
+    background: #f3ecf9;
+    color: #3b0f54;
+    border: 1px solid #b8862d;
+    border-top: 2px solid #3b0f54;
+    padding: 4.5px 3px;
     text-align: center;
-    font-size: 9.5px;
+    font-size: 9px;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
   }
   .bottom-content {
     margin-top: auto;
-    padding-top: 8px;
+    padding-top: 7px;
     flex-shrink: 0;
     page-break-inside: avoid;
     break-inside: avoid;
@@ -248,58 +262,38 @@
     margin-bottom: 6px;
   }
   .n5-karat-box, .n5-split-box {
-    border: 1.5px solid #5c162e;
+    border: 1.3px solid #3b0f54;
   }
   .n5-mini-head {
-    background: #5c162e;
-    color: #ffffff;
+    background: #3b0f54;
+    color: #f6e3b4;
     padding: 3px 8px;
-    font-size: 9.5px;
+    font-size: 9px;
     font-weight: 800;
     display: flex;
     justify-content: space-between;
   }
-  .n5-karat-grid {
+  .n5-karat-grid, .n5-split-grid {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
-    font-size: 9.5px;
+    font-size: 9px;
   }
-  .n5-karat-grid th, .n5-karat-grid td {
-    border: 1px solid #d6c8cc;
-    padding: 4px 3px;
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-  }
-  .n5-karat-grid th {
-    background: #faf5f7;
-    color: #5c162e;
-    font-weight: 800;
-  }
-  .n5-karat-grid td {
-    font-weight: 800;
-    color: #0f172a;
-  }
-  .n5-split-grid {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-    font-size: 9.5px;
-  }
+  .n5-karat-grid th, .n5-karat-grid td,
   .n5-split-grid th, .n5-split-grid td {
-    border: 1px solid #cbd5e1;
-    padding: 4px 5px;
+    border: 1px solid #d9c9e8;
+    padding: 3.5px 3px;
     text-align: center;
     font-variant-numeric: tabular-nums;
   }
-  .n5-split-grid th {
-    background: #f1f5f9;
-    color: #334155;
-    font-weight: 700;
-  }
-  .n5-split-grid td {
+  .n5-karat-grid th, .n5-split-grid th {
+    background: #faf7fd;
+    color: #3b0f54;
     font-weight: 800;
-    color: #0f172a;
+  }
+  .n5-karat-grid td, .n5-split-grid td {
+    font-weight: 800;
+    color: #1e1035;
   }
   .n5-bottom-pair {
     display: grid;
@@ -309,32 +303,32 @@
     margin-bottom: 6px;
   }
   .n5-policy-words {
-    border: 1px solid #cbd5e1;
-    background: #f8fafc;
-    padding: 6px 8px;
-    font-size: 9px;
+    border: 1px solid #d9c9e8;
+    background: #faf7fd;
+    padding: 5px 8px;
+    font-size: 8.8px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 4px;
+    gap: 3px;
   }
   .n5-policy-words b {
-    color: #5c162e;
+    color: #8c651b;
   }
   .n5-fin-table {
     width: 100%;
     height: 100%;
     border-collapse: collapse;
-    border: 1.5px solid #334155;
-    font-size: 9.5px;
+    border: 1.3px solid #3b0f54;
+    font-size: 9px;
   }
   .n5-fin-table th, .n5-fin-table td {
-    border: 1px solid #cbd5e1;
-    padding: 4px 7px;
+    border: 1px solid #d9c9e8;
+    padding: 3.5px 7px;
   }
   .n5-fin-table th {
-    background: #f1f5f9;
-    color: #334155;
+    background: #faf7fd;
+    color: #3b0f54;
     text-align: right;
     font-weight: 700;
     width: 55%;
@@ -345,38 +339,53 @@
     font-variant-numeric: tabular-nums;
   }
   .n5-fin-table tr.n5-grand th {
-    background: #5c162e;
-    color: #ffffff;
-    font-size: 10.5px;
+    background: #3b0f54;
+    color: #f6e3b4;
+    font-size: 10px;
   }
   .n5-fin-table tr.n5-grand td {
-    background: #faf5f7;
-    color: #5c162e;
-    font-size: 11px;
+    background: #f6eed9;
+    color: #3b0f54;
+    font-size: 10.5px;
     font-weight: 900;
   }
-  .n5-sigs-strip {
+
+  /* ── بطاقات تواقيع مؤطرة مع خانة الختم الرسمي ── */
+  .n5-sigs-cards {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    padding-top: 12px;
-    margin-bottom: 6px;
-    text-align: center;
-    font-size: 9px;
-    font-weight: 700;
-    color: #334155;
+    gap: 10px;
+    margin-bottom: 5px;
   }
-  .n5-sigs-strip div {
-    border-top: 1.5px solid #334155;
-    padding-top: 3px;
+  .n5-sig-card {
+    border: 1px solid #3b0f54;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 44px;
+    text-align: center;
+  }
+  .n5-sig-card .n5-sig-top {
+    background: #f3ecf9;
+    border-bottom: 1px solid #d9c9e8;
+    padding: 2.5px 4px;
+    font-size: 8.5px;
+    font-weight: 800;
+    color: #3b0f54;
+  }
+  .n5-sig-card .n5-sig-bot {
+    border-top: 1px dashed #b8862d;
+    padding: 2px 4px;
+    font-size: 7.8px;
+    color: #6b4e84;
   }
   .n5-footer {
-    border-top: 1.5px solid #5c162e;
-    padding-top: 4px;
+    border-top: 1.5px solid #b8862d;
+    padding-top: 3px;
     display: flex;
     justify-content: space-between;
-    font-size: 8.5px;
-    color: #475569;
+    font-size: 8.2px;
+    color: #6b4e84;
   }
   .sar-amount {
     display: inline-flex !important;
@@ -395,190 +404,201 @@
 </head>
 <body>
   <div class="invoice-container" data-gold-design="n5" data-gold-invoice-type="{{gold_invoice_type}}">
-    <div class="top-content-wrap">
-      <header class="n5-header">
-        <div class="n5-ar">
-          <h2>{{seller_name}}</h2>
-          <p>{{seller_address}}</p>
-          <p>الرقم الضريبي: {{seller_tax}} · س.ت: {{seller_cr}}</p>
-        </div>
-        <div class="logo-shell">{{logo}}</div>
-        <div class="n5-en">
-          <h2>{{seller_name_en}}</h2>
-          <p>{{seller_address_en}}</p>
-          <p>VAT No.: {{seller_tax}} · C.R.: {{seller_cr}}</p>
-        </div>
-      </header>
-
-      <div class="n5-bank-ribbon">
-        <div><span>البنك:</span><b>{{bank_name}}</b></div>
-        <div><span>رقم الآيبان IBAN:</span><b dir="ltr">{{seller_iban}}</b></div>
-        <div><span>التصنيف:</span><b>{{gold_type_label}}</b></div>
-      </div>
-
-      <section class="n5-meta-frame">
-        <div class="n5-meta-inner">
-          <div class="n5-meta-block">
-            <div class="n5-meta-block-head">بيانات العميل / Customer Info</div>
-            <table>
-              <tbody>
-                <tr><th>اسم العميل</th><td>{{buyer_name}}</td></tr>
-                <tr><th>الرقم الضريبي</th><td>{{buyer_tax}}</td></tr>
-                <tr><th>العنوان</th><td>{{buyer_address}}</td></tr>
-                <tr><th>الهاتف</th><td>{{buyer_phone}}</td></tr>
-              </tbody>
-            </table>
+    <div class="n5-cert-frame">
+      <div class="top-content-wrap">
+        <header class="n5-header">
+          <div class="n5-ar">
+            <h2>{{seller_name}}</h2>
+            <p>{{seller_address}}</p>
+            <p>الرقم الضريبي: {{seller_tax}} · س.ت: {{seller_cr}}</p>
           </div>
-          <div class="n5-meta-block">
-            <div class="n5-meta-block-head">{{invoice_type}}</div>
-            <table>
-              <tbody>
-                <tr><th>رقم الفاتورة</th><td>{{invoice_number}}</td></tr>
-                <tr><th>التاريخ</th><td>{{issue_date}}</td></tr>
-                <tr><th>الوقت</th><td>{{issue_time}}</td></tr>
-                <tr><th>السداد</th><td>{{payment_method}}</td></tr>
-              </tbody>
-            </table>
+          <div class="logo-shell">{{logo}}</div>
+          <div class="n5-en">
+            <h2>{{seller_name_en}}</h2>
+            <p>{{seller_address_en}}</p>
+            <p>VAT No.: {{seller_tax}} · C.R.: {{seller_cr}}</p>
           </div>
+        </header>
+
+        <div class="n5-bank-ribbon">
+          <div><span>البنك:</span><b>{{bank_name}}</b></div>
+          <div><span>رقم الآيبان IBAN:</span><b dir="ltr">{{seller_iban}}</b></div>
+          <div><span>التصنيف:</span><b>{{gold_type_label}}</b></div>
         </div>
-        <div class="qr-box">{{qr_code}}</div>
-      </section>
 
-      <section class="items-table-container">
-        <table class="items-main-table">
-          <thead>
-            <tr>
-              <th style="width:8%">رقم الصنف</th>
-              <th style="width:20%">اسم الصنف والبيان</th>
-              <th style="width:6%">العيار</th>
-              <th style="width:9%">الوزن (جم)</th>
-              <th style="width:10%">سعر الجرام</th>
-              <th style="width:8%">الأجور</th>
-              <th style="width:11%">قبل الضريبة</th>
-              <th style="width:6%">نسبة %</th>
-              <th style="width:10%">مبلغ الضريبة</th>
-              <th style="width:12%">شامل الضريبة</th>
-            </tr>
-          </thead>
-          <tbody>{{items_rows}}</tbody>
-          <tfoot>
-            <tr>
-              <td style="text-align:right">الإجمالي</td>
-              <td>{{total_pieces}} صنف</td>
-              <td>—</td>
-              <td>{{total_weight}} جم</td>
-              <td>{{total_gold_value}}</td>
-              <td>{{total_wage}}</td>
-              <td>{{taxable_amount}}</td>
-              <td>—</td>
-              <td>{{tax_amount}}</td>
-              <td>{{grand_total}}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </section>
-    </div>
-
-    <div class="bottom-content bottom-content-wrap">
-      <section class="n5-dual-gold-row">
-        <div class="n5-karat-box">
-          <div class="n5-mini-head">
-            <span>ملخص الجرامات حسب العيار</span>
-            <span>الإجمالي: {{total_weight}} جم (معادل 21: {{weight_21_equiv}} جم)</span>
+        <section class="n5-meta-frame">
+          <div class="n5-meta-inner">
+            <div class="n5-meta-block">
+              <div class="n5-meta-block-head">بيانات العميل / Customer Info</div>
+              <table>
+                <tbody>
+                  <tr><th>اسم العميل</th><td>{{buyer_name}}</td></tr>
+                  <tr><th>الرقم الضريبي</th><td>{{buyer_tax}}</td></tr>
+                  <tr><th>العنوان</th><td>{{buyer_address}}</td></tr>
+                  <tr><th>الهاتف</th><td>{{buyer_phone}}</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="n5-meta-block">
+              <div class="n5-meta-block-head">{{invoice_type}}</div>
+              <table>
+                <tbody>
+                  <tr><th>رقم الفاتورة</th><td>{{invoice_number}}</td></tr>
+                  <tr><th>التاريخ</th><td>{{issue_date}}</td></tr>
+                  <tr><th>الوقت</th><td>{{issue_time}}</td></tr>
+                  <tr><th>السداد</th><td>{{payment_method}}</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-          <table class="n5-karat-grid">
+          <div class="qr-box">{{qr_code}}</div>
+        </section>
+
+        <section class="items-table-container">
+          <table class="items-main-table">
             <thead>
               <tr>
-                <th>18K</th>
-                <th>21K</th>
-                <th>22K</th>
-                <th>24K</th>
-                <th>أخرى</th>
-                <th>الوزن القائم</th>
+                <th style="width:8%">رقم الصنف</th>
+                <th style="width:20%">اسم الصنف والبيان</th>
+                <th style="width:6%">العيار</th>
+                <th style="width:9%">الوزن (جم)</th>
+                <th style="width:10%">سعر الجرام</th>
+                <th style="width:8%">الأجور</th>
+                <th style="width:11%">قبل الضريبة</th>
+                <th style="width:6%">نسبة %</th>
+                <th style="width:10%">مبلغ الضريبة</th>
+                <th style="width:12%">شامل الضريبة</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody>{{items_rows}}</tbody>
+            <tfoot>
               <tr>
-                <td>{{weight_18}}</td>
-                <td>{{weight_21}}</td>
-                <td>{{weight_22}}</td>
-                <td>{{weight_24}}</td>
-                <td>{{weight_other}}</td>
+                <td style="text-align:right">الإجمالي</td>
+                <td>{{total_pieces}} صنف</td>
+                <td>—</td>
                 <td>{{total_weight}} جم</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="n5-split-box">
-          <div class="n5-mini-head">
-            <span>تفصيل الذهب والأجور والضريبة</span>
-            <span>{{zatca_phase_name}}</span>
-          </div>
-          <table class="n5-split-grid">
-            <thead>
-              <tr>
-                <th>قيمة الذهب</th>
-                <th>الأجور</th>
-                <th>ضريبة الذهب</th>
-                <th>ضريبة الأجور</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
                 <td>{{total_gold_value}}</td>
                 <td>{{total_wage}}</td>
-                <td>{{gold_tax_amount}}</td>
-                <td>{{wage_tax_amount}}</td>
+                <td>{{taxable_amount}}</td>
+                <td>—</td>
+                <td>{{tax_amount}}</td>
+                <td>{{grand_total}}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </section>
+      </div>
+
+      <div class="bottom-content bottom-content-wrap">
+        <section class="n5-dual-gold-row">
+          <div class="n5-karat-box">
+            <div class="n5-mini-head">
+              <span>ملخص الجرامات حسب العيار</span>
+              <span>الإجمالي: {{total_weight}} جم (معادل 21: {{weight_21_equiv}} جم)</span>
+            </div>
+            <table class="n5-karat-grid">
+              <thead>
+                <tr>
+                  <th>18K</th>
+                  <th>21K</th>
+                  <th>22K</th>
+                  <th>24K</th>
+                  <th>أخرى</th>
+                  <th>الوزن القائم</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{weight_18}}</td>
+                  <td>{{weight_21}}</td>
+                  <td>{{weight_22}}</td>
+                  <td>{{weight_24}}</td>
+                  <td>{{weight_other}}</td>
+                  <td>{{total_weight}} جم</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="n5-split-box">
+            <div class="n5-mini-head">
+              <span>تفصيل الذهب والأجور والضريبة</span>
+              <span>{{payment_method}}</span>
+            </div>
+            <table class="n5-split-grid">
+              <thead>
+                <tr>
+                  <th>قيمة الذهب</th>
+                  <th>الأجور</th>
+                  <th>ضريبة الذهب</th>
+                  <th>ضريبة الأجور</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{total_gold_value}}</td>
+                  <td>{{total_wage}}</td>
+                  <td>{{gold_tax_amount}}</td>
+                  <td>{{wage_tax_amount}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="n5-bottom-pair">
+          <div class="n5-policy-words">
+            <div><b>المبلغ كتابة:</b> {{total_in_words}}</div>
+            <div><b>الوزن كتابة:</b> {{total_weight_words}}</div>
+            <div><b>ملاحظات وشروط الاستلام:</b> {{notes}}</div>
+          </div>
+
+          <table class="n5-fin-table">
+            <tbody>
+              <tr>
+                <th>الإجمالي قبل الخصم</th>
+                <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{subtotal}}</bdi>{{sar_symbol}}</span></td>
+              </tr>
+              <tr>
+                <th>الخصم</th>
+                <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{discount}}</bdi>{{sar_symbol}}</span></td>
+              </tr>
+              <tr>
+                <th>الصافي قبل الضريبة</th>
+                <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{taxable_amount}}</bdi>{{sar_symbol}}</span></td>
+              </tr>
+              <tr>
+                <th>ضريبة القيمة المضافة</th>
+                <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{tax_amount}}</bdi>{{sar_symbol}}</span></td>
+              </tr>
+              <tr class="n5-grand">
+                <th>صافي الفاتورة المستحق</th>
+                <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{grand_total}}</bdi>{{sar_symbol}}</span></td>
               </tr>
             </tbody>
           </table>
-        </div>
-      </section>
+        </section>
 
-      <section class="n5-bottom-pair">
-        <div class="n5-policy-words">
-          <div><b>المبلغ كتابة:</b> {{total_in_words}}</div>
-          <div><b>الوزن كتابة:</b> {{total_weight_words}}</div>
-          <div><b>ملاحظات وشروط الاستلام:</b> {{notes}}</div>
-        </div>
+        <section class="n5-sigs-cards">
+          <div class="n5-sig-card">
+            <div class="n5-sig-top">توقيع البائع / أمين الصندوق</div>
+            <div class="n5-sig-bot">الاسم والتوقيع</div>
+          </div>
+          <div class="n5-sig-card">
+            <div class="n5-sig-top">توقيع المحاسب / المدقق</div>
+            <div class="n5-sig-bot">الاعتماد والمراجعة</div>
+          </div>
+          <div class="n5-sig-card">
+            <div class="n5-sig-top">توقيع المستلم / العميل</div>
+            <div class="n5-sig-bot">الاستلام والختم</div>
+          </div>
+        </section>
 
-        <table class="n5-fin-table">
-          <tbody>
-            <tr>
-              <th>الإجمالي قبل الخصم</th>
-              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{subtotal}}</bdi>{{sar_symbol}}</span></td>
-            </tr>
-            <tr>
-              <th>الخصم</th>
-              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{discount}}</bdi>{{sar_symbol}}</span></td>
-            </tr>
-            <tr>
-              <th>الصافي قبل الضريبة</th>
-              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{taxable_amount}}</bdi>{{sar_symbol}}</span></td>
-            </tr>
-            <tr>
-              <th>ضريبة القيمة المضافة</th>
-              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{tax_amount}}</bdi>{{sar_symbol}}</span></td>
-            </tr>
-            <tr class="n5-grand">
-              <th>صافي الفاتورة المستحق</th>
-              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{grand_total}}</bdi>{{sar_symbol}}</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-
-      <section class="n5-sigs-strip">
-        <div>توقيع البائع / أمين الصندوق</div>
-        <div>توقيع المحاسب / المدقق</div>
-        <div>توقيع المستلم / العميل</div>
-      </section>
-
-      <footer class="n5-footer">
-        <span>{{seller_name}} · هاتف: {{seller_phone}} · البريد: {{seller_email}}</span>
-        <span>عيار 24: ضريبة 0% · عيارات 18 و21 و22: ضريبة 15%</span>
-      </footer>
+        <footer class="n5-footer">
+          <span>{{seller_name}} · هاتف: {{seller_phone}} · البريد: {{seller_email}}</span>
+          <span>عيار 24: ضريبة 0% · عيارات 18 و21 و22: ضريبة 15%</span>
+        </footer>
+      </div>
     </div>
   </div>
 </body>

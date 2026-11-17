@@ -1709,6 +1709,7 @@ export function fillDynamicTemplateHtml(rawHtml, { issuer = {}, client = {}, vou
     if (k === 'buyer_name' || k === 'client_name' || k === 'customer_name' || k === 'received_from' || k === 'client') {
       return partyName;
     }
+    if (k === 'buyer_code' || k === 'client_code') return client.client_code || client.code || '';
     if (k === 'buyer_tax' || k === 'client_tax' || k === 'buyer_vat') return client.tax_number || '';
     if (k === 'buyer_cr' || k === 'client_cr') return client.commercial_register || '';
     if (k === 'buyer_address' || k === 'client_address') return clientAddr;

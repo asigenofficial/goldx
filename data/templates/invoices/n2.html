@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<title>n2 — جوهرة التميز (الثلاثي المفصل)</title>
+<title>n2 — جوهرة التميز (الإطارات الدائرية الذهبية)</title>
 <style>
   @page { size: A4 portrait; margin: 0; }
   * { box-sizing: border-box; }
@@ -11,8 +11,8 @@
     padding: 0;
     direction: rtl;
     background: #ffffff;
-    color: #162a45;
-    font: 10.5px/1.4 'goldx Document', Tahoma, Arial, sans-serif;
+    color: #3d2a06;
+    font: 10px/1.36 'goldx Document', Tahoma, Arial, sans-serif;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -20,7 +20,7 @@
   .invoice-container {
     width: 210mm;
     min-height: 297mm;
-    padding: 8mm;
+    padding: 7mm 8mm;
     background: #ffffff;
     display: flex;
     flex-direction: column;
@@ -28,34 +28,50 @@
     position: relative;
     overflow: visible;
   }
+
+  /* ── إطار خارجي مستدير الزوايا باللون الذهبي الفاخر ── */
+  .n2-outer-shell {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    border: 1.6px solid #9a6d14;
+    border-radius: 16px;
+    padding: 8px 10px 7px;
+    background: #ffffff;
+    min-height: 0;
+  }
   .top-content-wrap {
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
     min-height: 0;
   }
-  .n2-top-band {
+
+  /* ── الترويسة داخل بطاقة مستديرة ذهبية ── */
+  .n2-header-card {
+    border: 1.2px solid #c59b27;
+    border-radius: 11px;
+    background: #fdf9ee;
+    padding: 7px 12px;
     display: grid;
-    grid-template-columns: 1fr 90px 1fr;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: 10px;
-    padding-bottom: 8px;
-    border-bottom: 1.5px solid #b4832c;
-    margin-bottom: 6px;
+    margin-bottom: 7px;
     flex-shrink: 0;
   }
   .n2-seller-ar {
     text-align: right;
   }
   .n2-seller-ar h2 {
-    font-size: 14.5px;
+    font-size: 14px;
     font-weight: 800;
-    color: #162a45;
+    color: #78520d;
     margin-bottom: 2px;
   }
   .n2-seller-ar p, .n2-seller-en p {
-    font-size: 9px;
-    color: #475569;
+    font-size: 8.8px;
+    color: #6b5322;
     line-height: 1.4;
   }
   .n2-seller-en {
@@ -63,19 +79,19 @@
     direction: ltr;
   }
   .n2-seller-en h2 {
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 800;
-    color: #162a45;
+    color: #78520d;
     margin-bottom: 2px;
   }
   .logo-shell {
-    width: 82px;
-    height: 62px;
+    width: 78px;
+    height: 54px;
     margin: 0 auto;
-    border: 1px solid #d4b97f;
-    border-radius: 8px;
+    border: 1px solid #d4af37;
+    border-radius: 50%;
     padding: 4px;
-    background: #fafbfc;
+    background: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -86,84 +102,99 @@
     object-fit: contain;
     display: block;
   }
-  .n2-heading-row {
-    text-align: center;
+
+  /* ── كبسولة العنوان المركزية ── */
+  .n2-pill-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 7px;
+    flex-shrink: 0;
+  }
+  .n2-title-pill {
+    border: 1.3px solid #9a6d14;
+    border-radius: 22px;
+    background: #9a6d14;
+    color: #fffbeb;
+    padding: 4px 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .n2-title-pill h1 {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #ffffff;
+  }
+  .n2-title-pill span {
+    font-size: 10px;
+    font-weight: 700;
+    color: #fde68a;
+    border-right: 1px solid rgba(255, 255, 255, 0.35);
+    padding-right: 12px;
+  }
+
+  /* ── 3 بطاقات مستديرة متجاورة: العميل | المستند | الباركود ── */
+  .n2-triple-meta {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr 108px;
+    gap: 8px;
+    align-items: stretch;
     margin-bottom: 8px;
     flex-shrink: 0;
   }
-  .n2-heading-row h1 {
-    font-size: 14px;
-    font-weight: 800;
-    color: #162a45;
-  }
-  .n2-heading-row .n2-vat-line {
-    font-size: 9.5px;
-    font-weight: 700;
-    color: #8a6017;
-    margin-top: 2px;
-  }
-  .n2-triple-meta {
-    display: grid;
-    grid-template-columns: 1.35fr 132px 0.95fr;
-    gap: 10px;
-    align-items: stretch;
-    margin-bottom: 10px;
-    flex-shrink: 0;
-  }
-  .n2-card {
-    border: 1.5px solid #162a45;
-    border-radius: 8px;
+  .n2-round-card {
+    border: 1.2px solid #c59b27;
+    border-radius: 10px;
     overflow: hidden;
     background: #ffffff;
+    display: flex;
+    flex-direction: column;
   }
   .n2-card-title {
-    background: #f1f5f9;
-    border-bottom: 1px solid #cbd5e1;
+    background: #f9f1db;
+    border-bottom: 1px solid #e2ca8a;
     padding: 3px 8px;
-    font-size: 9.5px;
+    font-size: 9px;
     font-weight: 800;
-    color: #162a45;
+    color: #78520d;
     display: flex;
     justify-content: space-between;
   }
-  .n2-card table {
+  .n2-round-card table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 9.5px;
+    font-size: 9px;
+    flex: 1 1 auto;
   }
-  .n2-card th, .n2-card td {
-    border-bottom: 1px solid #e2e8f0;
-    padding: 4px 7px;
+  .n2-round-card th, .n2-round-card td {
+    border-bottom: 1px solid #eee1bd;
+    padding: 3.5px 6px;
   }
-  .n2-card tr:last-child th, .n2-card tr:last-child td {
+  .n2-round-card tr:last-child th, .n2-round-card tr:last-child td {
     border-bottom: 0;
   }
-  .n2-card th {
+  .n2-round-card th {
     width: 34%;
-    background: #f8fafc;
-    color: #334155;
+    background: #fdf9ee;
+    color: #6b4c10;
     text-align: right;
     font-weight: 700;
-    border-left: 1px solid #e2e8f0;
+    border-left: 1px solid #eee1bd;
   }
-  .n2-card td {
+  .n2-round-card td {
     text-align: right;
-    color: #0f172a;
+    color: #291d07;
     font-weight: 600;
     overflow-wrap: anywhere;
   }
-  .n2-card td.n2-center-val {
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-  }
   .qr-box {
-    width: 130px;
-    height: 130px;
-    min-width: 130px;
-    min-height: 130px;
+    width: 106px;
+    height: 106px;
+    min-width: 106px;
+    min-height: 106px;
     background: #ffffff;
-    border: 1.5px solid #b4832c;
-    border-radius: 8px;
+    border: 1.2px solid #c59b27;
+    border-radius: 10px;
     padding: 4px;
     display: flex;
     align-items: center;
@@ -177,6 +208,8 @@
     display: block;
     object-fit: contain;
   }
+
+  /* ── جدول الأصناف برأس ثنائي الصف لعمود الضريبة المدمج ── */
   .items-table-container {
     flex: 1 1 auto;
     display: flex;
@@ -187,43 +220,43 @@
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
-    border: 1.5px solid #162a45;
+    border: 1.3px solid #9a6d14;
   }
   .items-main-table thead th {
-    background: #162a45;
-    color: #f8fafc;
-    border: 1px solid #2b456b;
-    padding: 5px 3px;
+    background: #f9f1db;
+    color: #5c3f09;
+    border: 1px solid #c59b27;
+    padding: 4px 2px;
     text-align: center;
-    font-size: 9.5px;
-    font-weight: 700;
+    font-size: 8.8px;
+    font-weight: 800;
+    line-height: 1.22;
+  }
+  .items-main-table thead th small {
+    display: block;
+    font-size: 7.2px;
+    color: #8a6017;
+    font-weight: 600;
   }
   .items-main-table tbody td {
-    border: 1px solid #cbd5e1;
-    padding: 5px 3px;
+    border: 1px solid #e2ca8a;
+    padding: 4.5px 2px;
     text-align: center;
-    font-size: 9.5px;
+    font-size: 9px;
+    color: #291d07;
     vertical-align: top;
     font-variant-numeric: tabular-nums;
     overflow-wrap: anywhere;
   }
-  .items-main-table tbody td:nth-child(2) {
+  .items-main-table tbody td:nth-child(3) {
     text-align: right;
+    font-weight: 600;
   }
   .items-main-table tbody tr:nth-child(even) {
-    background: #f8fafc;
+    background: #fdfaf0;
   }
-  .items-main-table tfoot td {
-    background: #e9eef5;
-    color: #162a45;
-    border: 1px solid #94a3b8;
-    border-top: 2px solid #162a45;
-    padding: 5px 3px;
-    text-align: center;
-    font-size: 9.5px;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-  }
+
+  /* ── القسم السفلي المستدير: العيارات، التفصيل، المالي، التواقيع ── */
   .bottom-content {
     margin-top: auto;
     padding-top: 8px;
@@ -239,154 +272,123 @@
     margin-bottom: 6px;
   }
   .n2-subbox {
-    border: 1px solid #94a3b8;
-    border-radius: 6px;
+    border: 1.2px solid #c59b27;
+    border-radius: 9px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
   }
   .n2-subbox-head {
-    background: #162a45;
-    color: #fde68a;
+    background: #9a6d14;
+    color: #fffbeb;
     text-align: center;
-    padding: 4px 6px;
-    font-size: 9.5px;
+    padding: 3.5px 6px;
+    font-size: 9px;
     font-weight: 800;
   }
-  .n2-tax-split {
+  .n2-tax-split, .n2-karat-matrix, .n2-fin-table {
     width: 100%;
     height: 100%;
     border-collapse: collapse;
-    font-size: 9.5px;
+    font-size: 9px;
   }
-  .n2-tax-split th, .n2-tax-split td {
-    border: 1px solid #cbd5e1;
-    padding: 5px 6px;
-    text-align: center;
+  .n2-tax-split th, .n2-tax-split td,
+  .n2-karat-matrix th, .n2-karat-matrix td,
+  .n2-fin-table th, .n2-fin-table td {
+    border: 1px solid #e2ca8a;
+    padding: 4px 5px;
     font-variant-numeric: tabular-nums;
   }
-  .n2-tax-split th {
-    background: #f1f5f9;
-    color: #162a45;
-    font-weight: 700;
-  }
-  .n2-tax-split td {
-    font-weight: 800;
-    color: #0f172a;
-    font-size: 10px;
-  }
-  .n2-karat-matrix {
-    width: 100%;
-    height: 100%;
-    border-collapse: collapse;
-    font-size: 9.5px;
-  }
-  .n2-karat-matrix th, .n2-karat-matrix td {
-    border: 1px solid #cbd5e1;
-    padding: 4px 6px;
+  .n2-tax-split th, .n2-karat-matrix th {
+    background: #fdf9ee;
+    color: #78520d;
     text-align: center;
-    font-variant-numeric: tabular-nums;
-  }
-  .n2-karat-matrix th {
-    background: #f8fafc;
-    color: #162a45;
     font-weight: 700;
-    width: 24%;
   }
-  .n2-karat-matrix td {
+  .n2-tax-split td, .n2-karat-matrix td {
+    text-align: center;
     font-weight: 800;
-    color: #0f172a;
-    width: 26%;
+    color: #291d07;
   }
-  .n2-karat-total-row th {
-    background: #fef9ec;
-    color: #8a6017;
-  }
-  .n2-karat-total-row td {
-    background: #fef9ec;
-    color: #162a45;
+  .n2-karat-total-row th, .n2-karat-total-row td {
+    background: #f9f1db;
+    color: #5c3f09;
     font-weight: 900;
   }
-  .n2-fin-table {
-    width: 100%;
-    height: 100%;
-    border-collapse: collapse;
-    font-size: 9.5px;
-  }
-  .n2-fin-table th, .n2-fin-table td {
-    border: 1px solid #cbd5e1;
-    padding: 4px 7px;
-  }
   .n2-fin-table th {
-    background: #f8fafc;
-    color: #334155;
+    background: #fdf9ee;
+    color: #6b4c10;
     text-align: right;
     font-weight: 700;
     width: 56%;
   }
   .n2-fin-table td {
     text-align: left;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    color: #291d07;
   }
   .n2-fin-table tr.n2-grand th {
-    background: #162a45;
+    background: #9a6d14;
     color: #ffffff;
     font-weight: 800;
   }
   .n2-fin-table tr.n2-grand td {
-    background: #f5ecd6;
-    color: #162a45;
+    background: #f5e6bf;
+    color: #5c3f09;
     font-weight: 900;
-    font-size: 10.5px;
+    font-size: 10px;
   }
   .n2-tafqeet-bar {
-    border: 1px solid #b4832c;
-    background: #fdfaf2;
-    border-radius: 4px;
+    border: 1px solid #c59b27;
+    background: #fdf9ee;
+    border-radius: 8px;
     padding: 4px 10px;
     display: flex;
     justify-content: space-between;
-    gap: 12px;
-    font-size: 9px;
+    gap: 10px;
+    font-size: 8.8px;
     font-weight: 700;
-    color: #162a45;
+    color: #5c3f09;
     margin-bottom: 6px;
   }
   .n2-notes-row {
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    padding: 5px 8px;
-    font-size: 9px;
-    color: #334155;
-    background: #f8fafc;
-    margin-bottom: 10px;
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
+    border: 1px solid #e2ca8a;
+    border-radius: 8px;
+    padding: 4px 9px;
+    font-size: 8.8px;
+    color: #5c4314;
+    background: #fdfaf2;
+    margin-bottom: 8px;
   }
-  .n2-sigs-bar {
+  .n2-sigs-row {
+    border-top: 1px solid #e2ca8a;
+    padding-top: 6px;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
-    padding-top: 14px;
-    margin-bottom: 6px;
+    gap: 14px;
     text-align: center;
-    font-size: 9.5px;
-    font-weight: 700;
-    color: #162a45;
   }
-  .n2-sigs-bar div {
-    border-top: 1.5px solid #162a45;
-    padding-top: 4px;
+  .n2-sig-unit .n2-sig-en {
+    font-size: 8px;
+    font-weight: 800;
+    color: #8a6017;
   }
-  .n2-footer {
-    border-top: 1px solid #cbd5e1;
-    padding-top: 4px;
+  .n2-sig-unit .n2-sig-gap {
+    height: 20px;
+  }
+  .n2-sig-unit .n2-sig-ar {
+    font-size: 9px;
+    font-weight: 800;
+    color: #5c3f09;
+  }
+  .n2-outer-footer {
+    margin-top: 5px;
+    padding: 0 4px;
     display: flex;
     justify-content: space-between;
-    font-size: 8.5px;
-    color: #64748b;
+    font-size: 8.2px;
+    color: #78520d;
+    flex-shrink: 0;
   }
   .sar-amount {
     display: inline-flex !important;
@@ -405,191 +407,195 @@
 </head>
 <body>
   <div class="invoice-container" data-gold-design="n2" data-gold-invoice-type="{{gold_invoice_type}}">
-    <div class="top-content-wrap">
-      <header class="n2-top-band">
-        <div class="n2-seller-ar">
-          <h2>{{seller_name}}</h2>
-          <p>{{seller_address}}</p>
-          <p>س.ت: {{seller_cr}} · هاتف: {{seller_phone}}</p>
-        </div>
-        <div class="logo-shell">{{logo}}</div>
-        <div class="n2-seller-en">
-          <h2>{{seller_name_en}}</h2>
-          <p>{{seller_address_en}}</p>
-          <p>C.R.: {{seller_cr}} · Tel: {{seller_phone}}</p>
-        </div>
-      </header>
+    <div class="n2-outer-shell">
+      <div class="top-content-wrap">
+        <header class="n2-header-card">
+          <div class="n2-seller-ar">
+            <h2>{{seller_name}}</h2>
+            <p>{{seller_address}}</p>
+            <p>الرقم الضريبي: {{seller_tax}} · س.ت: {{seller_cr}}</p>
+          </div>
+          <div class="logo-shell">{{logo}}</div>
+          <div class="n2-seller-en">
+            <h2>{{seller_name_en}}</h2>
+            <p>{{seller_address_en}}</p>
+            <p>VAT: {{seller_tax}} · C.R.: {{seller_cr}}</p>
+          </div>
+        </header>
 
-      <div class="n2-heading-row">
-        <h1>{{invoice_type}} / Sales Tax Invoice</h1>
-        <div class="n2-vat-line">الرقم الضريبي للمنشأة: {{seller_tax}} · {{gold_type_label}}</div>
-      </div>
-
-      <section class="n2-triple-meta">
-        <div class="n2-card">
-          <div class="n2-card-title"><span>فاتورة إلى</span><span>Bill To</span></div>
-          <table>
-            <tbody>
-              <tr><th>اسم العميل</th><td>{{buyer_name}}</td></tr>
-              <tr><th>العنوان</th><td>{{buyer_address}}</td></tr>
-              <tr><th>الرقم الضريبي</th><td>{{buyer_tax}}</td></tr>
-              <tr><th>الهاتف / الاتصال</th><td>{{buyer_phone}}</td></tr>
-            </tbody>
-          </table>
+        <div class="n2-pill-wrap">
+          <div class="n2-title-pill">
+            <h1>{{invoice_type}}</h1>
+            <span>{{gold_type_label}}</span>
+            <span>رقم {{invoice_number}}</span>
+          </div>
         </div>
 
-        <div class="qr-box">{{qr_code}}</div>
+        <section class="n2-triple-meta">
+          <div class="n2-round-card">
+            <div class="n2-card-title"><span>بيانات العميل / الحساب</span><span>Bill To</span></div>
+            <table>
+              <tbody>
+                <tr><th>اسم العميل</th><td>{{buyer_name}}</td></tr>
+                <tr><th>العنوان</th><td>{{buyer_address}}</td></tr>
+                <tr><th>الرقم الضريبي</th><td>{{buyer_tax}}</td></tr>
+                <tr><th>رقم الجوال</th><td>{{buyer_phone}}</td></tr>
+              </tbody>
+            </table>
+          </div>
 
-        <div class="n2-card">
-          <div class="n2-card-title"><span>بيانات الفاتورة</span><span>Details</span></div>
-          <table>
-            <tbody>
-              <tr><th>رقم الفاتورة</th><td class="n2-center-val">{{invoice_number}}</td></tr>
-              <tr><th>التاريخ</th><td class="n2-center-val">{{issue_date}}</td></tr>
-              <tr><th>الوقت</th><td class="n2-center-val">{{issue_time}}</td></tr>
-              <tr><th>السداد</th><td class="n2-center-val">{{payment_method}}</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+          <div class="n2-round-card">
+            <div class="n2-card-title"><span>تفاصيل المستند</span><span>Document</span></div>
+            <table>
+              <tbody>
+                <tr><th>رقم الفاتورة</th><td>{{invoice_number}}</td></tr>
+                <tr><th>التاريخ</th><td>{{issue_date}}</td></tr>
+                <tr><th>الوقت</th><td>{{issue_time}}</td></tr>
+                <tr><th>نوع السداد</th><td>{{payment_method}}</td></tr>
+              </tbody>
+            </table>
+          </div>
 
-      <section class="items-table-container">
-        <table class="items-main-table">
-          <thead>
-            <tr>
-              <th style="width:4%">#</th>
-              <th style="width:22%">البيان والصنف</th>
-              <th style="width:6%">العيار</th>
-              <th style="width:9%">الوزن (جم)</th>
-              <th style="width:10%">سعر الجرام</th>
-              <th style="width:8%">الأجور</th>
-              <th style="width:11%">قبل الضريبة</th>
-              <th style="width:7%">نسبة %</th>
-              <th style="width:10%">قيمة الضريبة</th>
-              <th style="width:13%">شامل الضريبة</th>
-            </tr>
-          </thead>
-          <tbody>{{items_rows}}</tbody>
-          <tfoot>
-            <tr>
-              <td></td>
-              <td style="text-align:right">المجموع</td>
-              <td>—</td>
-              <td>{{total_weight}} جم</td>
-              <td>{{total_gold_value}}</td>
-              <td>{{total_wage}}</td>
-              <td>{{taxable_amount}}</td>
-              <td>—</td>
-              <td>{{tax_amount}}</td>
-              <td>{{grand_total}}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </section>
-    </div>
+          <div class="qr-box">{{qr_code}}</div>
+        </section>
 
-    <div class="bottom-content bottom-content-wrap">
-      <section class="n2-three-summary">
-        <div class="n2-subbox">
-          <div class="n2-subbox-head">تفاصيل الضريبة (الذهب / الأجور)</div>
-          <table class="n2-tax-split">
+        <section class="items-table-container">
+          <table class="items-main-table" data-columns="م,رقم الصنف,البيان,العيار,الوزن,سعر الجرام,الأجور,قبل الضريبة,قيمة الضريبة,نسبة الضريبة %,شامل الضريبة">
             <thead>
               <tr>
-                <th>ضريبة الذهب</th>
-                <th>ضريبة الأجور</th>
+                <th rowspan="2" style="width:4%">م</th>
+                <th rowspan="2" style="width:9%">رقم الصنف<small>Item No</small></th>
+                <th rowspan="2" style="width:18%">البيان والصنف<small>Description</small></th>
+                <th rowspan="2" style="width:6%">العيار<small>Karat</small></th>
+                <th rowspan="2" style="width:9%">الوزن (جم)<small>Weight</small></th>
+                <th rowspan="2" style="width:9%">سعر الجرام<small>Gold Price</small></th>
+                <th rowspan="2" style="width:9%">الأجور<small>Making</small></th>
+                <th rowspan="2" style="width:11%">قبل الضريبة<small>Taxable</small></th>
+                <th colspan="2" style="width:13%">الضريبة</th>
+                <th rowspan="2" style="width:12%">شامل الضريبة<small>Total</small></th>
+              </tr>
+              <tr>
+                <th style="width:8%">قيمة Value</th>
+                <th style="width:5%">%</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{gold_tax_amount}}</bdi>{{sar_symbol}}</span></td>
-                <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{wage_tax_amount}}</bdi>{{sar_symbol}}</span></td>
-              </tr>
-              <tr>
-                <th>إجمالي قيمة الذهب</th>
-                <th>إجمالي الأجور</th>
-              </tr>
-              <tr>
-                <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{total_gold_value}}</bdi>{{sar_symbol}}</span></td>
-                <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{total_wage}}</bdi>{{sar_symbol}}</span></td>
-              </tr>
-            </tbody>
+            <tbody>{{items_rows}}</tbody>
           </table>
-        </div>
-
-        <div class="n2-subbox">
-          <div class="n2-subbox-head">مجاميع العيارات (إجماليات الجرامات)</div>
-          <table class="n2-karat-matrix">
-            <tbody>
-              <tr>
-                <th>العيار 18</th><td>{{weight_18}} جم</td>
-                <th>العيار 21</th><td>{{weight_21}} جم</td>
-              </tr>
-              <tr>
-                <th>العيار 22</th><td>{{weight_22}} جم</td>
-                <th>العيار 24</th><td>{{weight_24}} جم</td>
-              </tr>
-              <tr>
-                <th>أخرى</th><td>{{weight_other}} جم</td>
-                <th>عدد القطع</th><td>{{total_pieces}}</td>
-              </tr>
-              <tr class="n2-karat-total-row">
-                <th>إجمالي القائم</th><td>{{total_weight}} جم</td>
-                <th>معادل 21</th><td>{{weight_21_equiv}} جم</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="n2-subbox">
-          <div class="n2-subbox-head">الملخص المالي</div>
-          <table class="n2-fin-table">
-            <tbody>
-              <tr>
-                <th>الإجمالي قبل الخصم</th>
-                <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{subtotal}}</bdi>{{sar_symbol}}</span></td>
-              </tr>
-              <tr>
-                <th>الخصم</th>
-                <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{discount}}</bdi>{{sar_symbol}}</span></td>
-              </tr>
-              <tr>
-                <th>الخاضع للضريبة</th>
-                <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{taxable_amount}}</bdi>{{sar_symbol}}</span></td>
-              </tr>
-              <tr>
-                <th>ضريبة القيمة المضافة</th>
-                <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{tax_amount}}</bdi>{{sar_symbol}}</span></td>
-              </tr>
-              <tr class="n2-grand">
-                <th>إجمالي الفاتورة مع الضريبة</th>
-                <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{grand_total}}</bdi>{{sar_symbol}}</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <div class="n2-tafqeet-bar">
-        <span><b>المبلغ كتابة:</b> {{total_in_words}}</span>
-        <span><b>الوزن كتابة:</b> {{total_weight_words}}</span>
+        </section>
       </div>
 
-      <div class="n2-notes-row">
-        <span><b>ملاحظات:</b> {{notes}}</span>
-        <span style="white-space:nowrap"><b>المرحلة:</b> {{zatca_phase_name}}</span>
+      <div class="bottom-content bottom-content-wrap">
+        <section class="n2-three-summary">
+          <div class="n2-subbox">
+            <div class="n2-subbox-head">تفاصيل الذهب والأجور</div>
+            <table class="n2-tax-split">
+              <thead>
+                <tr>
+                  <th>ضريبة الذهب</th>
+                  <th>ضريبة الأجور</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{gold_tax_amount}}</bdi>{{sar_symbol}}</span></td>
+                  <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{wage_tax_amount}}</bdi>{{sar_symbol}}</span></td>
+                </tr>
+                <tr>
+                  <th>قيمة الذهب</th>
+                  <th>إجمالي الأجور</th>
+                </tr>
+                <tr>
+                  <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{total_gold_value}}</bdi>{{sar_symbol}}</span></td>
+                  <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{total_wage}}</bdi>{{sar_symbol}}</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="n2-subbox">
+            <div class="n2-subbox-head">مجاميع العيارات (جم)</div>
+            <table class="n2-karat-matrix">
+              <tbody>
+                <tr>
+                  <th>18K</th><td>{{weight_18}}</td>
+                  <th>21K</th><td>{{weight_21}}</td>
+                </tr>
+                <tr>
+                  <th>22K</th><td>{{weight_22}}</td>
+                  <th>24K</th><td>{{weight_24}}</td>
+                </tr>
+                <tr>
+                  <th>أخرى</th><td>{{weight_other}}</td>
+                  <th>البنود</th><td>{{total_pieces}}</td>
+                </tr>
+                <tr class="n2-karat-total-row">
+                  <th>القائم</th><td>{{total_weight}} جم</td>
+                  <th>معادل 21</th><td>{{weight_21_equiv}} جم</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="n2-subbox">
+            <div class="n2-subbox-head">الملخص المالي</div>
+            <table class="n2-fin-table">
+              <tbody>
+                <tr>
+                  <th>الإجمالي قبل الخصم</th>
+                  <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{subtotal}}</bdi>{{sar_symbol}}</span></td>
+                </tr>
+                <tr>
+                  <th>الخصم</th>
+                  <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{discount}}</bdi>{{sar_symbol}}</span></td>
+                </tr>
+                <tr>
+                  <th>الخاضع للضريبة</th>
+                  <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{taxable_amount}}</bdi>{{sar_symbol}}</span></td>
+                </tr>
+                <tr>
+                  <th>ضريبة القيمة المضافة</th>
+                  <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{tax_amount}}</bdi>{{sar_symbol}}</span></td>
+                </tr>
+                <tr class="n2-grand">
+                  <th>صافي الفاتورة</th>
+                  <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{grand_total}}</bdi>{{sar_symbol}}</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <div class="n2-tafqeet-bar">
+          <span><b>المبلغ كتابة:</b> {{total_in_words}}</span>
+          <span><b>الوزن كتابة:</b> {{total_weight_words}}</span>
+        </div>
+
+        <div class="n2-notes-row"><b>ملاحظات:</b> {{notes}}</div>
+
+        <section class="n2-sigs-row">
+          <div class="n2-sig-unit">
+            <div class="n2-sig-en">CUSTOMER'S SIGNATURE</div>
+            <div class="n2-sig-gap"></div>
+            <div class="n2-sig-ar">توقيع العميل</div>
+          </div>
+          <div class="n2-sig-unit">
+            <div class="n2-sig-en">CHECKED BY</div>
+            <div class="n2-sig-gap"></div>
+            <div class="n2-sig-ar">توقيع المدقق</div>
+          </div>
+          <div class="n2-sig-unit">
+            <div class="n2-sig-en">AUTHORISED SIGNATURE</div>
+            <div class="n2-sig-gap"></div>
+            <div class="n2-sig-ar">توقيع أمين الصندوق</div>
+          </div>
+        </section>
       </div>
-
-      <section class="n2-sigs-bar">
-        <div>توقيع العميل</div>
-        <div>راجعه / المحاسب</div>
-        <div>مفوض من قبل</div>
-      </section>
-
-      <footer class="n2-footer">
-        <span>{{seller_name}} · {{seller_phone}}</span>
-        <span>عيار 24: ضريبة 0% · عيارات 18 و21 و22: ضريبة 15%</span>
-      </footer>
     </div>
+
+    <footer class="n2-outer-footer">
+      <span>{{seller_name}} · {{seller_phone}}</span>
+      <span>عيار 24 معفى (0%) · عيارات 18 و21 و22 خاضعة لضريبة 15%</span>
+    </footer>
   </div>
 </body>
 </html>
