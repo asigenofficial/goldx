@@ -588,10 +588,6 @@ table.payment-mini-table td {
         <div class="title-en" id="hdr-seller-en">{{seller_name_en}}</div>
         <div class="header-meta-grid">
           <div class="meta-row">
-            <div class="meta-col-right"><span id="hdr-branch">{{seller_branch}}</span></div>
-            <div class="meta-col-left"><span>رخصة المعادن : </span><span id="hdr-license">{{seller_license}}</span></div>
-          </div>
-          <div class="meta-row">
             <div class="meta-col-right"><span>السجل التجاري : </span><span id="hdr-cr">{{seller_cr}}</span></div>
             <div class="meta-col-left"><span dir="ltr">VAT : <span id="hdr-tax">{{seller_tax}}</span></span></div>
           </div>
@@ -606,7 +602,7 @@ table.payment-mini-table td {
     <!-- ─── 2. شريط عنوان الفاتورة ورمز QR ─── -->
     <section class="title-qr-row">
       <div class="invoice-title-area">
-        <h2 id="invoice-main-title">فاتورة ضريبية ( بيع مشغول آجل )</h2>
+        <h2 id="invoice-main-title">{{invoice_type}} &nbsp;&nbsp; أجور فقط</h2>
       </div>
       <div class="qr-box-left">
         {{qr_code}}
@@ -1085,26 +1081,7 @@ table.payment-mini-table td {
     payMethodName.textContent = 'آجل';
   }
 
-  // ضبط عنوان الفاتورة بذكاء من داخل القالب فقط: إذا كانت نقدية تظهر (بيع مشغول عاجل)، وإذا كانت آجل تظهر (بيع مشغول آجل)
-  var mainTitleEl = document.getElementById('invoice-main-title');
-  var currentPay = (payMethodName ? payMethodName.textContent : rawPayMethod).toLowerCase();
-  if (mainTitleEl) {
-    if (currentPay.indexOf('نقد') !== -1 || currentPay.indexOf('cash') !== -1) {
-      mainTitleEl.textContent = 'فاتورة ضريبية ( بيع مشغول عاجل )';
-    } else {
-      mainTitleEl.textContent = 'فاتورة ضريبية ( بيع مشغول آجل )';
-    }
-  }
-
   // 9. تدقيق نصوص الترويسة الذهبية الانسيابية
-  var branchEl = document.getElementById('hdr-branch');
-  if (branchEl && (!branchEl.textContent.trim() || branchEl.textContent.indexOf('{{') !== -1)) {
-    branchEl.textContent = 'فرع الذهب والمجوهرات';
-  }
-  var licenseEl = document.getElementById('hdr-license');
-  if (licenseEl && (!licenseEl.textContent.trim() || licenseEl.textContent.indexOf('{{') !== -1)) {
-    licenseEl.textContent = '11/40301936';
-  }
   var crEl = document.getElementById('hdr-cr');
   if (crEl && (!crEl.textContent.trim() || crEl.textContent.indexOf('{{') !== -1)) {
     crEl.textContent = '4030181123';
