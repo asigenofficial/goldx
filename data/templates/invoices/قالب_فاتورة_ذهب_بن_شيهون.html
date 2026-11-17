@@ -272,11 +272,12 @@
     table.box-table td {
       border-bottom: 1px solid #000000;
       border-right: 1px solid #000000;
-      padding: 0;
-      height: 18px;
+      padding: 2px 4px;
+      height: auto;
+      min-height: 18px;
       vertical-align: middle;
       box-sizing: border-box;
-      font-size: 8.5px;
+      font-size: 8.2px;
     }
 
     table.box-table td:first-child {
@@ -289,7 +290,7 @@
 
     table.box-table td.cell-lbl {
       background: #ffffff;
-      padding: 0 5px;
+      padding: 2px 5px;
       vertical-align: middle;
       box-sizing: border-box;
     }
@@ -299,58 +300,66 @@
       flex-direction: row;
       justify-content: space-between;
       align-items: center;
+      gap: 4px;
       width: 100%;
       height: 100%;
-      line-height: 1.1;
+      line-height: 1.15;
       box-sizing: border-box;
     }
 
     .lbl-row .en-txt {
-      font-size: 8px;
+      font-size: 7.5px;
       font-family: Arial, sans-serif;
       font-weight: 700;
       color: #000000;
       text-align: left;
+      white-space: nowrap;
     }
 
     .lbl-row .ar-txt {
-      font-size: 8.5px;
+      font-size: 8px;
       font-weight: 700;
       color: #000000;
       text-align: right;
+      white-space: nowrap;
     }
 
     table.box-table td.cell-val {
       background: #ffffff;
       font-weight: 700;
-      font-size: 8.5px;
+      font-size: 8px;
       text-align: center;
       direction: rtl;
       font-variant-numeric: tabular-nums;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      white-space: normal;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      line-height: 1.2;
       color: #000000;
-      padding: 0 4px;
+      padding: 2px 4px;
       vertical-align: middle;
       box-sizing: border-box;
     }
 
-    /* أوزان أعمدة جدول الشركة (تسمية على اليسار 38% | قيمة زرقاء على اليمين 62% كالمتبقي) */
-    .party-col-company table.box-table td.cell-lbl { width: 38%; }
+    /* أوزان أعمدة جدول الشركة (تسمية على اليسار 35% | قيمة زرقاء على اليمين 65%) */
+    .party-col-company table.box-table td.cell-lbl { width: 35%; }
     .party-col-company table.box-table td.cell-val {
-      width: 62%;
+      width: 65%;
       color: #0f356c !important; /* لون الخط الأزرق الكحلي لبيانات الشركة كالمتبقي */
       font-weight: 700 !important;
     }
 
-    /* أوزان أعمدة جدول العميل (قيمة زرقاء على اليسار 62% | تسمية سوداء على اليمين 38%) */
+    /* أوزان أعمدة جدول العميل (قيمة زرقاء على اليسار 65% | تسمية سوداء على اليمين 35%) */
     .party-col-customer table.box-table td.cell-val {
-      width: 62%;
+      width: 65%;
       color: #0f356c !important; /* لون الخط الأزرق الكحلي لبيانات العميل */
       font-weight: 700 !important;
     }
-    .party-col-customer table.box-table td.cell-lbl { width: 38%; }
+    .party-col-customer table.box-table td.cell-lbl { width: 35%; }
+
+    table.addr-table-company {
+      margin-top: auto;
+    }
 
     .cell-flex-lbl {
       display: flex;
@@ -394,11 +403,13 @@
     table.addr-table-customer td {
       border-bottom: 1px solid #000000;
       border-right: 1px solid #000000;
-      padding: 0 3px;
-      height: 17px;
+      padding: 2px 4px;
+      height: auto;
+      min-height: 17px;
       vertical-align: middle;
       text-align: center;
-      font-size: 8.5px;
+      font-size: 8.2px;
+      line-height: 1.2;
       box-sizing: border-box;
     }
 
@@ -416,17 +427,22 @@
       background: #ffffff;
       font-weight: 700;
       color: #000000;
-      text-align: center;
+      text-align: center !important;
+      direction: rtl;
+      white-space: nowrap;
     }
 
     .addr-val {
       background: #ffffff;
       font-weight: 700 !important;
       color: #0f356c !important; /* لون الخط الأزرق الكحلي لجميع قيم العناوين مثل المتبقي */
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      text-align: center;
+      direction: rtl !important;
+      text-align: center !important;
+      vertical-align: middle !important;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      line-height: 1.2;
     }
 
     /* نصوص العميل باللون الأزرق المطابق للصورة (المنطقة، المدينة، الحي، الشارع، وأرقام العنوان) */
@@ -1038,27 +1054,9 @@
               </tr>
               <tr>
                 <td class="cell-lbl">
-                  <div class="lbl-row"><span class="en-txt">License</span><span class="ar-txt">رقم الترخيص</span></div>
-                </td>
-                <td class="cell-val" id="seller-lic-cell">{{seller_license}}</td>
-              </tr>
-              <tr>
-                <td class="cell-lbl">
                   <div class="lbl-row"><span class="en-txt">Mobile No.</span><span class="ar-txt">رقم الجوال</span></div>
                 </td>
                 <td class="cell-val" id="seller-phone-cell">{{seller_phone}}</td>
-              </tr>
-              <tr>
-                <td class="cell-lbl">
-                  <div class="lbl-row"><span class="en-txt">Branch</span><span class="ar-txt">الفرع</span></div>
-                </td>
-                <td class="cell-val" id="seller-branch-cell">{{seller_branch}}</td>
-              </tr>
-              <tr>
-                <td class="cell-lbl">
-                  <div class="lbl-row"><span class="en-txt">Seller</span><span class="ar-txt">البائع</span></div>
-                </td>
-                <td class="cell-val" id="seller-seller-cell">{{notes}}</td>
               </tr>
             </tbody>
           </table>
@@ -1077,26 +1075,26 @@
             </thead>
             <tbody>
               <tr>
-                <td class="addr-lbl" style="width:20%;">المنطقة</td>
-                <td class="addr-val" style="width:30%;" id="seller-addr-reg">مكة المكرمة</td>
-                <td class="addr-lbl" style="width:25%;">رقم المبنى</td>
-                <td class="addr-val" style="width:25%;" id="seller-addr-bno">2222</td>
+                <td class="addr-lbl" style="width:18%;">المنطقة</td>
+                <td class="addr-val" style="width:40%;" id="seller-addr-reg">مكة المكرمة</td>
+                <td class="addr-lbl" style="width:24%;">رقم المبنى</td>
+                <td class="addr-val" style="width:18%;" id="seller-addr-bno"></td>
               </tr>
               <tr>
                 <td class="addr-lbl">المدينة</td>
                 <td class="addr-val" id="seller-addr-city">جدة</td>
                 <td class="addr-lbl">الرقم الإضافي</td>
-                <td class="addr-val" id="seller-addr-extra">6300</td>
+                <td class="addr-val" id="seller-addr-extra"></td>
               </tr>
               <tr>
                 <td class="addr-lbl">الحي</td>
                 <td class="addr-val" id="seller-addr-dist">الورود</td>
                 <td class="addr-lbl">الرمز البريدي</td>
-                <td class="addr-val" id="seller-addr-post">23221</td>
+                <td class="addr-val" id="seller-addr-post"></td>
               </tr>
               <tr>
                 <td class="addr-lbl">الشارع</td>
-                <td colspan="3" class="addr-val" style="text-align:right;padding-right:6px;" id="seller-addr-street">طريق الملك عبدالله</td>
+                <td colspan="3" class="addr-val" id="seller-addr-street">طريق الملك عبدالله</td>
               </tr>
             </tbody>
           </table>
@@ -1212,10 +1210,10 @@
             </thead>
             <tbody>
               <tr>
-                <td class="addr-val" style="width:25%;" id="buyer-addr-bno">{{buyer_building_no}}</td>
-                <td class="addr-lbl" style="width:25%;">رقم المبنى</td>
-                <td class="addr-val cust-blue-val" style="width:28%;" id="buyer-addr-reg">{{buyer_city}}</td>
-                <td class="addr-lbl" style="width:22%;">المنطقة</td>
+                <td class="addr-val" style="width:17%;" id="buyer-addr-bno">{{buyer_building_no}}</td>
+                <td class="addr-lbl" style="width:24%;">رقم المبنى</td>
+                <td class="addr-val cust-blue-val" style="width:41%;" id="buyer-addr-reg">{{buyer_city}}</td>
+                <td class="addr-lbl" style="width:18%;">المنطقة</td>
               </tr>
               <tr>
                 <td class="addr-val" id="buyer-addr-extra">{{buyer_postal_code}}</td>
@@ -1230,7 +1228,7 @@
                 <td class="addr-lbl">الحي</td>
               </tr>
               <tr>
-                <td colspan="3" class="addr-val cust-blue-val" style="text-align:right;padding-right:6px;" id="buyer-addr-street">{{buyer_street}}</td>
+                <td colspan="3" class="addr-val cust-blue-val" id="buyer-addr-street">{{buyer_street}}</td>
                 <td class="addr-lbl">الشارع</td>
               </tr>
             </tbody>
@@ -1512,15 +1510,9 @@
           setVal('seller-name-cell', 'شركة عالم بن شيهون للصناعة');
           setVal('seller-cr-cell', '4030535411');
           setVal('seller-vat-cell', '311085830500003');
-          setVal('seller-lic-cell', '114074301108605');
-          setVal('seller-branch-cell', 'المصنع الادارة');
-          setVal('seller-seller-cell', 'إبراهيم العروي - 02');
           setVal('seller-addr-reg', 'مكة المكرمة');
-          setVal('seller-addr-bno', '2222');
           setVal('seller-addr-city', 'جدة');
-          setVal('seller-addr-extra', '6300');
           setVal('seller-addr-dist', 'الورود');
-          setVal('seller-addr-post', '23221');
           setVal('seller-addr-street', 'طريق الملك عبدالله');
 
           setVal('inv-type-cell', 'فاتورة أجور تصنيع آجلة');
@@ -1602,27 +1594,9 @@
           }
         };
         setIfEmpty('seller-addr-reg', 'مكة المكرمة');
-        setIfEmpty('seller-addr-bno', '2222');
         setIfEmpty('seller-addr-city', 'جدة');
-        setIfEmpty('seller-addr-extra', '6300');
         setIfEmpty('seller-addr-dist', 'الورود');
-        setIfEmpty('seller-addr-post', '23221');
         setIfEmpty('seller-addr-street', 'طريق الملك عبدالله');
-
-        var sellerEl = document.getElementById('seller-seller-cell');
-        if (sellerEl) {
-          var sTxt = sellerEl.textContent.trim();
-          if (!sTxt || sTxt.indexOf('{{') !== -1 || sTxt.indexOf('ملاحظات') !== -1) {
-            sellerEl.textContent = 'إبراهيم العروي - 02';
-          }
-        }
-        var branchEl = document.getElementById('seller-branch-cell');
-        if (branchEl) {
-          var bTxt = branchEl.textContent.trim();
-          if (!bTxt || bTxt.indexOf('{{') !== -1) {
-            branchEl.textContent = 'المصنع الادارة';
-          }
-        }
 
         // إجمالي قيمة الذهب يظل دائماً 0.00 لفواتير أجور التصنيع
         var goldTotEl = document.getElementById('val-tot-gold');
