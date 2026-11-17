@@ -38,13 +38,14 @@
   /* ── الترويسة النظيفة القياسية ── */
   .n6-header {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: minmax(0, 1fr) 88px minmax(0, 1fr);
     align-items: flex-start;
-    gap: 12px;
+    gap: 10px;
     margin-bottom: 10px;
     flex-shrink: 0;
   }
   .n6-seller-ar {
+    grid-column: 1;
     text-align: right;
     direction: rtl;
   }
@@ -59,7 +60,16 @@
     color: #111827;
     line-height: 1.5;
   }
+  .n6-logo-col {
+    grid-column: 2;
+    width: 88px;
+    min-height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
   .n6-seller-en {
+    grid-column: 3;
     text-align: left;
     direction: ltr;
   }
@@ -408,7 +418,9 @@
           <p>الرقم الضريبي : {{seller_tax}}</p>
           <p>السجل التجاري : {{seller_cr}}</p>
         </div>
-        <div class="logo-shell">{{logo}}</div>
+        <div class="n6-logo-col">
+          <div class="logo-shell">{{logo}}</div>
+        </div>
         <div class="n6-seller-en">
           <h2>{{seller_name_en}}</h2>
           <p>{{seller_address_en}}</p>
