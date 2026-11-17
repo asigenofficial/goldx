@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<title>n3 — النواعم والمشاغل (البطاقة الموحدة ورأس الجدول الدائري)</title>
+<title>n3 — التاج المركزي والبطاقة الموحدة (بني وذهبي)</title>
 <style>
   @page { size: A4 portrait; margin: 0; }
   * { box-sizing: border-box; }
@@ -35,43 +35,21 @@
     min-height: 0;
   }
 
-  /* ── ترويسة ثلاثية بميدالية شعار دائرية ── */
-  .n3-crest-header {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 12px;
-    align-items: center;
-    margin-bottom: 7px;
+  /* ── ترويسة مركزية التاج (الشعار والاسم في الوسط كشهادة كلاسيكية) ── */
+  .n3-center-crest {
+    text-align: center;
+    padding-bottom: 7px;
+    margin-bottom: 8px;
+    border-bottom: 2px solid #b4832c;
     flex-shrink: 0;
   }
-  .n3-ar h2 {
-    font-size: 14px;
-    font-weight: 800;
-    color: #4a2c18;
-    margin-bottom: 2px;
-  }
-  .n3-ar p, .n3-en p {
-    font-size: 9px;
-    color: #6b4c35;
-    line-height: 1.4;
-  }
-  .n3-en {
-    direction: ltr;
-    text-align: left;
-  }
-  .n3-en h2 {
-    font-size: 12.5px;
-    font-weight: 800;
-    color: #4a2c18;
-    margin-bottom: 2px;
-  }
   .logo-shell {
-    width: 78px;
-    height: 62px;
-    margin: 0 auto;
+    width: 68px;
+    height: 54px;
+    margin: 0 auto 4px;
     border: 1.5px solid #b4832c;
     border-radius: 50%;
-    padding: 5px;
+    padding: 4px;
     background: #faf5ed;
     display: flex;
     align-items: center;
@@ -83,11 +61,27 @@
     object-fit: contain;
     display: block;
   }
+  .n3-center-crest h2 {
+    font-size: 15px;
+    font-weight: 900;
+    color: #4a2c18;
+  }
+  .n3-center-crest .n3-sub-en {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #8a6017;
+    direction: ltr;
+    margin-bottom: 3px;
+  }
+  .n3-center-crest .n3-addr-line {
+    font-size: 8.8px;
+    color: #6b4c35;
+  }
 
   /* ── بطاقة موحدة مستديرة الزوايا بالبني والذهبي والباركود بداخلها ── */
   .n3-unified-card {
     border: 1.4px solid #4a2c18;
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 7px 11px 8px;
     background: #ffffff;
     margin-bottom: 9px;
@@ -124,7 +118,7 @@
   }
   .n3-card-body {
     display: grid;
-    grid-template-columns: 1fr 136px;
+    grid-template-columns: 1fr 132px;
     gap: 12px;
     align-items: center;
   }
@@ -147,7 +141,7 @@
   .n3-shaded-val {
     background: #faf5ed;
     border: 1px solid #e4d7c5;
-    border-radius: 4px;
+    border-radius: 5px;
     padding: 3px 8px;
     font-weight: 700;
     color: #2b190d;
@@ -177,13 +171,13 @@
     color: #6b4c35;
   }
   .qr-box {
-    width: 96px;
-    height: 96px;
-    min-width: 96px;
-    min-height: 96px;
+    width: 94px;
+    height: 94px;
+    min-width: 94px;
+    min-height: 94px;
     background: #ffffff;
     border: 1.2px solid #b4832c;
-    border-radius: 8px;
+    border-radius: 9px;
     padding: 3px;
     display: flex;
     align-items: center;
@@ -197,7 +191,7 @@
     object-fit: contain;
   }
 
-  /* ── جدول الأصناف برأس شريطي مستدير الزوايا بالبني والذهبي ── */
+  /* ── جدول برأس شريطي كبسولي منفصل عن صفوف البيانات ── */
   .items-table-container {
     flex: 1 1 auto;
     display: flex;
@@ -207,7 +201,7 @@
   .items-main-table {
     width: 100%;
     border-collapse: separate;
-    border-spacing: 0;
+    border-spacing: 0 3px;
     table-layout: fixed;
   }
   .items-main-table thead th {
@@ -223,17 +217,19 @@
   }
   .items-main-table thead th:first-child {
     border-right: 1.2px solid #4a2c18;
-    border-top-right-radius: 8px;
-    border-bottom-right-radius: 8px;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
   }
   .items-main-table thead th:last-child {
     border-left: 1.2px solid #4a2c18;
-    border-top-left-radius: 8px;
-    border-bottom-left-radius: 8px;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
   }
   .items-main-table tbody td {
-    border-bottom: 1px solid #d8c5a8;
-    border-left: 1px solid #d8c5a8;
+    background: #ffffff;
+    border-top: 1px solid #e4d7c5;
+    border-bottom: 1px solid #e4d7c5;
+    border-left: 1px solid #efe5d3;
     padding: 5px 3px;
     text-align: center;
     font-size: 9.2px;
@@ -243,7 +239,14 @@
     overflow-wrap: anywhere;
   }
   .items-main-table tbody td:first-child {
-    border-right: 1px solid #d8c5a8;
+    border-right: 1px solid #e4d7c5;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+  }
+  .items-main-table tbody td:last-child {
+    border-left: 1px solid #e4d7c5;
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
   }
   .items-main-table tbody td:nth-child(3) {
     text-align: right;
@@ -263,7 +266,7 @@
   }
   .n3-ledger-box {
     border: 1.4px solid #4a2c18;
-    border-radius: 8px;
+    border-radius: 10px;
     overflow: hidden;
     display: grid;
     grid-template-columns: 1.45fr 0.85fr;
@@ -287,7 +290,7 @@
   .n3-gold-tiles div {
     background: #faf5ed;
     border: 1px solid #e4d7c5;
-    border-radius: 4px;
+    border-radius: 5px;
     padding: 3px 4px;
     text-align: center;
   }
@@ -315,7 +318,7 @@
   .n3-tafqeet-pill {
     background: #faf5ed;
     border: 1px solid #e4d7c5;
-    border-radius: 4px;
+    border-radius: 5px;
     padding: 3px 8px;
     font-weight: 700;
     color: #2b190d;
@@ -404,20 +407,11 @@
 <body>
   <div class="invoice-container" data-gold-design="n3" data-gold-invoice-type="{{gold_invoice_type}}">
     <div class="top-content-wrap">
-      <header class="n3-crest-header">
-        <div class="n3-ar">
-          <h2>{{seller_name}}</h2>
-          <p>{{seller_address}}</p>
-          <p>الرقم الضريبي: {{seller_tax}} · س.ت: {{seller_cr}}</p>
-          <p>جوال / هاتف: {{seller_phone}}</p>
-        </div>
+      <header class="n3-center-crest">
         <div class="logo-shell">{{logo}}</div>
-        <div class="n3-en">
-          <h2>{{seller_name_en}}</h2>
-          <p>{{seller_address_en}}</p>
-          <p>VAT: {{seller_tax}} · C.R.: {{seller_cr}}</p>
-          <p>Tel: {{seller_phone}}</p>
-        </div>
+        <h2>{{seller_name}}</h2>
+        <div class="n3-sub-en">{{seller_name_en}}</div>
+        <div class="n3-addr-line">{{seller_address}} · الرقم الضريبي: {{seller_tax}} · س.ت: {{seller_cr}} · هاتف: {{seller_phone}}</div>
       </header>
 
       <section class="n3-unified-card">

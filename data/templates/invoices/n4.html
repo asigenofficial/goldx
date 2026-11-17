@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
-<title>n4 — الحداثة الصافية (التحريري البنفسجي بدون خطوط طولية)</title>
+<title>n4 — التحريري العصري (بنفسجي)</title>
 <style>
   @page { size: A4 portrait; margin: 0; }
   * { box-sizing: border-box; }
@@ -20,7 +20,7 @@
   .invoice-container {
     width: 210mm;
     min-height: 297mm;
-    padding: 8mm 9mm;
+    padding: 9mm 10mm;
     background: #ffffff;
     display: flex;
     flex-direction: column;
@@ -35,12 +35,12 @@
     min-height: 0;
   }
 
-  /* ── ترويسة عصرية بشارة فاتورة بنفسجية صلبة ── */
+  /* ── ترويسة عصرية مع شارة الفاتورة والباركود بالأعلى يساراً ── */
   .n4-head {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
     padding-bottom: 10px;
     border-bottom: 2px solid #4c1d95;
     margin-bottom: 10px;
@@ -52,21 +52,21 @@
     gap: 12px;
   }
   .logo-shell {
-    width: 64px;
+    width: 62px;
     height: 54px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   .logo-shell img, .logo-shell svg {
-    max-width: 64px;
+    max-width: 62px;
     max-height: 54px;
     object-fit: contain;
     display: block;
   }
   .n4-brand h2 {
-    font-size: 16px;
-    font-weight: 800;
+    font-size: 16.5px;
+    font-weight: 900;
     color: #3b0764;
     margin-bottom: 2px;
   }
@@ -75,49 +75,72 @@
     color: #5b467a;
     line-height: 1.4;
   }
+  .n4-top-left-cluster {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
   .n4-doc-pill {
     background: #4c1d95;
     color: #ffffff;
-    border-radius: 12px;
-    padding: 8px 16px;
+    border-radius: 14px;
+    padding: 8px 14px;
     text-align: left;
-    min-width: 175px;
+    min-width: 152px;
   }
   .n4-doc-pill .n4-eyebrow {
-    font-size: 9px;
+    font-size: 8.8px;
     font-weight: 700;
     color: #ddd6fe;
     margin-bottom: 2px;
   }
   .n4-doc-pill h1 {
-    font-size: 17px;
+    font-size: 16.5px;
     font-weight: 900;
     color: #ffffff;
     font-variant-numeric: tabular-nums;
   }
   .n4-doc-pill p {
-    font-size: 8.8px;
+    font-size: 8.5px;
     color: #ede9fe;
     margin-top: 2px;
   }
+  .qr-box {
+    width: 82px;
+    height: 82px;
+    min-width: 82px;
+    min-height: 82px;
+    background: #ffffff;
+    border: 1.2px solid #c4b5fd;
+    border-radius: 12px;
+    padding: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .qr-box svg, .qr-box img {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+    object-fit: contain;
+  }
 
-  /* ── 3 بطاقات مؤشرات عصرية مستديرة ── */
+  /* ── 3 بطاقات مؤشرات ناعمة بدون حدود خارجية ── */
   .n4-hero-cards {
     display: grid;
-    grid-template-columns: 1.2fr 1fr 1fr;
+    grid-template-columns: 1.25fr 1fr 1fr;
     gap: 10px;
     margin-bottom: 10px;
     flex-shrink: 0;
   }
   .n4-hero-cell {
     background: #faf7ff;
-    border-radius: 10px;
-    border-right: 4px solid #6d28d9;
-    padding: 7px 12px;
+    border-radius: 14px;
+    padding: 8px 13px;
   }
   .n4-hero-cell.n4-accent {
     background: #f3edff;
-    border-right-color: #4c1d95;
   }
   .n4-hero-cell span {
     display: block;
@@ -126,7 +149,7 @@
     margin-bottom: 2px;
   }
   .n4-hero-cell strong {
-    font-size: 13.5px;
+    font-size: 14px;
     font-weight: 900;
     color: #1e1035;
     font-variant-numeric: tabular-nums;
@@ -156,7 +179,7 @@
     margin-bottom: 3px;
   }
   .n4-party-name {
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 800;
     color: #1e1035;
     margin-bottom: 2px;
@@ -195,10 +218,10 @@
     table-layout: fixed;
   }
   .items-main-table thead th {
-    background: #faf7ff;
+    background: transparent;
     color: #4c1d95;
-    border-top: 2px solid #4c1d95;
-    border-bottom: 2px solid #4c1d95;
+    border-top: 0;
+    border-bottom: 2.5px solid #4c1d95;
     border-inline: 0;
     padding: 6px 4px;
     text-align: center;
@@ -211,7 +234,7 @@
   .items-main-table tbody td {
     border-inline: 0;
     border-bottom: 1px solid #ede9fe;
-    padding: 6px 4px;
+    padding: 6.5px 4px;
     text-align: center;
     font-size: 9.3px;
     color: #1e1035;
@@ -223,14 +246,11 @@
     text-align: right;
     font-weight: 600;
   }
-  .items-main-table tbody tr:nth-child(even) {
-    background: #fcfaff;
-  }
   .items-main-table tfoot td {
-    background: #f3edff;
+    background: #faf7ff;
     color: #3b0764;
-    border-top: 1.5px solid #4c1d95;
-    border-bottom: 1.5px solid #4c1d95;
+    border-top: 2px solid #4c1d95;
+    border-bottom: 0;
     border-inline: 0;
     padding: 6px 4px;
     text-align: center;
@@ -239,7 +259,7 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* ── القسم السفلي: كبسولات العيارات + 3 أعمدة بدون حدود شبكية ── */
+  /* ── القسم السفلي: كبسولات دائرية للعيارات + تقسيم ثنائي مفتوح ── */
   .bottom-content {
     margin-top: auto;
     padding-top: 10px;
@@ -251,83 +271,59 @@
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
   .n4-k-item {
     background: #faf7ff;
-    border: 1px solid #e9d5ff;
-    border-radius: 9px;
-    padding: 5px 6px;
+    border-radius: 999px;
+    padding: 5px 8px;
     text-align: center;
   }
   .n4-k-item.n4-k-main {
     background: #4c1d95;
-    border-color: #4c1d95;
     color: #ffffff;
   }
   .n4-k-item span {
     display: block;
-    font-size: 8px;
+    font-size: 7.8px;
     color: #6b548c;
   }
   .n4-k-item.n4-k-main span {
     color: #ddd6fe;
   }
   .n4-k-item b {
-    font-size: 10.5px;
+    font-size: 10px;
     color: #3b0764;
     font-variant-numeric: tabular-nums;
   }
   .n4-k-item.n4-k-main b {
     color: #ffffff;
   }
-  .n4-bottom-grid {
+  .n4-bottom-split {
     display: grid;
-    grid-template-columns: 1fr 122px 0.95fr;
-    gap: 14px;
+    grid-template-columns: 1.25fr 0.85fr;
+    gap: 18px;
     align-items: start;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
   .n4-info-col {
-    background: #faf7ff;
-    border-radius: 10px;
-    padding: 8px 10px;
-    font-size: 9px;
+    border-right: 3px solid #6d28d9;
+    padding-right: 12px;
+    font-size: 9.2px;
     color: #4c1d95;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 6px;
   }
   .n4-bank-chip {
-    background: #ffffff;
-    border: 1px solid #ddd6fe;
-    padding: 4px 8px;
-    border-radius: 6px;
+    background: #faf7ff;
+    padding: 5px 9px;
+    border-radius: 8px;
     color: #1e1035;
     direction: rtl;
   }
   .n4-bank-chip:empty {
     display: none;
-  }
-  .qr-box {
-    width: 120px;
-    height: 120px;
-    min-width: 120px;
-    min-height: 120px;
-    background: #ffffff;
-    border: 1.2px solid #c4b5fd;
-    border-radius: 10px;
-    padding: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-  .qr-box svg, .qr-box img {
-    width: 100% !important;
-    height: 100% !important;
-    display: block;
-    object-fit: contain;
   }
   .n4-totals-clean {
     width: 100%;
@@ -335,7 +331,7 @@
     font-size: 9.5px;
   }
   .n4-totals-clean th, .n4-totals-clean td {
-    padding: 4px 4px;
+    padding: 4.5px 4px;
     border-bottom: 1px solid #ede9fe;
   }
   .n4-totals-clean th {
@@ -353,23 +349,23 @@
     background: #4c1d95;
     color: #ffffff;
     border-bottom: 0;
-    padding: 6px 8px;
+    padding: 6.5px 10px;
     font-size: 11px;
     font-weight: 900;
   }
   .n4-totals-clean tr.n4-grand th {
-    border-top-right-radius: 7px;
-    border-bottom-right-radius: 7px;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
   }
   .n4-totals-clean tr.n4-grand td {
-    border-top-left-radius: 7px;
-    border-bottom-left-radius: 7px;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
     color: #f3e8ff;
   }
   .n4-sigs-row {
     display: flex;
     justify-content: space-between;
-    padding: 8px 16px 4px;
+    padding: 6px 12px;
     font-size: 9px;
     font-weight: 700;
     color: #4c1d95;
@@ -410,10 +406,13 @@
             <p>الرقم الضريبي: {{seller_tax}} · السجل التجاري: {{seller_cr}}</p>
           </div>
         </div>
-        <div class="n4-doc-pill">
-          <div class="n4-eyebrow">{{invoice_type}} · {{gold_type_label}}</div>
-          <h1>#{{invoice_number}}</h1>
-          <p>{{issue_date}} · {{issue_time}}</p>
+        <div class="n4-top-left-cluster">
+          <div class="n4-doc-pill">
+            <div class="n4-eyebrow">{{invoice_type}} · {{gold_type_label}}</div>
+            <h1>#{{invoice_number}}</h1>
+            <p>{{issue_date}} · {{issue_time}}</p>
+          </div>
+          <div class="qr-box">{{qr_code}}</div>
         </div>
       </header>
 
@@ -492,15 +491,13 @@
         <div class="n4-k-item"><span>المكافئ عيار 21</span><b>{{weight_21_equiv}} جم</b></div>
       </section>
 
-      <section class="n4-bottom-grid">
+      <section class="n4-bottom-split">
         <div class="n4-info-col">
           <div><b>المبلغ كتابة:</b> {{total_in_words}}</div>
           <div><b>الوزن كتابة:</b> {{total_weight_words}}</div>
           <div class="n4-bank-chip">{{bank_info}}</div>
           <div><b>ملاحظات:</b> {{notes}}</div>
         </div>
-
-        <div class="qr-box">{{qr_code}}</div>
 
         <table class="n4-totals-clean">
           <tbody>

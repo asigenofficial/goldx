@@ -390,14 +390,14 @@ func localizedPresetName(baseName, category string) string {
 		"24-lapis-orbit":          "فاتورة ضريبية — المدار اللازوردي",
 		"25-aubergine-prism":      "فاتورة ضريبية — المنشور الباذنجاني",
 		"26-pearl-architecture":   "فاتورة ضريبية — العمارة اللؤلؤية",
-		"n1":                      "n1 — الإماراتي العامري (الميزان الثنائي)",
-		"n2":                      "n2 — جوهرة التميز (الثلاثي المفصل)",
-		"n3":                      "n3 — النواعم والمشاغل (شريط الجرامات)",
-		"n4":                      "n4 — الحداثة الصافية (العصري المرن)",
-		"n5":                      "n5 — التجاري المصرفي (المزدوج الاحترافي)",
-		"n6":                      "n6 — العامري الرسمي (القياسي الكلاسيكي)",
-		"n7":                      "n7 — بن شيهون التجاري (الإطارات الدائرية)",
-		"n8":                      "n8 — ديوان التجاري (البطاقة الموحدة)",
+		"n1":                      "n1 — الميزان الثنائي (أسود وذهبي)",
+		"n2":                      "n2 — الشريط الذهبي والبطاقات الدائرية",
+		"n3":                      "n3 — التاج المركزي والبطاقة الموحدة (بني وذهبي)",
+		"n4":                      "n4 — التحريري العصري (بنفسجي)",
+		"n5":                      "n5 — الشهادة المعمارية المزدوجة (بنفسجي وذهبي)",
+		"n6":                      "n6 — القياسي الكلاسيكي (أبيض وأسود)",
+		"n7":                      "n7 — الإطارات الدائرية الكلاسيكي",
+		"n8":                      "n8 — البطاقة الموحدة ورأس الجدول المستدير",
 		"thermal":                 "فاتورة حرارية",
 		"legacy-default":          "فاتورة ضريبية افتراضية",
 		"قالب_سند_قبض_رسمي_معتمد": "سند قبض رسمي معتمد",
@@ -672,9 +672,11 @@ func (s *TemplateService) syncDiskTemplatesLocked() error {
 			if hasExisting && !isUuidStr(ex.nameAr) && strings.TrimSpace(ex.nameAr) != "" {
 				id = ex.id
 				nameAr = ex.nameAr
-				if isGenericTemplateTitle(nameAr, ex.category) {
-					if localized := localizedPresetName(baseName, ex.category); localized != "" {
+				if isGenericTemplateTitle(nameAr, ex.category) || (metaNameAr == "" && strings.HasPrefix(baseName, "n") && len(baseName) <= 3 && titleFromHtml != "") {
+					if localized := localizedPresetName(baseName, ex.category); localized != "" && !isGenericTemplateTitle(localized, ex.category) {
 						nameAr = localized
+					} else if titleFromHtml != "" {
+						nameAr = titleFromHtml
 					}
 				}
 				category = ex.category
