@@ -130,13 +130,18 @@ func (s *ReportService) DashboardStats(issuerID string) (*DashboardData, error) 
 		Remaining: models.ToMajor(allRem),
 	}
 
-	// 2. Month summary
+	// 2. Month summary (use range predicate so SQLite can utilize issue_date index)
 	var mTotal int64
 	var mCount int
-	mArgs := append(argsBase, curMonth)
+	monthStart := curMonth + "-01"
+	nextMonthStart := monthStart
+	if tMonth, errParse := time.Parse("2006-01-02", monthStart); errParse == nil {
+		nextMonthStart = tMonth.AddDate(0, 1, 0).Format("2006-01-02")
+	}
+	mArgs := append(append([]any(nil), argsBase...), monthStart, nextMonthStart)
 	_ = s.db.QueryRow(fmt.Sprintf(`
 		SELECT COUNT(*), COALESCE(SUM(grand_total), 0)
-		FROM invoices %s AND status <> 'CANCELLED' AND strftime('%%Y-%%m', issue_date) = ?
+		FROM invoices %s AND status <> 'CANCELLED' AND issue_date >= ? AND issue_date < ?
 	`, whereBase), mArgs...).Scan(&mCount, &mTotal)
 
 	data.Month = DashboardSummary{
@@ -147,7 +152,7 @@ func (s *ReportService) DashboardStats(issuerID string) (*DashboardData, error) 
 	// 3. Today summary
 	var tTotal int64
 	var tCount int
-	tArgs := append(argsBase, today)
+	tArgs := append(append([]any(nil), argsBase...), today)
 	_ = s.db.QueryRow(fmt.Sprintf(`
 		SELECT COUNT(*), COALESCE(SUM(grand_total), 0)
 		FROM invoices %s AND status <> 'CANCELLED' AND issue_date = ?

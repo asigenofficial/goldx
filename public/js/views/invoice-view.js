@@ -2,7 +2,7 @@
 //  عرض فاتورة: التفاصيل، رمز QR، الطباعة (A4 / حراري)، التصدير، السداد.
 // ==========================================================================
 import { api } from '../core/api.js';
-import { can, store } from '../core/store.js';
+import { can, store, loadTemplates } from '../core/store.js';
 import * as router from '../core/router.js';
 import {
   html, raw, esc, money, num, dateAr, dateTimeAr, qrSvg, printDoc, toastOk, toastErr,
@@ -145,8 +145,7 @@ export async function getInvoiceDocHtml({ invoice, issuer, client, printSettings
   const cfg = printSettings || (typeof issuer?.print_settings === 'string'
     ? JSON.parse(issuer.print_settings || '{}')
     : (issuer?.print_settings || {})) || {};
-  const catalog = await api.get('/api/invoices/templates?type=invoices');
-  const choices = Array.isArray(catalog) ? catalog : (catalog?.data || []);
+  const choices = await loadTemplates('invoices');
 
   const goldTplMap = {
     'PRICE_ONLY': 'قالب_فاتورة_ذهب_سعر_فقط',
@@ -302,25 +301,32 @@ export async function render(view, ctx) {
   let zoomLevel = 82;
   let selectedTplStyle = null;
   let availableTemplates = [];
+  let cleanupResize = null;
 
   const draw = async () => {
-    const { invoice, issuer, client } = await loadContext(invoiceId);
+    if (cleanupResize) {
+      cleanupResize();
+      cleanupResize = null;
+    }
+    const [{ invoice, issuer, client }, loadedTpls] = await Promise.all([
+      loadContext(invoiceId),
+      loadTemplates('invoices').catch(async () => {
+        try {
+          const allList = await loadTemplates('all');
+          return allList.filter((t) => !t.category || t.category === 'invoices' || t.category === 'custom' || t.category === 'custom_invoices');
+        } catch {
+          return [];
+        }
+      }),
+    ]);
     const issuerPrintCfg = (typeof issuer.print_settings === 'string'
       ? JSON.parse(issuer.print_settings || '{}')
       : (issuer.print_settings || {})) || {};
 
-    try {
-      const res = await api.get('/api/invoices/templates?type=invoices');
-      availableTemplates = Array.isArray(res) ? res : (res?.data || []);
-      if (!availableTemplates.length) {
-        const fallbackRes = await api.get('/api/invoices/templates?type=all');
-        const allList = Array.isArray(fallbackRes) ? fallbackRes : (fallbackRes?.data || []);
-        availableTemplates = allList.filter((t) => !t.category || t.category === 'invoices' || t.category === 'custom' || t.category === 'custom_invoices');
-      }
-    } catch {
+    availableTemplates = Array.isArray(loadedTpls) ? loadedTpls : [];
+    if (!availableTemplates.length) {
       try {
-        const fallbackRes = await api.get('/api/invoices/templates?type=all');
-        const allList = Array.isArray(fallbackRes) ? fallbackRes : (fallbackRes?.data || []);
+        const allList = await loadTemplates('all');
         availableTemplates = allList.filter((t) => !t.category || t.category === 'invoices' || t.category === 'custom' || t.category === 'custom_invoices');
       } catch {
         availableTemplates = [];
@@ -678,24 +684,30 @@ export async function render(view, ctx) {
       const iframe = $('#inv-iframe', view);
       if (!iframe) return;
       const printSettings = getPrintSettings();
-      const tplId = selectedTplStyle || printSettings?.template_style;
-      {
-        // إظهار مؤشر تحميل نظيف بدلاً من وميض قالب قديم غير مرغوب
-        iframe.srcdoc = getLoadingPreviewHtml('جارٍ تجهيز قالب الفاتورة الحقيقي...');
-
-        try {
-          const res = await fetch(`/api/invoices/${encodeURIComponent(invoice.id)}/render-html?style=${encodeURIComponent(tplId)}&_t=${Date.now()}`);
-          if (res.ok) {
-            let filledHtml = await res.text();
-            if (filledHtml && filledHtml.length > 500 && iframe) {
-              filledHtml = enforceLtrHeaderIcons(filledHtml);
-              currentInvoiceDocHtml = filledHtml;
-              iframe.srcdoc = filledHtml;
-              return;
-            }
-          }
-        } catch { }
+      const tplId = selectedTplStyle || printSettings?.template_style || '';
+      const cachedHtml = tplHtmlCache.get(tplId);
+      if (cachedHtml) {
+        currentInvoiceDocHtml = cachedHtml;
+        iframe.srcdoc = cachedHtml;
+        return;
       }
+
+      // إظهار مؤشر تحميل نظيف بدلاً من وميض قالب قديم غير مرغوب
+      iframe.srcdoc = getLoadingPreviewHtml('جارٍ تجهيز قالب الفاتورة الحقيقي...');
+
+      try {
+        const res = await fetch(`/api/invoices/${encodeURIComponent(invoice.id)}/render-html?style=${encodeURIComponent(tplId)}`);
+        if (res.ok) {
+          let filledHtml = await res.text();
+          if (filledHtml && filledHtml.length > 500 && iframe) {
+            filledHtml = enforceLtrHeaderIcons(filledHtml);
+            tplHtmlCache.set(tplId, filledHtml);
+            currentInvoiceDocHtml = filledHtml;
+            iframe.srcdoc = filledHtml;
+            return;
+          }
+        }
+      } catch { }
 
       currentInvoiceDocHtml = '';
       iframe.srcdoc = getLoadingPreviewHtml('تعذر قراءة قالب الفاتورة المختار من data');
@@ -932,9 +944,12 @@ export async function render(view, ctx) {
     // إقلاع المعاينة الحية وملاءمة العرض
     updateInvoicePreview();
     setTimeout(fitZoom, 80);
-    window.addEventListener('resize', fitZoom);
+    window.addEventListener('resize', fitZoom, { passive: true });
+    cleanupResize = () => window.removeEventListener('resize', fitZoom);
   };
 
   await draw();
-  return undefined;
+  return () => {
+    if (cleanupResize) cleanupResize();
+  };
 }

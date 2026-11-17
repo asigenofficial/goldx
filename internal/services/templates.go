@@ -14,8 +14,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/skip2/go-qrcode"
@@ -27,8 +29,43 @@ import (
 )
 
 var (
-	moneySarRegex1 = regexp.MustCompile(`([0-9]+(?:\.[0-9]+)?)\s*(?:ر\.س|ر\.\s*س|﷼|SAR)`)
-	moneySarRegex2 = regexp.MustCompile(`(?:ر\.س|ر\.\s*س|﷼|SAR)\s*([0-9]+(?:\.[0-9]+)?)`)
+	moneySarRegex1            = regexp.MustCompile(`([0-9]+(?:\.[0-9]+)?)\s*(?:ر\.س|ر\.\s*س|﷼|SAR)`)
+	moneySarRegex2            = regexp.MustCompile(`(?:ر\.س|ر\.\s*س|﷼|SAR)\s*([0-9]+(?:\.[0-9]+)?)`)
+	tplDoubleCurlyRegex       = regexp.MustCompile(`\{\{[^}]*\}\}`)
+	tplMultiSpaceRegex        = regexp.MustCompile(`\s+`)
+	tplTitleTagReplaceRegex   = regexp.MustCompile(`(?is)<title(?:\s[^>]*)?>.*?</title\s*>`)
+	tplHeadOpenRegex          = regexp.MustCompile(`(?i)<head(?:\s[^>]*)?>`)
+	tplTitleExtractRegex      = regexp.MustCompile(`(?i)<title>(.*?)</title>`)
+	tplPlaceholderRegex       = regexp.MustCompile(`\{\{\s*([a-zA-Z0-9_\-\.]+)\s*\}\}`)
+	tplCleanImgLogoRegex      = regexp.MustCompile(`(?i)<img\b[^>]*src=["']\{\{\s*(logo|seller_logo|company_logo|issuer_logo|store_logo|logo_html|شعار|الشعار)\s*\}\}["'][^>]*>`)
+	tplCleanImgQrRegex        = regexp.MustCompile(`(?i)<img\b[^>]*src=["']\{\{\s*(qr_code|qr|qrcode|barcode|zatca_qr|zatca_code|zatca_payload|رمز_الاستجابة|الباركود|باركود)\s*\}\}["'][^>]*>`)
+	tplItemsRowsRegex         = regexp.MustCompile(`\{\{\s*(items_rows[a-zA-Z0-9_-]*|items_table_body[a-zA-Z0-9_-]*|items_body[a-zA-Z0-9_-]*|table_rows[a-zA-Z0-9_-]*)\s*\}\}`)
+	tplQrTagRegex             = regexp.MustCompile(`(?i)\{\{\s*(qr_code|qr|qrcode|barcode|zatca_qr|zatca_code|zatca_payload|رمز_الاستجابة|الباركود|باركود)\s*\}\}`)
+	tplZatcaBadgeRegex        = regexp.MustCompile(`(?i)\{\{\s*(zatca_phase_badge|zatca_badge|شارة_المرحلة)\s*\}\}`)
+	tplZatcaPhaseRegex        = regexp.MustCompile(`(?i)\{\{\s*(zatca_phase|مرحلة_الزكاة|مرحلة_الفوترة)\s*\}\}`)
+	tplLogoTagRegex           = regexp.MustCompile(`(?i)\{\{\s*(logo|seller_logo|company_logo|issuer_logo|store_logo|logo_html|شعار|الشعار)\s*\}\}`)
+	tplQrContainerRegex       = regexp.MustCompile(`(?i)(<div\b[^>]*(?:class|id)=["'][^"']*(?:qr-img-placeholder|qr-box|qr-frame|qr-wrap|qr-container|qr-code|qrcode)[^"']*["'][^>]*>)([\s\S]*?)(</div>)`)
+	tplLogoContainerRegex     = regexp.MustCompile(`(?i)(<div\b[^>]*(?:class|id)=["'][^"']*(?:logo-container|logo-slot|logo-placeholder|company-logo|seller-logo)[^"']*["'][^>]*>)([\s\S]*?)(</div>)`)
+	tplTbodyOuterRegex        = regexp.MustCompile(`(?i)(<tbody\b[^>]*>)([\s\S]*?)(</tbody>)`)
+	tplDupNoOtherRegex        = regexp.MustCompile(`(لا غير\s*)+لا غير`)
+	tplDupFaqatRegex          = regexp.MustCompile(`(فقط\s*)+فقط`)
+	tplCleanRemainingTagRegex = regexp.MustCompile(`\{\{\s*[a-zA-Z0-9_]+\s*\}\}`)
+	tplStripTagsRegex         = regexp.MustCompile(`<[^>]*>`)
+	tplTableOuterRegex        = regexp.MustCompile(`(?i)<table\b[^>]*>([\s\S]*?)</table>`)
+	tplDataColsRegex          = regexp.MustCompile(`(?i)<table\b[^>]*\bdata-columns=["']([^"']+)["']`)
+	tplTheadRegex             = regexp.MustCompile(`(?i)<thead\b[^>]*>([\s\S]*?)</thead>`)
+	tplTrRegex                = regexp.MustCompile(`(?i)<tr\b[^>]*>([\s\S]*?)</tr>`)
+	tplThSimpleRegex          = regexp.MustCompile(`(?i)<th\b[^>]*>([\s\S]*?)</th>`)
+	tplTdSimpleRegex          = regexp.MustCompile(`(?i)<td\b[^>]*>([\s\S]*?)</td>`)
+	tplThAttrsRegex           = regexp.MustCompile(`(?i)<th\b([^>]*)>([\s\S]*?)</th>`)
+	tplColspanRegex           = regexp.MustCompile(`(?i)colspan=["']?(\d+)`)
+	tplRowspanRegex           = regexp.MustCompile(`(?i)rowspan=["']?(\d+)`)
+	tplTbodyInnerRegex        = regexp.MustCompile(`(?i)<tbody\b[^>]*>([\s\S]*?)</tbody>`)
+	tplTableWithTbodyRegex    = regexp.MustCompile(`(?i)(<table\b[^>]*>[\s\S]*?)(<tbody\b[^>]*>)([\s\S]*?)(</tbody>)([\s\S]*?</table>)`)
+	tplFooterBrandRegex       = regexp.MustCompile(`(?i)<div\b[^>]*class=["'][^"']*footer-brand[^"']*["'][^>]*>[\s\S]*?</div>`)
+	tplPromoRegex             = regexp.MustCompile(`(?i)<div\b[^>]*>\s*تم إنشاء وطباعة هذا المستند عبر نظام رصين[^<]*</div>`)
+	tplStyleTagRegex          = regexp.MustCompile(`(?is)<style\b[^>]*>(.*?)</style>`)
+	tplBodyTagRegex           = regexp.MustCompile(`(?is)<body\b[^>]*>(.*?)</body>`)
 )
 
 const ltrIconsStyleTag = `<style>
@@ -81,9 +118,124 @@ svg.sar-sym-svg, svg.sar-sym, .sar-sym svg, .currency-symbol svg {
 </style>`
 
 const documentFontStyleTag = `<style data-document-font>
-@font-face { font-family: 'goldx Document'; src: url('/fonts/NotoSansArabic.ttf') format('truetype'); font-weight: 100 900; font-display: block; }
+@font-face { font-family: 'goldx Document'; src: url('/fonts/NotoSansArabic.ttf') format('truetype'); font-weight: 100 900; font-display: swap; }
 body, body * { font-family: 'goldx Document', Tahoma, Arial, sans-serif !important; }
 </style>`
+
+// EmptyLogoHideStyleTag hides empty logo containers and collapses reserved header tracks when no logo is configured.
+const EmptyLogoHideStyleTag = `<style data-hide-empty-logo>
+img.doc-logo-img:not([src]),
+img.doc-logo-img[src=""],
+.logo:empty,
+.logo-shell:empty,
+.logo-slot:empty,
+.logo-box:empty,
+.logo-wrap:empty,
+.logo-frame:empty,
+.logo-container:empty,
+.logo-placeholder:empty,
+.doc-logo-placeholder,
+.logo-fallback,
+.seller-logo-box:empty,
+.company-logo:empty,
+.seller-logo:empty,
+.brand-logo-frame:empty,
+.reference-logo:empty,
+.arbash-logo-shell:empty,
+.user-logo-container:empty,
+.issuer-logo:empty,
+.sheet header > div:empty {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: none !important;
+}
+.logo:not(:has(img, svg)),
+.logo-shell:not(:has(img, svg)),
+.logo-slot:not(:has(img, svg)),
+.logo-box:not(:has(img, svg)),
+.logo-wrap:not(:has(img, svg)),
+.logo-frame:not(:has(img, svg)),
+.logo-container:not(:has(img, svg)),
+.logo-placeholder:not(:has(img, svg)),
+.seller-logo-box:not(:has(img, svg)),
+.company-logo:not(:has(img, svg)),
+.seller-logo:not(:has(img, svg)),
+.brand-logo-frame:not(:has(img, svg)),
+.reference-logo:not(:has(img, svg)),
+.arbash-logo-shell:not(:has(img, svg)),
+.user-logo-container:not(:has(img, svg)),
+.header-logo-box:not(:has(img, svg)),
+.header-logo-area:not(:has(img, svg)),
+.header-col-logo:not(:has(img, svg)),
+.crest:not(:has(img, svg)) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: none !important;
+}
+.reference-header:has(> .reference-logo):has(> .seller-en):not(:has(.reference-logo img, .reference-logo svg)) {
+  grid-template-columns: 1fr 1fr !important;
+}
+.reference-header.ledger-head:has(> .reference-logo):not(:has(.reference-logo img, .reference-logo svg)),
+.reference-header.medallion-head:has(> .crest > .reference-logo):not(:has(.reference-logo img, .reference-logo svg)) {
+  grid-template-columns: 1fr !important;
+}
+.reference-header.medallion-head:has(> .crest > .reference-logo):not(:has(.reference-logo img, .reference-logo svg)) .seller-en {
+  grid-column: 1 !important;
+}
+.ledger:has(> .logo):not(:has(.logo img, .logo svg)) {
+  grid-template-columns: 1fr 1.5fr !important;
+}
+.compact-details:has(> .logo):not(:has(.logo img, .logo svg)) {
+  grid-template-columns: 1.2fr 1fr !important;
+}
+.emerald-header:has(> .logo):not(:has(.logo img, .logo svg)) {
+  grid-template-columns: 1.2fr 1fr !important;
+}
+.geo-header:has(> .logo):not(:has(.logo img, .logo svg)) {
+  grid-template-columns: 1.25fr 1fr !important;
+}
+.plum-header:has(> .logo):not(:has(.logo img, .logo svg)) {
+  grid-template-columns: 1fr 205px !important;
+}
+</style>`
+
+// BuildIssuerLogoHTML returns the sanitized <img> tag for an issuer logo, or empty string when unset.
+func BuildIssuerLogoHTML(logoData *string, maxW, maxH int) string {
+	if logoData == nil {
+		return ""
+	}
+	src := strings.TrimSpace(*logoData)
+	if src == "" {
+		return ""
+	}
+	return fmt.Sprintf(`<img src="%s" alt="شعار المنشأة" class="doc-logo-img" style="max-width:%dpx;max-height:%dpx;object-fit:contain;display:block;" />`, html.EscapeString(src), maxW, maxH)
+}
+
+// ReplaceLogoTags substitutes all logo placeholders in HTML and ensures empty logo slots collapse cleanly.
+func ReplaceLogoTags(htmlStr, logoHTML string) string {
+	cleaned := tplCleanImgLogoRegex.ReplaceAllString(htmlStr, "{{logo}}")
+	hasExplicit := tplLogoTagRegex.MatchString(cleaned)
+	out := tplLogoTagRegex.ReplaceAllString(cleaned, logoHTML)
+	if !hasExplicit && tplLogoContainerRegex.MatchString(out) {
+		out = tplLogoContainerRegex.ReplaceAllString(out, "${1}"+logoHTML+"${3}")
+	}
+	if !strings.Contains(out, "data-hide-empty-logo") {
+		out = injectTemplateStyle(out, EmptyLogoHideStyleTag)
+	}
+	return out
+}
 
 func injectLtrIconsStyle(h string) string {
 	if strings.Contains(h, "</head>") {
@@ -103,6 +255,25 @@ type TemplateService struct {
 	db           *db.DB
 	dataDir      string
 	sarSymbolSVG string
+
+	mu          sync.Mutex
+	syncSig     string
+	syncedCount int
+	catalog     []TemplateCatalogItem
+	pathCache   map[string]string
+}
+
+// InvalidateCache clears cached template catalog and file path lookups.
+func (s *TemplateService) InvalidateCache() {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.syncSig = ""
+	s.syncedCount = 0
+	s.catalog = nil
+	s.pathCache = nil
+	s.mu.Unlock()
 }
 
 // SARSymbolSVG returns the same inline icon used by invoice and browser previews.
@@ -177,8 +348,8 @@ func isGenericTemplateTitle(title, category string) bool {
 }
 
 func cleanTemplateDisplayName(title string) string {
-	title = regexp.MustCompile(`\{\{[^}]*\}\}`).ReplaceAllString(title, "")
-	title = regexp.MustCompile(`\s+`).ReplaceAllString(title, " ")
+	title = tplDoubleCurlyRegex.ReplaceAllString(title, "")
+	title = tplMultiSpaceRegex.ReplaceAllString(title, " ")
 	return strings.TrimSpace(strings.Trim(title, " —–-"))
 }
 
@@ -219,6 +390,11 @@ func localizedPresetName(baseName, category string) string {
 		"24-lapis-orbit":          "فاتورة ضريبية — المدار اللازوردي",
 		"25-aubergine-prism":      "فاتورة ضريبية — المنشور الباذنجاني",
 		"26-pearl-architecture":   "فاتورة ضريبية — العمارة اللؤلؤية",
+		"n1":                      "n1 — الإماراتي العامري (الميزان الثنائي)",
+		"n2":                      "n2 — جوهرة التميز (الثلاثي المفصل)",
+		"n3":                      "n3 — النواعم والمشاغل (شريط الجرامات)",
+		"n4":                      "n4 — الحداثة الصافية (العصري المرن)",
+		"n5":                      "n5 — التجاري المصرفي (المزدوج الاحترافي)",
 		"thermal":                 "فاتورة حرارية",
 		"legacy-default":          "فاتورة ضريبية افتراضية",
 		"قالب_سند_قبض_رسمي_معتمد": "سند قبض رسمي معتمد",
@@ -257,13 +433,11 @@ func localizedPresetName(baseName, category string) string {
 
 func setTemplateHTMLTitle(content, title string) string {
 	escapedTitle := html.EscapeString(strings.TrimSpace(title))
-	titleRegex := regexp.MustCompile(`(?is)<title(?:\s[^>]*)?>.*?</title\s*>`)
-	if titleRegex.MatchString(content) {
-		return titleRegex.ReplaceAllStringFunc(content, func(string) string { return "<title>" + escapedTitle + "</title>" })
+	if tplTitleTagReplaceRegex.MatchString(content) {
+		return tplTitleTagReplaceRegex.ReplaceAllStringFunc(content, func(string) string { return "<title>" + escapedTitle + "</title>" })
 	}
-	headRegex := regexp.MustCompile(`(?i)<head(?:\s[^>]*)?>`)
-	if match := headRegex.FindString(content); match != "" {
-		return headRegex.ReplaceAllString(content, match+"\n<title>"+escapedTitle+"</title>")
+	if match := tplHeadOpenRegex.FindString(content); match != "" {
+		return tplHeadOpenRegex.ReplaceAllString(content, match+"\n<title>"+escapedTitle+"</title>")
 	}
 	return "<title>" + escapedTitle + "</title>\n" + content
 }
@@ -295,6 +469,12 @@ func (s *TemplateService) SyncDiskTemplates() error {
 	if s == nil || s.db == nil {
 		return nil
 	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.syncDiskTemplatesLocked()
+}
+
+func (s *TemplateService) syncDiskTemplatesLocked() error {
 	dirs := []struct {
 		relPath  string
 		category string
@@ -304,6 +484,52 @@ func (s *TemplateService) SyncDiskTemplates() error {
 		{filepath.Join(s.dataDir, "templates", "documents"), "documents", "سند HTML"},
 		{filepath.Join(s.dataDir, "templates", "reports"), "reports", "تقرير مالي HTML"},
 		{filepath.Join(s.dataDir, "templates", "statements"), "statements", "كشف حساب HTML"},
+	}
+
+	type diskFile struct {
+		category string
+		badge    string
+		name     string
+		fullPath string
+		size     int64
+		modNano  int64
+	}
+	var diskFiles []diskFile
+	var sigBuf strings.Builder
+	for _, d := range dirs {
+		entries, err := os.ReadDir(d.relPath)
+		if err != nil {
+			continue
+		}
+		sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
+		for _, entry := range entries {
+			if entry.IsDir() || !strings.HasSuffix(strings.ToLower(entry.Name()), ".html") {
+				continue
+			}
+			fullPath := filepath.Clean(filepath.Join(d.relPath, entry.Name()))
+			var sz, mt int64
+			if info, errInfo := entry.Info(); errInfo == nil {
+				sz = info.Size()
+				mt = info.ModTime().UnixNano()
+			}
+			diskFiles = append(diskFiles, diskFile{
+				category: d.category,
+				badge:    d.badge,
+				name:     entry.Name(),
+				fullPath: fullPath,
+				size:     sz,
+				modNano:  mt,
+			})
+			fmt.Fprintf(&sigBuf, "%s|%s|%d|%d;", d.category, entry.Name(), sz, mt)
+		}
+	}
+
+	diskSig := sigBuf.String()
+	if diskSig != "" && diskSig == s.syncSig {
+		var dbCount int
+		if err := s.db.QueryRow(`SELECT COUNT(*) FROM excel_templates`).Scan(&dbCount); err == nil && dbCount == s.syncedCount && s.syncedCount > 0 {
+			return nil
+		}
 	}
 
 	type existingTpl struct {
@@ -338,161 +564,154 @@ func (s *TemplateService) SyncDiskTemplates() error {
 		rows.Close()
 	}
 
-	seenPathsOnDisk := make(map[string]bool)
 	seenTemplateIDs := make(map[string]bool)
 
-	isUuidStr := func(s string) bool {
-		s = strings.TrimSpace(s)
-		if len(s) == 36 && strings.Count(s, "-") == 4 {
+	isUuidStr := func(v string) bool {
+		v = strings.TrimSpace(v)
+		if len(v) == 36 && strings.Count(v, "-") == 4 {
 			return true
 		}
-		if strings.HasPrefix(s, "tpl_") && len(s) > 30 {
+		if strings.HasPrefix(v, "tpl_") && len(v) > 30 {
 			return true
 		}
 		return false
 	}
 
-	for _, d := range dirs {
-		entries, err := os.ReadDir(d.relPath)
-		if err != nil {
-			continue
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	nowIso := db.NowIso()
+	for _, df := range diskFiles {
+		baseName := strings.TrimSuffix(df.name, ".html")
+		contentBytes, _ := os.ReadFile(df.fullPath)
+		htmlStr := string(contentBytes)
+		tags := extractHtmlPlaceholders(htmlStr)
+		headersJson, _ := json.Marshal(tags)
+
+		// Try to extract title from HTML if available
+		titleFromHtml := ""
+		if m := tplTitleExtractRegex.FindStringSubmatch(htmlStr); len(m) > 1 {
+			titleFromHtml = cleanTemplateDisplayName(m[1])
 		}
-		for _, entry := range entries {
-			if entry.IsDir() || !strings.HasSuffix(strings.ToLower(entry.Name()), ".html") {
-				continue
-			}
-			fullPath := filepath.Clean(filepath.Join(d.relPath, entry.Name()))
-			seenPathsOnDisk[fullPath] = true
 
-			baseName := strings.TrimSuffix(entry.Name(), ".html")
-			contentBytes, _ := os.ReadFile(fullPath)
-			htmlStr := string(contentBytes)
-			tags := extractHtmlPlaceholders(htmlStr)
-			headersJson, _ := json.Marshal(tags)
+		// Match by current path first, then stable ID, then category and filename.
+		// Filename matching preserves template IDs when a package is restored on a
+		// different computer where the saved absolute data directory has changed.
+		ex, hasExisting := existingByPath[df.fullPath]
+		if !hasExisting {
+			ex, hasExisting = existingByID[baseName]
+		}
+		if !hasExisting {
+			ex, hasExisting = existingByCategoryAndName[df.category+"\x00"+strings.ToLower(df.name)]
+		}
 
-			// Try to extract title from HTML if available
-			titleFromHtml := ""
-			titleRegex := regexp.MustCompile(`(?i)<title>(.*?)</title>`)
-			if m := titleRegex.FindStringSubmatch(htmlStr); len(m) > 1 {
-				titleFromHtml = cleanTemplateDisplayName(m[1])
-			}
-
-			// Match by current path first, then stable ID, then category and filename.
-			// Filename matching preserves template IDs when a package is restored on a
-			// different computer where the saved absolute data directory has changed.
-			ex, hasExisting := existingByPath[fullPath]
-			if !hasExisting {
-				ex, hasExisting = existingByID[baseName]
-			}
-			if !hasExisting {
-				ex, hasExisting = existingByCategoryAndName[d.category+"\x00"+strings.ToLower(entry.Name())]
-			}
-
-			// Check if this template has a saved builder config in meta table
-			var metaNameAr string
-			var metaColor string
-			var metaType string
-			var metaVal string
-			if errMeta := s.db.QueryRow("SELECT value FROM meta WHERE key = ? OR key = ?", "tpl_builder_config_"+baseName, "tpl_builder_config_"+ex.id).Scan(&metaVal); errMeta == nil && metaVal != "" {
-				var bc map[string]any
-				if errJson := json.Unmarshal([]byte(metaVal), &bc); errJson == nil {
-					if n, ok := bc["name_ar"].(string); ok && strings.TrimSpace(n) != "" {
-						metaNameAr = strings.TrimSpace(n)
-					}
-					if c, ok := bc["primary_color"].(string); ok && strings.TrimSpace(c) != "" {
-						metaColor = strings.TrimSpace(c)
-					}
-					if tp, ok := bc["type"].(string); ok && strings.TrimSpace(tp) != "" {
-						metaType = strings.TrimSpace(tp)
-					}
+		// Check if this template has a saved builder config in meta table
+		var metaNameAr string
+		var metaColor string
+		var metaType string
+		var metaVal string
+		if errMeta := tx.QueryRow("SELECT value FROM meta WHERE key = ? OR key = ?", "tpl_builder_config_"+baseName, "tpl_builder_config_"+ex.id).Scan(&metaVal); errMeta == nil && metaVal != "" {
+			var bc map[string]any
+			if errJson := json.Unmarshal([]byte(metaVal), &bc); errJson == nil {
+				if n, ok := bc["name_ar"].(string); ok && strings.TrimSpace(n) != "" {
+					metaNameAr = strings.TrimSpace(n)
+				}
+				if c, ok := bc["primary_color"].(string); ok && strings.TrimSpace(c) != "" {
+					metaColor = strings.TrimSpace(c)
+				}
+				if tp, ok := bc["type"].(string); ok && strings.TrimSpace(tp) != "" {
+					metaType = strings.TrimSpace(tp)
 				}
 			}
+		}
 
-			var id, nameAr, category, badge, colorHex string
+		var id, nameAr, category, badge, colorHex string
 
-			if isUuidStr(baseName) {
-				// Custom template created via template-builder
-				id = baseName
-				if hasExisting && ex.id != "" && ex.id != baseName {
-					// Clean up legacy hash ID row to avoid duplicate entries
-					_, _ = s.db.Exec("DELETE FROM excel_templates WHERE id = ?", ex.id)
-				}
+		if isUuidStr(baseName) {
+			// Custom template created via template-builder
+			id = baseName
+			if hasExisting && ex.id != "" && ex.id != baseName {
+				// Clean up legacy hash ID row to avoid duplicate entries
+				_, _ = tx.Exec("DELETE FROM excel_templates WHERE id = ?", ex.id)
+			}
 
-				if hasExisting && !isUuidStr(ex.nameAr) && strings.TrimSpace(ex.nameAr) != "" && ex.nameAr != "قالب مخصص" {
-					nameAr = ex.nameAr
-				} else if metaNameAr != "" {
-					nameAr = metaNameAr
-				} else if titleFromHtml != "" && !isUuidStr(titleFromHtml) && titleFromHtml != "قالب فواتير مخصص" && titleFromHtml != "قالب سند مالي مخصص" {
-					nameAr = titleFromHtml
-				} else if hasExisting && ex.nameAr != "" && !isUuidStr(ex.nameAr) {
-					nameAr = ex.nameAr
-				} else {
-					nameAr = "قالب مخصص"
-				}
-
-				category = d.category
-				if metaType != "" {
-					category = metaType
-				}
-				badge = "مخصص"
-				if category == "documents" {
-					badge = "سند مخصص"
-				}
-				colorHex = "#d4af37"
-				if metaColor != "" {
-					colorHex = metaColor
-				} else if hasExisting && ex.colorHex != "" {
-					colorHex = ex.colorHex
-				}
+			if hasExisting && !isUuidStr(ex.nameAr) && strings.TrimSpace(ex.nameAr) != "" && ex.nameAr != "قالب مخصص" {
+				nameAr = ex.nameAr
+			} else if metaNameAr != "" {
+				nameAr = metaNameAr
+			} else if titleFromHtml != "" && !isUuidStr(titleFromHtml) && titleFromHtml != "قالب فواتير مخصص" && titleFromHtml != "قالب سند مالي مخصص" {
+				nameAr = titleFromHtml
+			} else if hasExisting && ex.nameAr != "" && !isUuidStr(ex.nameAr) {
+				nameAr = ex.nameAr
 			} else {
-				// Preset / default file
-				if hasExisting && !isUuidStr(ex.nameAr) && strings.TrimSpace(ex.nameAr) != "" {
-					id = ex.id
-					nameAr = ex.nameAr
-					if isGenericTemplateTitle(nameAr, ex.category) {
-						if localized := localizedPresetName(baseName, ex.category); localized != "" {
-							nameAr = localized
-						}
-					}
-					category = ex.category
-					badge = ex.badge
-					colorHex = ex.colorHex
-				} else if titleFromHtml != "" && !isUuidStr(titleFromHtml) {
-					h := sha256.Sum256([]byte(d.category + "/" + entry.Name()))
-					id = "tpl_" + hex.EncodeToString(h[:4])
-					nameAr = titleFromHtml
-					if isGenericTemplateTitle(titleFromHtml, d.category) {
-						if localized := localizedPresetName(baseName, d.category); localized != "" {
-							nameAr = localized
-						}
-					}
-					badge = d.badge
-					colorHex = "#d4af37"
-					category = d.category
-				} else {
-					h := sha256.Sum256([]byte(d.category + "/" + entry.Name()))
-					id = "tpl_" + hex.EncodeToString(h[:4])
-					nameAr = strings.ReplaceAll(baseName, "_", " ")
-					badge = d.badge
-					colorHex = "#d4af37"
-					category = d.category
-				}
+				nameAr = "قالب مخصص"
 			}
 
-			if _, err := s.db.Exec(`
-				INSERT INTO excel_templates (id, name_ar, name_en, description, badge, category, file_path, color_hex, headers_json, is_active, updated_at)
-				VALUES (?, ?, '', 'قالب معتمد في النظام', ?, ?, ?, ?, ?, 1, ?)
-				ON CONFLICT(id) DO UPDATE SET
-					name_ar = excluded.name_ar,
-					file_path = excluded.file_path,
-					category = excluded.category,
-					badge = excluded.badge,
-					color_hex = excluded.color_hex,
-					headers_json = excluded.headers_json,
-					updated_at = excluded.updated_at
-			`, id, nameAr, badge, category, fullPath, colorHex, string(headersJson), db.NowIso()); err == nil {
-				seenTemplateIDs[id] = true
+			category = df.category
+			if metaType != "" {
+				category = metaType
 			}
+			badge = "مخصص"
+			if category == "documents" {
+				badge = "سند مخصص"
+			}
+			colorHex = "#d4af37"
+			if metaColor != "" {
+				colorHex = metaColor
+			} else if hasExisting && ex.colorHex != "" {
+				colorHex = ex.colorHex
+			}
+		} else {
+			// Preset / default file
+			if hasExisting && !isUuidStr(ex.nameAr) && strings.TrimSpace(ex.nameAr) != "" {
+				id = ex.id
+				nameAr = ex.nameAr
+				if isGenericTemplateTitle(nameAr, ex.category) {
+					if localized := localizedPresetName(baseName, ex.category); localized != "" {
+						nameAr = localized
+					}
+				}
+				category = ex.category
+				badge = ex.badge
+				colorHex = ex.colorHex
+			} else if titleFromHtml != "" && !isUuidStr(titleFromHtml) {
+				h := sha256.Sum256([]byte(df.category + "/" + df.name))
+				id = "tpl_" + hex.EncodeToString(h[:4])
+				nameAr = titleFromHtml
+				if isGenericTemplateTitle(titleFromHtml, df.category) {
+					if localized := localizedPresetName(baseName, df.category); localized != "" {
+						nameAr = localized
+					}
+				}
+				badge = df.badge
+				colorHex = "#d4af37"
+				category = df.category
+			} else {
+				h := sha256.Sum256([]byte(df.category + "/" + df.name))
+				id = "tpl_" + hex.EncodeToString(h[:4])
+				nameAr = strings.ReplaceAll(baseName, "_", " ")
+				badge = df.badge
+				colorHex = "#d4af37"
+				category = df.category
+			}
+		}
+
+		if _, err := tx.Exec(`
+			INSERT INTO excel_templates (id, name_ar, name_en, description, badge, category, file_path, color_hex, headers_json, is_active, updated_at)
+			VALUES (?, ?, '', 'قالب معتمد في النظام', ?, ?, ?, ?, ?, 1, ?)
+			ON CONFLICT(id) DO UPDATE SET
+				name_ar = excluded.name_ar,
+				file_path = excluded.file_path,
+				category = excluded.category,
+				badge = excluded.badge,
+				color_hex = excluded.color_hex,
+				headers_json = excluded.headers_json,
+				updated_at = excluded.updated_at
+		`, id, nameAr, badge, category, df.fullPath, colorHex, string(headersJson), nowIso); err == nil {
+			seenTemplateIDs[id] = true
 		}
 	}
 
@@ -505,17 +724,24 @@ func (s *TemplateService) SyncDiskTemplates() error {
 			args = append(args, id)
 		}
 		query := fmt.Sprintf("DELETE FROM excel_templates WHERE id NOT IN (%s)", strings.Join(placeholders, ","))
-		_, _ = s.db.Exec(query, args...)
+		_, _ = tx.Exec(query, args...)
 	} else {
-		_, _ = s.db.Exec("DELETE FROM excel_templates")
+		_, _ = tx.Exec("DELETE FROM excel_templates")
 	}
 
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	s.syncSig = diskSig
+	s.syncedCount = len(seenTemplateIDs)
+	s.catalog = nil
+	s.pathCache = nil
 	return nil
 }
 
 func extractHtmlPlaceholders(content string) []string {
-	tagRegex := regexp.MustCompile(`\{\{\s*([a-zA-Z0-9_\-\.]+)\s*\}\}`)
-	matches := tagRegex.FindAllString(content, -1)
+	matches := tplPlaceholderRegex.FindAllString(content, -1)
 	seen := make(map[string]bool)
 	var list []string
 	for _, m := range matches {
@@ -532,49 +758,61 @@ func extractHtmlPlaceholders(content string) []string {
 
 func (s *TemplateService) List(typeFilter, categoryFilter string) ([]TemplateCatalogItem, error) {
 	_ = s.SyncDiskTemplates()
-	list := make([]TemplateCatalogItem, 0)
 
-	rows, err := s.db.Query(`
-		SELECT id, name_ar, name_en, description, badge, category, file_path, color_hex, headers_json, is_active
-		FROM excel_templates
-	`)
-	if err != nil {
-		return list, nil
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var tpl TemplateCatalogItem
-		var filePath, headersJson string
-		var isAct int
-		if err := rows.Scan(&tpl.ID, &tpl.NameAr, &tpl.NameEn, &tpl.Description, &tpl.Badge, &tpl.Category, &filePath, &tpl.ColorHex, &headersJson, &isAct); err != nil {
-			continue
-		}
-		if strings.TrimSpace(tpl.NameAr) == "" {
-			tpl.NameAr = localizedPresetName(strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath)), tpl.Category)
-			if tpl.NameAr == "" {
-				tpl.NameAr = "قالب مخصص"
+	s.mu.Lock()
+	if s.catalog == nil {
+		loaded := make([]TemplateCatalogItem, 0)
+		paths := make(map[string]string)
+		rows, err := s.db.Query(`
+			SELECT id, name_ar, name_en, description, badge, category, file_path, color_hex, headers_json, is_active
+			FROM excel_templates
+		`)
+		if err == nil {
+			for rows.Next() {
+				var tpl TemplateCatalogItem
+				var filePath, headersJson string
+				var isAct int
+				if err := rows.Scan(&tpl.ID, &tpl.NameAr, &tpl.NameEn, &tpl.Description, &tpl.Badge, &tpl.Category, &filePath, &tpl.ColorHex, &headersJson, &isAct); err != nil {
+					continue
+				}
+				if strings.TrimSpace(tpl.NameAr) == "" {
+					tpl.NameAr = localizedPresetName(strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath)), tpl.Category)
+					if tpl.NameAr == "" {
+						tpl.NameAr = "قالب مخصص"
+					}
+				}
+				tpl.IsActive = isAct == 1
+				tpl.IsDefault = tpl.ID == "standard"
+				tpl.FilePath = filePath
+				if fi, errStat := os.Stat(filePath); errStat == nil {
+					tpl.FileSize = fi.Size()
+				}
+				if headersJson != "" {
+					_ = json.Unmarshal([]byte(headersJson), &tpl.Headers)
+				}
+				if tpl.Headers == nil {
+					tpl.Headers = []string{}
+				}
+				tpl.TotalFields = len(tpl.Headers)
+				if tpl.TotalFields > 0 {
+					tpl.FieldsSummary = fmt.Sprintf("قالب HTML — تم اكتشاف %d وسم تلقائياً", tpl.TotalFields)
+				} else {
+					tpl.FieldsSummary = "قالب HTML معتمد"
+				}
+				loaded = append(loaded, tpl)
+				paths[tpl.ID] = filePath
 			}
+			rows.Close()
 		}
-		tpl.IsActive = isAct == 1
-		tpl.IsDefault = tpl.ID == "standard"
-		tpl.FilePath = filePath
-		if fi, errStat := os.Stat(filePath); errStat == nil {
-			tpl.FileSize = fi.Size()
-		}
-		if headersJson != "" {
-			_ = json.Unmarshal([]byte(headersJson), &tpl.Headers)
-		}
-		if tpl.Headers == nil {
-			tpl.Headers = []string{}
-		}
-		tpl.TotalFields = len(tpl.Headers)
-		if tpl.TotalFields > 0 {
-			tpl.FieldsSummary = fmt.Sprintf("قالب HTML — تم اكتشاف %d وسم تلقائياً", tpl.TotalFields)
-		} else {
-			tpl.FieldsSummary = "قالب HTML معتمد"
-		}
+		s.catalog = loaded
+		s.pathCache = paths
+	}
+	snapshot := make([]TemplateCatalogItem, len(s.catalog))
+	copy(snapshot, s.catalog)
+	s.mu.Unlock()
 
+	list := make([]TemplateCatalogItem, 0, len(snapshot))
+	for _, tpl := range snapshot {
 		if typeFilter != "" && typeFilter != "all" {
 			if typeFilter == "invoices" && tpl.Category != "invoices" && tpl.Category != "custom" && tpl.Category != "custom_invoices" {
 				continue
@@ -596,6 +834,11 @@ func (s *TemplateService) List(typeFilter, categoryFilter string) ([]TemplateCat
 			if (categoryFilter == "reports" || categoryFilter == "statements") && tpl.Category != categoryFilter {
 				continue
 			}
+		}
+		if len(tpl.Headers) > 0 {
+			hCopy := make([]string, len(tpl.Headers))
+			copy(hCopy, tpl.Headers)
+			tpl.Headers = hCopy
 		}
 		list = append(list, tpl)
 	}
@@ -742,6 +985,7 @@ func (s *TemplateService) Upload(input UploadTemplateInput) (*TemplateCatalogIte
 		_ = os.Remove(filePath)
 		return nil, err
 	}
+	s.InvalidateCache()
 
 	return &TemplateCatalogItem{
 		ID:            id,
@@ -769,11 +1013,13 @@ func (s *TemplateService) Delete(id string) error {
 		_ = os.Remove(filePath)
 	}
 	_, err := s.db.Exec("DELETE FROM excel_templates WHERE id = ?", id)
+	s.InvalidateCache()
 	return err
 }
 
 func (s *TemplateService) Reset() error {
 	_, _ = s.db.Exec("DELETE FROM excel_templates")
+	s.InvalidateCache()
 	return s.SyncDiskTemplates()
 }
 
@@ -782,6 +1028,15 @@ func (s *TemplateService) Reset() error {
 func (s *TemplateService) GetFilePath(id string) (string, error) {
 	if id == "" {
 		return "", errors.New("empty template id")
+	}
+
+	s.mu.Lock()
+	cachedPath := s.pathCache[id]
+	s.mu.Unlock()
+	if cachedPath != "" {
+		if _, errStat := os.Stat(cachedPath); errStat == nil {
+			return cachedPath, nil
+		}
 	}
 
 	cleanId := strings.TrimSuffix(id, ".html")
@@ -795,6 +1050,12 @@ func (s *TemplateService) GetFilePath(id string) (string, error) {
 		`, id, cleanId, "%"+id+"%", "%"+cleanId+"%").Scan(&filePath)
 		if err == nil && filePath != "" {
 			if _, errStat := os.Stat(filePath); errStat == nil {
+				s.mu.Lock()
+				if s.pathCache == nil {
+					s.pathCache = make(map[string]string)
+				}
+				s.pathCache[id] = filePath
+				s.mu.Unlock()
 				return filePath, nil
 			}
 		}
@@ -1166,6 +1427,41 @@ func formatNationalAddressEn(cityEn, districtEn, streetEn, buildingNo, postalCod
 	return strings.Join(parts, " - ")
 }
 
+func normalizeKaratBucket(raw string) (string, float64) {
+	s := strings.TrimSpace(strings.ToUpper(raw))
+	s = strings.NewReplacer(
+		"عيار", "", "K", "", " ", "", "\t", "",
+		"٠", "0", "١", "1", "٢", "2", "٣", "3", "٤", "4",
+		"٥", "5", "٦", "6", "٧", "7", "٨", "8", "٩", "9",
+	).Replace(s)
+	switch {
+	case s == "" || s == "21" || s == "875" || s == "0.875":
+		return "21", 21
+	case s == "18" || s == "750" || s == "0.750" || s == "0.75":
+		return "18", 18
+	case s == "22" || s == "916" || s == "0.916" || s == "916.6":
+		return "22", 22
+	case s == "24" || s == "999" || s == "999.9" || s == "995" || s == "0.999" || s == "1000":
+		return "24", 24
+	}
+	if strings.Contains(s, "18") {
+		return "18", 18
+	}
+	if strings.Contains(s, "21") {
+		return "21", 21
+	}
+	if strings.Contains(s, "22") {
+		return "22", 22
+	}
+	if strings.Contains(s, "24") {
+		return "24", 24
+	}
+	if v, err := strconv.ParseFloat(s, 64); err == nil && v > 0 && v <= 24 {
+		return "other", v
+	}
+	return "other", 21
+}
+
 // ─── Tag Substitution Engine ──────────────────────────────────────────────────
 
 func (s *TemplateService) SubstituteInvoiceTags(tpl string, inv *InvoiceView) string {
@@ -1210,6 +1506,7 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 
 	sellerName, sellerTax, sellerAddress, sellerCR, sellerCity, sellerCountry := "", "", "", "", "", ""
 	sellerNameEn, sellerAddressEn, sellerPhone, sellerEmail := "", "", "", ""
+	sellerBank, sellerIban := "", ""
 	sellerLogoHtml := ""
 	if inv.IssuerSnapshot != nil {
 		sellerName = inv.IssuerSnapshot.NameAr
@@ -1220,6 +1517,8 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 		sellerCR = inv.IssuerSnapshot.CommercialRegister
 		sellerPhone = inv.IssuerSnapshot.Phone
 		sellerEmail = inv.IssuerSnapshot.Email
+		sellerBank = inv.IssuerSnapshot.BankName
+		sellerIban = inv.IssuerSnapshot.BankIban
 
 		sellerAddress = formatNationalAddress(inv.IssuerSnapshot.City, inv.IssuerSnapshot.District, inv.IssuerSnapshot.Street, inv.IssuerSnapshot.BuildingNo, inv.IssuerSnapshot.PostalCode)
 		if sellerAddress == "" {
@@ -1241,9 +1540,7 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 				sellerAddressEn = strings.TrimSpace(inv.IssuerSnapshot.StreetEn + " " + inv.IssuerSnapshot.CityEn)
 			}
 		}
-		if inv.IssuerSnapshot.LogoData != nil && *inv.IssuerSnapshot.LogoData != "" {
-			sellerLogoHtml = fmt.Sprintf(`<img src="%s" alt="Logo" style="max-height:75px;max-width:140px;object-fit:contain;" />`, *inv.IssuerSnapshot.LogoData)
-		}
+		sellerLogoHtml = BuildIssuerLogoHTML(inv.IssuerSnapshot.LogoData, 140, 75)
 	}
 
 	if sellerName == "" && inv.SellerName != "" {
@@ -1281,18 +1578,15 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 			}
 		}
 	}
-	if sellerLogoHtml == "" {
-		sellerLogoHtml = `<img src="/img/logo-banner.jpg" alt="GOLDX" style="max-height:75px;max-width:140px;object-fit:cover;border-radius:8px;" />`
-	}
 
 	qrB64 := ""
 	payload := inv.QrPayload
 
-	isPhase2 := inv.ZatcaPhase == "PHASE2" || (inv.SignatureMode != "" && inv.SignatureMode != "NONE")
+	isPhase2 := inv.ZatcaPhase == "PHASE2"
 	needRegen := payload == ""
-	if !needRegen && isPhase2 {
+	if !needRegen {
 		tags, err := zatca.ParseQrPayload(payload)
-		if err != nil || len(tags) < 6 {
+		if err != nil || (isPhase2 && len(tags) < 6) || (!isPhase2 && len(tags) != 5) {
 			needRegen = true
 		}
 	}
@@ -1326,14 +1620,14 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 			vat = "150.00"
 		}
 		sampleParams := zatca.QrParams{
-			SellerName:  sName,
-			VatNumber:   sTax,
-			Timestamp:   issDate + "T" + issTime + "Z",
-			Total:       tot,
-			VatTotal:    vat,
-			InvoiceHash: inv.InvoiceHash,
+			SellerName: sName,
+			VatNumber:  sTax,
+			Timestamp:  issDate + "T" + issTime + "Z",
+			Total:      tot,
+			VatTotal:   vat,
 		}
 		if isPhase2 {
+			sampleParams.InvoiceHash = inv.InvoiceHash
 			sampleParams = zatca.BuildPhase2Params(sampleParams, inv.InvoiceNumber)
 			if inv.InvoiceHash == "" {
 				inv.InvoiceHash = sampleParams.InvoiceHash
@@ -1351,24 +1645,83 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 
 	totalQty := 0.0
 	totalWage := 0.0
+	totalGoldValue := 0.0
+	goldTaxAmount := 0.0
+	wageTaxAmount := 0.0
+	weight21Equiv := 0.0
 	weightsByKarat := map[string]float64{}
 	for _, it := range inv.Lines {
 		totalQty += it.Quantity
+		gp := it.GramPriceMajor
 		w := it.WageMajor
-		if w == 0 && it.GramPriceMajor == 0 && it.UnitPriceMajor > 0 {
-			w = it.UnitPriceMajor
+		switch inv.GoldInvoiceType {
+		case "PRICE_ONLY":
+			w = 0
+			if gp == 0 && it.UnitPriceMajor > 0 {
+				gp = it.UnitPriceMajor
+			}
+		case "WAGE_ONLY":
+			gp = 0
+			if w == 0 && it.UnitPriceMajor > 0 {
+				w = it.UnitPriceMajor
+			}
+		default:
+			if gp == 0 && w == 0 && it.UnitPriceMajor > 0 {
+				gp = it.UnitPriceMajor
+			}
 		}
-		totalWage += it.Quantity * w
-		karat := strings.TrimSpace(it.Karat)
-		if karat == "" {
-			karat = "21"
+		lineGold := it.Quantity * gp
+		lineWage := it.Quantity * w
+		totalGoldValue += lineGold
+		totalWage += lineWage
+
+		switch inv.GoldInvoiceType {
+		case "PRICE_ONLY":
+			goldTaxAmount += it.TaxAmountMajor
+		case "WAGE_ONLY":
+			wageTaxAmount += it.TaxAmountMajor
+		default:
+			denom := lineGold + lineWage
+			if denom > 0 && it.TaxAmountMajor > 0 {
+				gTax := math.Round((it.TaxAmountMajor*(lineGold/denom))*100) / 100
+				goldTaxAmount += gTax
+				wageTaxAmount += it.TaxAmountMajor - gTax
+			}
 		}
-		weightsByKarat[karat] += it.Quantity
+
+		bucket, karatNum := normalizeKaratBucket(it.Karat)
+		weightsByKarat[bucket] += it.Quantity
+		weight21Equiv += it.Quantity * (karatNum / 21.0)
 	}
 	wageAmountStr := fmt.Sprintf("%.2f", totalWage)
-	if totalWage == 0 && (inv.GoldInvoiceType == "WAGE_ONLY" || inv.SubtotalMajor > 0) {
+	if totalWage == 0 && inv.GoldInvoiceType == "WAGE_ONLY" && inv.SubtotalMajor > 0 {
 		wageAmountStr = fmt.Sprintf("%.2f", inv.SubtotalMajor)
 	}
+	goldValueStr := fmt.Sprintf("%.2f", totalGoldValue)
+	if totalGoldValue == 0 && inv.GoldInvoiceType == "PRICE_ONLY" && inv.SubtotalMajor > 0 {
+		goldValueStr = fmt.Sprintf("%.2f", inv.SubtotalMajor)
+	}
+	if inv.GoldInvoiceType == "PRICE_ONLY" && goldTaxAmount == 0 && inv.TaxAmountMajor > 0 {
+		goldTaxAmount = inv.TaxAmountMajor
+	} else if inv.GoldInvoiceType == "WAGE_ONLY" && wageTaxAmount == 0 && inv.TaxAmountMajor > 0 {
+		wageTaxAmount = inv.TaxAmountMajor
+	} else if goldTaxAmount+wageTaxAmount == 0 && inv.TaxAmountMajor > 0 {
+		goldTaxAmount = inv.TaxAmountMajor
+	}
+	goldTaxStr := fmt.Sprintf("%.2f", goldTaxAmount)
+	wageTaxStr := fmt.Sprintf("%.2f", wageTaxAmount)
+	totalWeightWords := tafqeetGoldArabic(totalQty, "")
+	if totalWeightWords == "" {
+		totalWeightWords = "فقط صفر جرام لا غير"
+	}
+	bankInfoParts := []string{}
+	if strings.TrimSpace(sellerBank) != "" {
+		bankInfoParts = append(bankInfoParts, "الحساب البنكي: "+strings.TrimSpace(sellerBank))
+	}
+	if strings.TrimSpace(sellerIban) != "" {
+		bankInfoParts = append(bankInfoParts, "IBAN: "+strings.TrimSpace(sellerIban))
+	}
+	bankInfoStr := strings.Join(bankInfoParts, " · ")
 
 	paidAmount := inv.PaidAmountMajor
 	isCash := strings.Contains(inv.PaymentMethod, "نقد") || strings.EqualFold(inv.PaymentMethod, "CASH") || strings.Contains(strings.ToLower(inv.PaymentMethod), "cash")
@@ -1440,11 +1793,9 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 	}
 
 	// تنظيف ذاتي: إذا قام الذكاء الاصطناعي أو المستخدم بتغليف وسم الشعار أو الباركود داخل <img src="{{logo}}">
-	cleanImgLogoRegex := regexp.MustCompile(`(?i)<img\b[^>]*src=["']\{\{\s*(logo|seller_logo|company_logo|شعار|الشعار)\s*\}\}["'][^>]*>`)
-	tpl = cleanImgLogoRegex.ReplaceAllString(tpl, "{{logo}}")
+	tpl = tplCleanImgLogoRegex.ReplaceAllString(tpl, "{{logo}}")
 
-	cleanImgQrRegex := regexp.MustCompile(`(?i)<img\b[^>]*src=["']\{\{\s*(qr_code|qr|qrcode|barcode|zatca_qr|zatca_code|zatca_payload|رمز_الاستجابة|الباركود|باركود)\s*\}\}["'][^>]*>`)
-	tpl = cleanImgQrRegex.ReplaceAllString(tpl, "{{qr_code}}")
+	tpl = tplCleanImgQrRegex.ReplaceAllString(tpl, "{{qr_code}}")
 
 	// استبدال أي رمز قديم تسبب في إظهار "جل جلاله" بدلاً من رمز الريال
 	tpl = strings.ReplaceAll(tpl, "&#xFDFB;", "{{sar_symbol}}")
@@ -1504,6 +1855,12 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 		"{{seller_country}}", sellerCountry,
 		"{{seller_phone}}", sellerPhone,
 		"{{seller_email}}", sellerEmail,
+		"{{bank_name}}", sellerBank,
+		"{{seller_bank}}", sellerBank,
+		"{{seller_iban}}", sellerIban,
+		"{{iban}}", sellerIban,
+		"{{bank_account}}", sellerIban,
+		"{{bank_info}}", bankInfoStr,
 		"{{seller_meta_ar}}", sellerMetaAr,
 		"{{seller_meta_en}}", sellerMetaEn,
 
@@ -1597,16 +1954,28 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 		"{{wage_total}}", wageAmountStr,
 		"{{wage_amount}}", wageAmountStr,
 		"{{total_wage_amount}}", wageAmountStr,
+		"{{total_gold_value}}", goldValueStr,
+		"{{gold_value}}", goldValueStr,
+		"{{gold_total}}", goldValueStr,
+		"{{gold_tax_amount}}", goldTaxStr,
+		"{{gold_tax}}", goldTaxStr,
+		"{{wage_tax_amount}}", wageTaxStr,
+		"{{wage_tax}}", wageTaxStr,
 		"{{weight_18}}", fmt.Sprintf("%.2f", weightsByKarat["18"]),
 		"{{weight_21}}", fmt.Sprintf("%.2f", weightsByKarat["21"]),
 		"{{weight_22}}", fmt.Sprintf("%.2f", weightsByKarat["22"]),
 		"{{weight_24}}", fmt.Sprintf("%.2f", weightsByKarat["24"]),
 		"{{weight_other}}", fmt.Sprintf("%.2f", weightsByKarat["other"]),
+		"{{weight_21_equiv}}", fmt.Sprintf("%.2f", weight21Equiv),
+		"{{equivalent_21k}}", fmt.Sprintf("%.2f", weight21Equiv),
+		"{{prevalent_weight}}", fmt.Sprintf("%.2f", weight21Equiv),
 		"{{credit_days}}", "0",
 		"{{seller_branch}}", "فرع الذهب والمجوهرات",
 		"{{seller_license}}", "11/40301936",
 		"{{seller_activity}}", "صناعة و بيع وشراء المعادن الثمينة والأحجار الكريمة",
 		"{{gold_amount_in_words}}", tafqeetGoldArabic(totalQty, "عيار 875"),
+		"{{total_weight_words}}", totalWeightWords,
+		"{{gold_weight_in_words}}", totalWeightWords,
 		"{{total_pieces}}", fmt.Sprintf("%d", len(inv.Lines)),
 		"{{reference_no}}", "",
 		"{{gold_price}}", func() string {
@@ -1631,48 +2000,40 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 	).Replace(tpl)
 
 	// استبدال أي وسم صفوف أصناف مهما كان اسمه
-	itemsRowsRegex := regexp.MustCompile(`\{\{\s*(items_rows[a-zA-Z0-9_-]*|items_table_body[a-zA-Z0-9_-]*|items_body[a-zA-Z0-9_-]*|table_rows[a-zA-Z0-9_-]*)\s*\}\}`)
-	result = itemsRowsRegex.ReplaceAllString(result, smartRows)
+	result = tplItemsRowsRegex.ReplaceAllString(result, smartRows)
 
 	// استبدال ذكي لجميع وسوم الباركود ورمز الاستجابة السريع بكافة الصيغ الممكنة
-	qrTagRegex := regexp.MustCompile(`(?i)\{\{\s*(qr_code|qr|qrcode|barcode|zatca_qr|zatca_code|zatca_payload|رمز_الاستجابة|الباركود|باركود)\s*\}\}`)
-	result = qrTagRegex.ReplaceAllString(result, qrB64)
+	result = tplQrTagRegex.ReplaceAllString(result, qrB64)
 
 	// استبدال ذكي لوسوم شارة ومرحلة الفوترة
-	zatcaBadgeRegex := regexp.MustCompile(`(?i)\{\{\s*(zatca_phase_badge|zatca_badge|شارة_المرحلة)\s*\}\}`)
 	phaseBadge := "م1 — أساسي"
 	if isPhase2 {
 		phaseBadge = "م2 — مشفر وموقّع ZATCA"
 	}
-	result = zatcaBadgeRegex.ReplaceAllString(result, phaseBadge)
+	result = tplZatcaBadgeRegex.ReplaceAllString(result, phaseBadge)
 
-	zatcaPhaseRegex := regexp.MustCompile(`(?i)\{\{\s*(zatca_phase|مرحلة_الزكاة|مرحلة_الفوترة)\s*\}\}`)
-	result = zatcaPhaseRegex.ReplaceAllString(result, inv.ZatcaPhase)
+	result = tplZatcaPhaseRegex.ReplaceAllString(result, inv.ZatcaPhase)
 
 	// استبدال ذكي لجميع وسوم الشعار بكافة الصيغ الممكنة
-	logoTagRegex := regexp.MustCompile(`(?i)\{\{\s*(logo|seller_logo|company_logo|شعار|الشعار)\s*\}\}`)
-	result = logoTagRegex.ReplaceAllString(result, sellerLogoHtml)
+	result = tplLogoTagRegex.ReplaceAllString(result, sellerLogoHtml)
 
 	// إذا لم يحتوِ القالب على وسم باركود صريح ولكنه يحتوي على حاوية باركود في الكود (كلاس أو آيدي)
 	if !strings.Contains(tpl, "{{qr") && !strings.Contains(tpl, "{{barcode") && !strings.Contains(tpl, "{{zatca") && !strings.Contains(tpl, "{{باركود") {
-		qrContainerRegex := regexp.MustCompile(`(?i)(<div\b[^>]*(?:class|id)=["'][^"']*(?:qr-img-placeholder|qr-box|qr-frame|qr-wrap|qr-container|qr-code|qrcode)[^"']*["'][^>]*>)([\s\S]*?)(</div>)`)
-		if qrContainerRegex.MatchString(result) {
-			result = qrContainerRegex.ReplaceAllString(result, "${1}"+qrB64+"${3}")
+		if tplQrContainerRegex.MatchString(result) {
+			result = tplQrContainerRegex.ReplaceAllString(result, "${1}"+qrB64+"${3}")
 		}
 	}
 
 	// إذا لم يحتوِ القالب على وسم شعار صريح ولكنه يحتوي على حاوية شعار في الكود
-	if !strings.Contains(tpl, "{{logo") && !strings.Contains(tpl, "{{شعار") && !strings.Contains(tpl, "{{seller_logo") && !strings.Contains(tpl, "{{company_logo") {
-		logoContainerRegex := regexp.MustCompile(`(?i)(<div\b[^>]*(?:class|id)=["'][^"']*(?:logo-container|logo-slot|logo-placeholder|company-logo|seller-logo)[^"']*["'][^>]*>)([\s\S]*?)(</div>)`)
-		if logoContainerRegex.MatchString(result) {
-			result = logoContainerRegex.ReplaceAllString(result, "${1}"+sellerLogoHtml+"${3}")
+	if !tplLogoTagRegex.MatchString(tpl) {
+		if tplLogoContainerRegex.MatchString(result) {
+			result = tplLogoContainerRegex.ReplaceAllString(result, "${1}"+sellerLogoHtml+"${3}")
 		}
 	}
 
 	// استبدال ذكي إضافي إذا كان القالب يحتوي على tbody ثابت أو فارغ بدون وسوم
-	tbodyRegex := regexp.MustCompile(`(?i)(<tbody\b[^>]*>)([\s\S]*?)(</tbody>)`)
-	if tbodyRegex.MatchString(result) && !strings.Contains(tpl, "{{items_rows") && !strings.Contains(tpl, "{{items_table") {
-		result = tbodyRegex.ReplaceAllString(result, "${1}"+smartRows+"${3}")
+	if tplTbodyOuterRegex.MatchString(result) && !strings.Contains(tpl, "{{items_rows") && !strings.Contains(tpl, "{{items_table") {
+		result = tplTbodyOuterRegex.ReplaceAllString(result, "${1}"+smartRows+"${3}")
 	}
 
 	if strings.Contains(result, "overflow: hidden") || strings.Contains(result, "overflow:hidden") {
@@ -1680,15 +2041,15 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 		result = strings.ReplaceAll(result, "overflow:hidden", "overflow:visible")
 	}
 
-	dupNoOtherRegex := regexp.MustCompile(`(لا غير\s*)+لا غير`)
-	result = dupNoOtherRegex.ReplaceAllString(result, "لا غير")
-	dupFaqatRegex := regexp.MustCompile(`(فقط\s*)+فقط`)
-	result = dupFaqatRegex.ReplaceAllString(result, "فقط")
+	result = tplDupNoOtherRegex.ReplaceAllString(result, "لا غير")
+	result = tplDupFaqatRegex.ReplaceAllString(result, "فقط")
 	result = strings.ReplaceAll(result, "فقط مبلغ وقدره فقط", "فقط مبلغ وقدره")
 
-	cleanRemainingTags := regexp.MustCompile(`\{\{\s*[a-zA-Z0-9_]+\s*\}\}`)
-	result = cleanRemainingTags.ReplaceAllString(result, "")
+	result = tplCleanRemainingTagRegex.ReplaceAllString(result, "")
 
+	if !strings.Contains(result, "data-hide-empty-logo") {
+		result = injectTemplateStyle(result, EmptyLogoHideStyleTag)
+	}
 	return injectLtrIconsStyle(result)
 }
 
@@ -1776,13 +2137,11 @@ func detectColumnType(th string) colType {
 }
 
 func stripHtmlTags(s string) string {
-	re := regexp.MustCompile(`<[^>]*>`)
-	return re.ReplaceAllString(s, " ")
+	return tplStripTagsRegex.ReplaceAllString(s, " ")
 }
 
 func extractTableHeaders(htmlSnippet string) []string {
-	tableRegex := regexp.MustCompile(`(?i)<table\b[^>]*>([\s\S]*?)</table>`)
-	tableMatches := tableRegex.FindAllString(htmlSnippet, -1)
+	tableMatches := tplTableOuterRegex.FindAllString(htmlSnippet, -1)
 	targetTableHtml := ""
 	for _, tbl := range tableMatches {
 		if strings.Contains(tbl, "items_rows") || strings.Contains(tbl, "items_table_body") || strings.Contains(tbl, "items_body") || strings.Contains(tbl, "table_rows") {
@@ -1804,8 +2163,7 @@ func extractTableHeaders(htmlSnippet string) []string {
 	}
 
 	// 1. Support explicit data-columns attribute on the <table>
-	dataColsRegex := regexp.MustCompile(`(?i)<table\b[^>]*\bdata-columns=["']([^"']+)["']`)
-	if m := dataColsRegex.FindStringSubmatch(targetTableHtml); len(m) > 1 {
+	if m := tplDataColsRegex.FindStringSubmatch(targetTableHtml); len(m) > 1 {
 		rawCols := strings.Split(m[1], ",")
 		cols := make([]string, 0, len(rawCols))
 		for _, c := range rawCols {
@@ -1820,14 +2178,12 @@ func extractTableHeaders(htmlSnippet string) []string {
 	}
 
 	// 2. Check for multi-row thead with colspan / rowspan
-	theadRegex := regexp.MustCompile(`(?i)<thead\b[^>]*>([\s\S]*?)</thead>`)
 	headerArea := targetTableHtml
-	if m := theadRegex.FindStringSubmatch(targetTableHtml); len(m) > 1 {
+	if m := tplTheadRegex.FindStringSubmatch(targetTableHtml); len(m) > 1 {
 		headerArea = m[1]
 	}
 
-	trRegex := regexp.MustCompile(`(?i)<tr\b[^>]*>([\s\S]*?)</tr>`)
-	trMatches := trRegex.FindAllStringSubmatch(headerArea, -1)
+	trMatches := tplTrRegex.FindAllStringSubmatch(headerArea, -1)
 	if len(trMatches) > 1 {
 		multiHeaders := parseMultiRowHeader(trMatches)
 		if len(multiHeaders) > 0 {
@@ -1835,8 +2191,7 @@ func extractTableHeaders(htmlSnippet string) []string {
 		}
 	}
 
-	thRegex := regexp.MustCompile(`(?i)<th\b[^>]*>([\s\S]*?)</th>`)
-	matches := thRegex.FindAllStringSubmatch(headerArea, -1)
+	matches := tplThSimpleRegex.FindAllStringSubmatch(headerArea, -1)
 	if len(matches) > 0 {
 		headers := make([]string, 0, len(matches))
 		for _, m := range matches {
@@ -1849,8 +2204,7 @@ func extractTableHeaders(htmlSnippet string) []string {
 
 	// Try <td> in the first <tr>
 	if len(trMatches) > 0 {
-		tdRegex := regexp.MustCompile(`(?i)<td\b[^>]*>([\s\S]*?)</td>`)
-		tdMatches := tdRegex.FindAllStringSubmatch(trMatches[0][1], -1)
+		tdMatches := tplTdSimpleRegex.FindAllStringSubmatch(trMatches[0][1], -1)
 		if len(tdMatches) > 0 {
 			headers := make([]string, 0, len(tdMatches))
 			for _, m := range tdMatches {
@@ -1871,15 +2225,12 @@ func parseMultiRowHeader(trMatches [][]string) []string {
 	}
 	grid := make(map[cellCoord]string)
 	numRows := len(trMatches)
-	thRegex := regexp.MustCompile(`(?i)<th\b([^>]*)>([\s\S]*?)</th>`)
-	colspanRegex := regexp.MustCompile(`(?i)colspan=["']?(\d+)`)
-	rowspanRegex := regexp.MustCompile(`(?i)rowspan=["']?(\d+)`)
 
 	for r, tr := range trMatches {
 		if len(tr) < 2 {
 			continue
 		}
-		cells := thRegex.FindAllStringSubmatch(tr[1], -1)
+		cells := tplThAttrsRegex.FindAllStringSubmatch(tr[1], -1)
 		c := 0
 		for _, cell := range cells {
 			if len(cell) < 3 {
@@ -1894,13 +2245,13 @@ func parseMultiRowHeader(trMatches [][]string) []string {
 				c++
 			}
 			cs := 1
-			if m := colspanRegex.FindStringSubmatch(attrs); len(m) > 1 {
+			if m := tplColspanRegex.FindStringSubmatch(attrs); len(m) > 1 {
 				if n, err := strconv.Atoi(m[1]); err == nil && n > 0 {
 					cs = n
 				}
 			}
 			rs := 1
-			if m := rowspanRegex.FindStringSubmatch(attrs); len(m) > 1 {
+			if m := tplRowspanRegex.FindStringSubmatch(attrs); len(m) > 1 {
 				if n, err := strconv.Atoi(m[1]); err == nil && n > 0 {
 					rs = n
 				}
@@ -1941,9 +2292,8 @@ func parseMultiRowHeader(trMatches [][]string) []string {
 }
 
 func ensureItemsRowsInTbody(tpl string) string {
-	tbodyRegex := regexp.MustCompile(`(?i)<tbody\b[^>]*>([\s\S]*?)</tbody>`)
 	hasInTbody := false
-	for _, m := range tbodyRegex.FindAllStringSubmatch(tpl, -1) {
+	for _, m := range tplTbodyInnerRegex.FindAllStringSubmatch(tpl, -1) {
 		if len(m) > 1 && strings.Contains(m[1], "items_rows") {
 			hasInTbody = true
 			break
@@ -1953,30 +2303,27 @@ func ensureItemsRowsInTbody(tpl string) string {
 	if hasInTbody {
 		// الوسم موجود داخل tbody بالفعل، لكن قد يكون الذكاء الاصطناعي كتبه أيضاً خارج الجدول بالخطأ
 		// نحمي الوسم الموجود داخل tbody ونحذف أي وسم شارد خارج أي tbody
-		cleanTpl := tbodyRegex.ReplaceAllStringFunc(tpl, func(tb string) string {
+		cleanTpl := tplTbodyInnerRegex.ReplaceAllStringFunc(tpl, func(tb string) string {
 			return strings.ReplaceAll(tb, "{{items_rows}}", "___SAFE_ITEMS_ROWS___")
 		})
-		strayRegex := regexp.MustCompile(`\{\{\s*(items_rows[a-zA-Z0-9_-]*|items_table_body[a-zA-Z0-9_-]*|items_body[a-zA-Z0-9_-]*|table_rows[a-zA-Z0-9_-]*)\s*\}\}`)
-		cleanTpl = strayRegex.ReplaceAllString(cleanTpl, "")
+		cleanTpl = tplItemsRowsRegex.ReplaceAllString(cleanTpl, "")
 		return strings.ReplaceAll(cleanTpl, "___SAFE_ITEMS_ROWS___", "{{items_rows}}")
 	}
 
 	// إذا لم يكن موجوداً داخل أي tbody على الإطلاق:
 	// 1. نحذف أي وسم شارد خارج الجداول حتى لا يظهر مبعثراً كسطر نصي
-	strayRegex := regexp.MustCompile(`\{\{\s*(items_rows[a-zA-Z0-9_-]*|items_table_body[a-zA-Z0-9_-]*|items_body[a-zA-Z0-9_-]*|table_rows[a-zA-Z0-9_-]*)\s*\}\}`)
-	tpl = strayRegex.ReplaceAllString(tpl, "")
+	tpl = tplItemsRowsRegex.ReplaceAllString(tpl, "")
 
 	// 2. نبحث عن جدول الأصناف الرئيسي (الذي يحتوي على كلمات دالة كالأصناف والأسعار) ونضع {{items_rows}} داخل tbody فيه
-	tableRegex := regexp.MustCompile(`(?i)(<table\b[^>]*>[\s\S]*?)(<tbody\b[^>]*>)([\s\S]*?)(</tbody>)([\s\S]*?</table>)`)
 	replaced := false
-	tpl = tableRegex.ReplaceAllStringFunc(tpl, func(tbl string) string {
+	tpl = tplTableWithTbodyRegex.ReplaceAllStringFunc(tpl, func(tbl string) string {
 		if replaced {
 			return tbl
 		}
 		lower := strings.ToLower(tbl)
 		if strings.Contains(lower, "صنف") || strings.Contains(lower, "وصف") || strings.Contains(lower, "بيان") || strings.Contains(lower, "كمية") || strings.Contains(lower, "سعر") || strings.Contains(lower, "item") || strings.Contains(lower, "qty") || strings.Contains(lower, "price") {
 			replaced = true
-			subMatch := tableRegex.FindStringSubmatch(tbl)
+			subMatch := tplTableWithTbodyRegex.FindStringSubmatch(tbl)
 			if len(subMatch) >= 6 {
 				return subMatch[1] + subMatch[2] + "\n{{items_rows}}\n" + subMatch[4] + subMatch[5]
 			}
@@ -1985,15 +2332,11 @@ func ensureItemsRowsInTbody(tpl string) string {
 	})
 
 	if !replaced {
-		firstTbodyRegex := regexp.MustCompile(`(?i)(<tbody\b[^>]*>)([\s\S]*?)(</tbody>)`)
-		tpl = firstTbodyRegex.ReplaceAllString(tpl, "${1}\n{{items_rows}}\n${3}")
+		tpl = tplTbodyOuterRegex.ReplaceAllString(tpl, "${1}\n{{items_rows}}\n${3}")
 	}
 
-	footerBrandRegex := regexp.MustCompile(`(?i)<div\b[^>]*class=["'][^"']*footer-brand[^"']*["'][^>]*>[\s\S]*?</div>`)
-	tpl = footerBrandRegex.ReplaceAllString(tpl, "")
-
-	promoRegex := regexp.MustCompile(`(?i)<div\b[^>]*>\s*تم إنشاء وطباعة هذا المستند عبر نظام رصين[^<]*</div>`)
-	tpl = promoRegex.ReplaceAllString(tpl, "")
+	tpl = tplFooterBrandRegex.ReplaceAllString(tpl, "")
+	tpl = tplPromoRegex.ReplaceAllString(tpl, "")
 
 	return tpl
 }
@@ -2257,6 +2600,7 @@ func (s *TemplateService) SaveBuilderConfig(id string, config any) error {
 			_ = os.Remove(oldAbs)
 		}
 	}
+	s.InvalidateCache()
 	return nil
 }
 
@@ -2431,14 +2775,12 @@ func (s *TemplateService) CombineHTMLDocuments(docs []string) string {
 
 	var allStyles strings.Builder
 	var allBodies strings.Builder
-	styleRegex := regexp.MustCompile(`(?is)<style\b[^>]*>(.*?)</style>`)
-	bodyRegex := regexp.MustCompile(`(?is)<body\b[^>]*>(.*?)</body>`)
 
 	seenStyles := make(map[string]bool)
 
 	for _, doc := range docs {
 		// Extract and deduplicate styles
-		styleMatches := styleRegex.FindAllStringSubmatch(doc, -1)
+		styleMatches := tplStyleTagRegex.FindAllStringSubmatch(doc, -1)
 		for _, sm := range styleMatches {
 			if len(sm) > 1 {
 				trimmed := strings.TrimSpace(sm[1])
@@ -2452,7 +2794,7 @@ func (s *TemplateService) CombineHTMLDocuments(docs []string) string {
 		}
 
 		// Extract body content
-		bMatch := bodyRegex.FindStringSubmatch(doc)
+		bMatch := tplBodyTagRegex.FindStringSubmatch(doc)
 		content := ""
 		if len(bMatch) > 1 {
 			content = strings.TrimSpace(bMatch[1])

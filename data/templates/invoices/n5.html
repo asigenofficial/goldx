@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>n5 — التجاري المصرفي (المزدوج الاحترافي)</title>
+<style>
+  @page { size: A4 portrait; margin: 0; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0;
+    direction: rtl;
+    background: #ffffff;
+    color: #1e293b;
+    font: 10.5px/1.4 'goldx Document', Tahoma, Arial, sans-serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  h1, h2, h3, p { margin: 0; }
+  .invoice-container {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 8mm;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    position: relative;
+    overflow: visible;
+  }
+  .top-content-wrap {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .n5-header {
+    background: #5c162e;
+    color: #ffffff;
+    padding: 10px 14px;
+    border-bottom: 3px solid #cbd5e1;
+    display: grid;
+    grid-template-columns: 1fr 96px 1fr;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 6px;
+    flex-shrink: 0;
+  }
+  .n5-ar h2 {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 2px;
+  }
+  .n5-ar p, .n5-en p {
+    font-size: 9px;
+    color: #f3dce2;
+    line-height: 1.4;
+  }
+  .n5-en {
+    direction: ltr;
+    text-align: left;
+  }
+  .n5-en h2 {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 2px;
+  }
+  .logo-shell {
+    width: 82px;
+    height: 60px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 6px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .logo-shell img, .logo-shell svg {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .n5-bank-ribbon {
+    display: grid;
+    grid-template-columns: 1.1fr 1.2fr 0.9fr;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    margin-bottom: 8px;
+    font-size: 9px;
+    flex-shrink: 0;
+  }
+  .n5-bank-ribbon > div {
+    padding: 4px 8px;
+    border-left: 1px solid #cbd5e1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+  }
+  .n5-bank-ribbon > div:last-child {
+    border-left: 0;
+  }
+  .n5-bank-ribbon span {
+    color: #64748b;
+    font-weight: 700;
+  }
+  .n5-bank-ribbon b {
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+  }
+  .n5-bank-ribbon b:empty::after {
+    content: '—';
+    color: #94a3b8;
+  }
+  .n5-meta-frame {
+    border: 1.5px solid #334155;
+    display: grid;
+    grid-template-columns: 1fr 134px;
+    gap: 0;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+  .n5-meta-inner {
+    display: grid;
+    grid-template-columns: 1.25fr 0.95fr;
+    border-left: 1.5px solid #334155;
+  }
+  .n5-meta-block {
+    border-left: 1px solid #cbd5e1;
+  }
+  .n5-meta-block:last-child {
+    border-left: 0;
+  }
+  .n5-meta-block-head {
+    background: #334155;
+    color: #ffffff;
+    padding: 3px 8px;
+    font-size: 9px;
+    font-weight: 800;
+  }
+  .n5-meta-block table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5px;
+  }
+  .n5-meta-block th, .n5-meta-block td {
+    border-bottom: 1px solid #e2e8f0;
+    padding: 3.5px 6px;
+  }
+  .n5-meta-block tr:last-child th, .n5-meta-block tr:last-child td {
+    border-bottom: 0;
+  }
+  .n5-meta-block th {
+    width: 34%;
+    background: #faf5f7;
+    color: #5c162e;
+    text-align: right;
+    font-weight: 700;
+  }
+  .n5-meta-block td {
+    color: #0f172a;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+  .qr-box {
+    width: 132px;
+    height: 132px;
+    min-width: 132px;
+    min-height: 132px;
+    background: #ffffff;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    margin: auto;
+    overflow: hidden;
+  }
+  .qr-box svg, .qr-box img {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+    object-fit: contain;
+  }
+  .items-table-container {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .items-main-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    border: 1.5px solid #334155;
+  }
+  .items-main-table thead th {
+    background: #334155;
+    color: #ffffff;
+    border: 1px solid #475569;
+    border-bottom: 2px solid #5c162e;
+    padding: 5px 3px;
+    text-align: center;
+    font-size: 9.5px;
+    font-weight: 700;
+  }
+  .items-main-table tbody td {
+    border: 1px solid #cbd5e1;
+    padding: 5px 3px;
+    text-align: center;
+    font-size: 9.5px;
+    vertical-align: top;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .items-main-table tbody td:nth-child(3) {
+    text-align: right;
+  }
+  .items-main-table tbody tr:nth-child(even) {
+    background: #faf5f7;
+  }
+  .items-main-table tfoot td {
+    background: #f1f5f9;
+    color: #0f172a;
+    border: 1px solid #94a3b8;
+    border-top: 2px solid #5c162e;
+    padding: 5px 3px;
+    text-align: center;
+    font-size: 9.5px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  .bottom-content {
+    margin-top: auto;
+    padding-top: 8px;
+    flex-shrink: 0;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .n5-dual-gold-row {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .n5-karat-box, .n5-split-box {
+    border: 1.5px solid #5c162e;
+  }
+  .n5-mini-head {
+    background: #5c162e;
+    color: #ffffff;
+    padding: 3px 8px;
+    font-size: 9.5px;
+    font-weight: 800;
+    display: flex;
+    justify-content: space-between;
+  }
+  .n5-karat-grid {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 9.5px;
+  }
+  .n5-karat-grid th, .n5-karat-grid td {
+    border: 1px solid #d6c8cc;
+    padding: 4px 3px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .n5-karat-grid th {
+    background: #faf5f7;
+    color: #5c162e;
+    font-weight: 800;
+  }
+  .n5-karat-grid td {
+    font-weight: 800;
+    color: #0f172a;
+  }
+  .n5-split-grid {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 9.5px;
+  }
+  .n5-split-grid th, .n5-split-grid td {
+    border: 1px solid #cbd5e1;
+    padding: 4px 5px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .n5-split-grid th {
+    background: #f1f5f9;
+    color: #334155;
+    font-weight: 700;
+  }
+  .n5-split-grid td {
+    font-weight: 800;
+    color: #0f172a;
+  }
+  .n5-bottom-pair {
+    display: grid;
+    grid-template-columns: 1.25fr 0.75fr;
+    gap: 8px;
+    align-items: stretch;
+    margin-bottom: 6px;
+  }
+  .n5-policy-words {
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    padding: 6px 8px;
+    font-size: 9px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 4px;
+  }
+  .n5-policy-words b {
+    color: #5c162e;
+  }
+  .n5-fin-table {
+    width: 100%;
+    height: 100%;
+    border-collapse: collapse;
+    border: 1.5px solid #334155;
+    font-size: 9.5px;
+  }
+  .n5-fin-table th, .n5-fin-table td {
+    border: 1px solid #cbd5e1;
+    padding: 4px 7px;
+  }
+  .n5-fin-table th {
+    background: #f1f5f9;
+    color: #334155;
+    text-align: right;
+    font-weight: 700;
+    width: 55%;
+  }
+  .n5-fin-table td {
+    text-align: left;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  .n5-fin-table tr.n5-grand th {
+    background: #5c162e;
+    color: #ffffff;
+    font-size: 10.5px;
+  }
+  .n5-fin-table tr.n5-grand td {
+    background: #faf5f7;
+    color: #5c162e;
+    font-size: 11px;
+    font-weight: 900;
+  }
+  .n5-sigs-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    padding-top: 12px;
+    margin-bottom: 6px;
+    text-align: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: #334155;
+  }
+  .n5-sigs-strip div {
+    border-top: 1.5px solid #334155;
+    padding-top: 3px;
+  }
+  .n5-footer {
+    border-top: 1.5px solid #5c162e;
+    padding-top: 4px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 8.5px;
+    color: #475569;
+  }
+  .sar-amount {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    direction: rtl !important;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .sar-amount bdi { direction: ltr; unicode-bidi: isolate; }
+  .sar-amount svg { width: .72em !important; height: .82em !important; flex: 0 0 auto; fill: currentColor; }
+  @media print { * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+  <div class="invoice-container" data-gold-design="n5" data-gold-invoice-type="{{gold_invoice_type}}">
+    <div class="top-content-wrap">
+      <header class="n5-header">
+        <div class="n5-ar">
+          <h2>{{seller_name}}</h2>
+          <p>{{seller_address}}</p>
+          <p>الرقم الضريبي: {{seller_tax}} · س.ت: {{seller_cr}}</p>
+        </div>
+        <div class="logo-shell">{{logo}}</div>
+        <div class="n5-en">
+          <h2>{{seller_name_en}}</h2>
+          <p>{{seller_address_en}}</p>
+          <p>VAT No.: {{seller_tax}} · C.R.: {{seller_cr}}</p>
+        </div>
+      </header>
+
+      <div class="n5-bank-ribbon">
+        <div><span>البنك:</span><b>{{bank_name}}</b></div>
+        <div><span>رقم الآيبان IBAN:</span><b dir="ltr">{{seller_iban}}</b></div>
+        <div><span>التصنيف:</span><b>{{gold_type_label}}</b></div>
+      </div>
+
+      <section class="n5-meta-frame">
+        <div class="n5-meta-inner">
+          <div class="n5-meta-block">
+            <div class="n5-meta-block-head">بيانات العميل / Customer Info</div>
+            <table>
+              <tbody>
+                <tr><th>اسم العميل</th><td>{{buyer_name}}</td></tr>
+                <tr><th>الرقم الضريبي</th><td>{{buyer_tax}}</td></tr>
+                <tr><th>العنوان</th><td>{{buyer_address}}</td></tr>
+                <tr><th>الهاتف</th><td>{{buyer_phone}}</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="n5-meta-block">
+            <div class="n5-meta-block-head">{{invoice_type}}</div>
+            <table>
+              <tbody>
+                <tr><th>رقم الفاتورة</th><td>{{invoice_number}}</td></tr>
+                <tr><th>التاريخ</th><td>{{issue_date}}</td></tr>
+                <tr><th>الوقت</th><td>{{issue_time}}</td></tr>
+                <tr><th>السداد</th><td>{{payment_method}}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="qr-box">{{qr_code}}</div>
+      </section>
+
+      <section class="items-table-container">
+        <table class="items-main-table">
+          <thead>
+            <tr>
+              <th style="width:8%">رقم الصنف</th>
+              <th style="width:20%">اسم الصنف والبيان</th>
+              <th style="width:6%">العيار</th>
+              <th style="width:9%">الوزن (جم)</th>
+              <th style="width:10%">سعر الجرام</th>
+              <th style="width:8%">الأجور</th>
+              <th style="width:11%">قبل الضريبة</th>
+              <th style="width:6%">نسبة %</th>
+              <th style="width:10%">مبلغ الضريبة</th>
+              <th style="width:12%">شامل الضريبة</th>
+            </tr>
+          </thead>
+          <tbody>{{items_rows}}</tbody>
+          <tfoot>
+            <tr>
+              <td style="text-align:right">الإجمالي</td>
+              <td>{{total_pieces}} صنف</td>
+              <td>—</td>
+              <td>{{total_weight}} جم</td>
+              <td>{{total_gold_value}}</td>
+              <td>{{total_wage}}</td>
+              <td>{{taxable_amount}}</td>
+              <td>—</td>
+              <td>{{tax_amount}}</td>
+              <td>{{grand_total}}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </section>
+    </div>
+
+    <div class="bottom-content bottom-content-wrap">
+      <section class="n5-dual-gold-row">
+        <div class="n5-karat-box">
+          <div class="n5-mini-head">
+            <span>ملخص الجرامات حسب العيار</span>
+            <span>الإجمالي: {{total_weight}} جم (معادل 21: {{weight_21_equiv}} جم)</span>
+          </div>
+          <table class="n5-karat-grid">
+            <thead>
+              <tr>
+                <th>18K</th>
+                <th>21K</th>
+                <th>22K</th>
+                <th>24K</th>
+                <th>أخرى</th>
+                <th>الوزن القائم</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{{weight_18}}</td>
+                <td>{{weight_21}}</td>
+                <td>{{weight_22}}</td>
+                <td>{{weight_24}}</td>
+                <td>{{weight_other}}</td>
+                <td>{{total_weight}} جم</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="n5-split-box">
+          <div class="n5-mini-head">
+            <span>تفصيل الذهب والأجور والضريبة</span>
+            <span>{{zatca_phase_name}}</span>
+          </div>
+          <table class="n5-split-grid">
+            <thead>
+              <tr>
+                <th>قيمة الذهب</th>
+                <th>الأجور</th>
+                <th>ضريبة الذهب</th>
+                <th>ضريبة الأجور</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{{total_gold_value}}</td>
+                <td>{{total_wage}}</td>
+                <td>{{gold_tax_amount}}</td>
+                <td>{{wage_tax_amount}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="n5-bottom-pair">
+        <div class="n5-policy-words">
+          <div><b>المبلغ كتابة:</b> {{total_in_words}}</div>
+          <div><b>الوزن كتابة:</b> {{total_weight_words}}</div>
+          <div><b>ملاحظات وشروط الاستلام:</b> {{notes}}</div>
+        </div>
+
+        <table class="n5-fin-table">
+          <tbody>
+            <tr>
+              <th>الإجمالي قبل الخصم</th>
+              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{subtotal}}</bdi>{{sar_symbol}}</span></td>
+            </tr>
+            <tr>
+              <th>الخصم</th>
+              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{discount}}</bdi>{{sar_symbol}}</span></td>
+            </tr>
+            <tr>
+              <th>الصافي قبل الضريبة</th>
+              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{taxable_amount}}</bdi>{{sar_symbol}}</span></td>
+            </tr>
+            <tr>
+              <th>ضريبة القيمة المضافة</th>
+              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{tax_amount}}</bdi>{{sar_symbol}}</span></td>
+            </tr>
+            <tr class="n5-grand">
+              <th>صافي الفاتورة المستحق</th>
+              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{grand_total}}</bdi>{{sar_symbol}}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="n5-sigs-strip">
+        <div>توقيع البائع / أمين الصندوق</div>
+        <div>توقيع المحاسب / المدقق</div>
+        <div>توقيع المستلم / العميل</div>
+      </section>
+
+      <footer class="n5-footer">
+        <span>{{seller_name}} · هاتف: {{seller_phone}} · البريد: {{seller_email}}</span>
+        <span>عيار 24: ضريبة 0% · عيارات 18 و21 و22: ضريبة 15%</span>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

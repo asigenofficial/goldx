@@ -36,7 +36,7 @@
     }
     const mode = source.dataset.goldInvoiceType;
     if (mode === 'PRICE_ONLY' || mode === 'WAGE_ONLY') {
-      const hidden = Array.from(table.tHead?.rows[0]?.cells || []).findIndex(cell => mode === 'PRICE_ONLY' ? /أجور|اجور|مصنعية/.test(cell.textContent) : /سعر الجرام|سعر الذهب/.test(cell.textContent));
+      const hidden = Array.from(table.tHead?.rows[0]?.cells || []).findIndex(cell => mode === 'PRICE_ONLY' ? /أجور|اجور|أجرة|اجرة|مصنعية/.test(cell.textContent) : /سعر الجرام|سعر الذهب/.test(cell.textContent));
       if (hidden >= 0) for (const row of Array.from(table.rows)) if (row.cells[hidden]) set(row.cells[hidden],'display','none');
     }
     const blueprint = source.cloneNode(true);
@@ -70,6 +70,23 @@
       if (state.foot) state.grid.append(state.foot);
     }
     let current=createPage();
+    // Fast single-pass check: most invoices fit on page 1 without forcing N per-row layout reflows.
+    const frag=document.createDocumentFragment();
+    for (const row of rows) frag.append(row.cloneNode(true));
+    current.body.append(frag);
+    addSummary(current);
+    if (fits(current)) {
+      source.remove();
+      pages.forEach((state,i) => {
+        state.page.dataset.invoicePage=String(i+1);
+        state.label.textContent=(i<pages.length-1 ? 'متابعة الفاتورة في الصفحة التالية' : 'الإجماليات النهائية')+` — صفحة ${i+1} من ${pages.length}`;
+      });
+      return;
+    }
+    // Overflow fallback: clear and paginate row-by-row.
+    current.body.replaceChildren();
+    current.parts.forEach(el => el.remove());
+    if (current.foot) current.foot.remove();
     for (const row of rows) {
       current.body.append(row.cloneNode(true));
       if (!fits(current) && current.body.rows.length>1) {

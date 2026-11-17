@@ -3,7 +3,7 @@
 //  يدعم حتى 50 مستخدماً متزامناً في نفس اللحظة عبر Server-Sent Events (SSE)
 // ==========================================================================
 import { api } from './api.js';
-import { store } from './store.js';
+import { store, invalidate } from './store.js';
 import * as router from './router.js';
 import { toastOk, toastErr, modal, html, esc, raw, icon } from './util.js';
 
@@ -193,6 +193,7 @@ export function startSync() {
     es.addEventListener('template:updated', (e) => {
       try {
         const ev = JSON.parse(e.data);
+        invalidate('templates');
         emitLocal(ev.type, ev);
         if (store.user?.username === ev.actor) return;
         if (router.currentView() === 'templates') scheduleSmartRender();

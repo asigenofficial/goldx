@@ -2,7 +2,7 @@
 //  قائمة الفواتير: بحث وتصفية شاملة، إجماليات، طباعة، تصدير.
 // ==========================================================================
 import { api, qs } from '../core/api.js';
-import { store, loadClients, can, getFilterState, setFilterState, clearFilterState } from '../core/store.js';
+import { store, loadClients, loadTemplates, can, getFilterState, setFilterState, clearFilterState } from '../core/store.js';
 
 const syncNotify = (entity, action, payload) => (typeof store.syncNotify === 'function' ? store.syncNotify(entity, action, payload) : null);
 const onSync = (cb) => (typeof store.onSync === 'function' ? store.onSync(cb) : () => { });
@@ -16,13 +16,11 @@ import {
 const PAGE = 50;
 
 export async function render(view, ctx) {
-  await loadClients();
-
-  let availableTemplates = [];
-  try {
-    const tplRes = await api.get('/api/invoices/templates?type=invoices');
-    availableTemplates = Array.isArray(tplRes) ? tplRes : (tplRes?.data || []);
-  } catch { }
+  const [, tplList] = await Promise.all([
+    loadClients(),
+    loadTemplates('invoices').catch(() => []),
+  ]);
+  const availableTemplates = Array.isArray(tplList) ? tplList : [];
 
   const renderTemplateOptions = (selectedId) => {
     const customOpts = availableTemplates.map((t) => `<option value="${esc(t.id)}" ${t.id === selectedId ? 'selected' : ''}>${esc(t.name_ar || t.name || t.id)}</option>`).join('');

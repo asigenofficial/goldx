@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"goldx/internal/crypto"
@@ -15,8 +16,12 @@ import (
 )
 
 type AuthService struct {
-	db *db.DB
-	ttl time.Duration
+	db             *db.DB
+	ttl            time.Duration
+	rolesMu        sync.RWMutex
+	rolesCache     map[string]string
+	rolePermsCache map[string][]string
+	rolesCached    bool
 }
 
 func NewAuthService(d *db.DB, hours ...int) *AuthService {
@@ -352,7 +357,32 @@ func (s *AuthService) DeleteUser(id, currentUserID string) error {
 }
 
 // ------------------------------------------------------------------ أدوار النظام
+func (s *AuthService) invalidateRolesCache() {
+	s.rolesMu.Lock()
+	s.rolesCached = false
+	s.rolesCache = nil
+	s.rolePermsCache = nil
+	s.rolesMu.Unlock()
+}
+
 func (s *AuthService) GetRolesAndPermissions() (map[string]string, map[string][]string) {
+	s.rolesMu.RLock()
+	if s.rolesCached {
+		rolesCopy := make(map[string]string, len(s.rolesCache))
+		for k, v := range s.rolesCache {
+			rolesCopy[k] = v
+		}
+		permsCopy := make(map[string][]string, len(s.rolePermsCache))
+		for k, v := range s.rolePermsCache {
+			c := make([]string, len(v))
+			copy(c, v)
+			permsCopy[k] = c
+		}
+		s.rolesMu.RUnlock()
+		return rolesCopy, permsCopy
+	}
+	s.rolesMu.RUnlock()
+
 	roles := map[string]string{
 		"ADMIN":      "مدير النظام",
 		"ACCOUNTANT": "محاسب",
@@ -390,6 +420,20 @@ func (s *AuthService) GetRolesAndPermissions() (map[string]string, map[string][]
 		}
 	}
 
+	s.rolesMu.Lock()
+	s.rolesCache = make(map[string]string, len(roles))
+	for k, v := range roles {
+		s.rolesCache[k] = v
+	}
+	s.rolePermsCache = make(map[string][]string, len(rolePerms))
+	for k, v := range rolePerms {
+		c := make([]string, len(v))
+		copy(c, v)
+		s.rolePermsCache[k] = c
+	}
+	s.rolesCached = true
+	s.rolesMu.Unlock()
+
 	return roles, rolePerms
 }
 
@@ -402,6 +446,9 @@ func (s *AuthService) UpdateRolePermissions(roleID string, perms []string) error
 		INSERT INTO meta (key, value) VALUES (?, ?)
 		ON CONFLICT(key) DO UPDATE SET value = excluded.value
 	`, "role_perms_"+roleID, string(b))
+	if err == nil {
+		s.invalidateRolesCache()
+	}
 	return err
 }
 
@@ -419,6 +466,7 @@ func (s *AuthService) CreateRole(key, label string, perms []string) error {
 	if err != nil {
 		return err
 	}
+	s.invalidateRolesCache()
 	return s.UpdateRolePermissions(key, perms)
 }
 
@@ -437,10 +485,14 @@ func (s *AuthService) DeleteRole(roleID string) error {
 	b, _ := json.Marshal(roles)
 	_, _ = s.db.Exec("UPDATE meta SET value = ? WHERE key = 'custom_roles'", string(b))
 	_, _ = s.db.Exec("DELETE FROM meta WHERE key = ?", "role_perms_"+roleID)
+	s.invalidateRolesCache()
 	return nil
 }
 
 func (s *AuthService) ResetRole(roleID string) error {
 	_, err := s.db.Exec("DELETE FROM meta WHERE key = ?", "role_perms_"+roleID)
+	if err == nil {
+		s.invalidateRolesCache()
+	}
 	return err
 }

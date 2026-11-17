@@ -630,9 +630,9 @@ export function buildZatcaTlv(sellerName, taxNumber, timestamp, total, vatTotal,
   try {
     const enc = new TextEncoder();
     const isPhase2 = typeof options === 'boolean' ? options : !!(options?.isPhase2 || options?.phase === 'PHASE2');
-    const invHash = options?.invoiceHash || options?.hash || (isPhase2 ? btoa(`${sellerName}|${taxNumber}|${timestamp}|${total}|${vatTotal}`) : '');
-    const sigB64 = options?.signature || (isPhase2 ? 'MEQCIAd9pE/SampleECDSA+SignatureZATCA2024ValidHashgoldxV2==' : '');
-    const pubKeyB64 = options?.publicKey || (isPhase2 ? 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE/SampleECDSAPublicKeyDERZATCA2024==' : '');
+    const invHash = isPhase2 ? (options?.invoiceHash || options?.hash || btoa(`${sellerName}|${taxNumber}|${timestamp}|${total}|${vatTotal}`)) : '';
+    const sigB64 = isPhase2 ? (options?.signature || 'MEQCIAd9pE/SampleECDSA+SignatureZATCA2024ValidHashgoldxV2==') : '';
+    const pubKeyB64 = isPhase2 ? (options?.publicKey || 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE/SampleECDSAPublicKeyDERZATCA2024==') : '';
 
     const fields = [
       [1, sellerName || 'شركة تجريبية للتقنية', 'str'],
@@ -839,9 +839,105 @@ export async function loadStoredTemplate(category, selectedId = '') {
   return response.text();
 }
 
+const EMPTY_LOGO_HIDE_STYLE = `<style data-hide-empty-logo>
+img.doc-logo-img:not([src]),
+img.doc-logo-img[src=""],
+.logo:empty,
+.logo-shell:empty,
+.logo-slot:empty,
+.logo-box:empty,
+.logo-wrap:empty,
+.logo-frame:empty,
+.logo-container:empty,
+.logo-placeholder:empty,
+.doc-logo-placeholder,
+.logo-fallback,
+.seller-logo-box:empty,
+.company-logo:empty,
+.seller-logo:empty,
+.brand-logo-frame:empty,
+.reference-logo:empty,
+.arbash-logo-shell:empty,
+.user-logo-container:empty,
+.issuer-logo:empty,
+.sheet header > div:empty {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: none !important;
+}
+.logo:not(:has(img, svg)),
+.logo-shell:not(:has(img, svg)),
+.logo-slot:not(:has(img, svg)),
+.logo-box:not(:has(img, svg)),
+.logo-wrap:not(:has(img, svg)),
+.logo-frame:not(:has(img, svg)),
+.logo-container:not(:has(img, svg)),
+.logo-placeholder:not(:has(img, svg)),
+.seller-logo-box:not(:has(img, svg)),
+.company-logo:not(:has(img, svg)),
+.seller-logo:not(:has(img, svg)),
+.brand-logo-frame:not(:has(img, svg)),
+.reference-logo:not(:has(img, svg)),
+.arbash-logo-shell:not(:has(img, svg)),
+.user-logo-container:not(:has(img, svg)),
+.header-logo-box:not(:has(img, svg)),
+.header-logo-area:not(:has(img, svg)),
+.header-col-logo:not(:has(img, svg)),
+.crest:not(:has(img, svg)) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: none !important;
+}
+.reference-header:has(> .reference-logo):has(> .seller-en):not(:has(.reference-logo img, .reference-logo svg)) {
+  grid-template-columns: 1fr 1fr !important;
+}
+.reference-header.ledger-head:has(> .reference-logo):not(:has(.reference-logo img, .reference-logo svg)),
+.reference-header.medallion-head:has(> .crest > .reference-logo):not(:has(.reference-logo img, .reference-logo svg)) {
+  grid-template-columns: 1fr !important;
+}
+.reference-header.medallion-head:has(> .crest > .reference-logo):not(:has(.reference-logo img, .reference-logo svg)) .seller-en {
+  grid-column: 1 !important;
+}
+.ledger:has(> .logo):not(:has(.logo img, .logo svg)) {
+  grid-template-columns: 1fr 1.5fr !important;
+}
+.compact-details:has(> .logo):not(:has(.logo img, .logo svg)) {
+  grid-template-columns: 1.2fr 1fr !important;
+}
+.emerald-header:has(> .logo):not(:has(.logo img, .logo svg)) {
+  grid-template-columns: 1.2fr 1fr !important;
+}
+.geo-header:has(> .logo):not(:has(.logo img, .logo svg)) {
+  grid-template-columns: 1.25fr 1fr !important;
+}
+.plum-header:has(> .logo):not(:has(.logo img, .logo svg)) {
+  grid-template-columns: 1fr 205px !important;
+}
+</style>`;
+
+function applyEmptyLogoHideStyle(htmlStr) {
+  if (!htmlStr || String(htmlStr).includes('data-hide-empty-logo')) return htmlStr;
+  return /<\/head>/i.test(htmlStr)
+    ? htmlStr.replace(/<\/head>/i, EMPTY_LOGO_HIDE_STYLE + '\n</head>')
+    : EMPTY_LOGO_HIDE_STYLE + '\n' + htmlStr;
+}
+
 export function fillStoredTemplate(template, values, rawFields = []) {
-  return String(template).replace(/{{\s*([a-zA-Z0-9_]+)\s*}}/g, (_, key) =>
+  const filled = String(template).replace(/{{\s*([a-zA-Z0-9_]+)\s*}}/g, (_, key) =>
     rawFields.includes(key) ? String(values[key] ?? '') : esc(String(values[key] ?? '')));
+  return applyEmptyLogoHideStyle(filled);
 }
 
 export async function renderStoredVoucher(voucher, issuer, client, style = '') {
@@ -1334,6 +1430,42 @@ export function tafqeetArabicJS(value, currency = 'SAR') {
   return `${text} لا غير`;
 }
 
+function tafqeetGoldArabicJS(val, karatLabel = '') {
+  const numVal = Number(val || 0);
+  if (!Number.isFinite(numVal) || numVal <= 0) return 'فقط صفر جرام لا غير';
+  const intPart = Math.floor(numVal);
+  const decPart = Math.round((numVal - intPart) * 1000);
+  const chunks = [];
+  const millions = Math.floor(intPart / 1000000);
+  const thousands = Math.floor((intPart % 1000000) / 1000);
+  const units = intPart % 1000;
+  if (millions) chunks.push(groupWordAR(millions, 'مليون', 'مليونان', 'ملايين'));
+  if (thousands) chunks.push(groupWordAR(thousands, 'ألف', 'ألفان', 'آلاف'));
+  if (units) chunks.push(under1000AR(units));
+  let text = chunks.length ? `فقط ${chunks.join(' و')} جرام` : 'فقط صفر جرام';
+  if (decPart > 0) text += ` و${under1000AR(decPart)} مليجرام`;
+  text += ' لا غير';
+  if (karatLabel) text += ` ${karatLabel}`;
+  return text;
+}
+
+function normalizeKaratBucketJS(raw) {
+  let s = String(raw || '').trim().toUpperCase();
+  s = s.replace(/عيار|K|\s+/g, '')
+    .replace(/[٠-٩]/g, (d) => '0123456789'['٠١٢٣٤٥٦٧٨٩'.indexOf(d)]);
+  if (!s || s === '21' || s === '875' || s === '0.875') return { bucket: '21', num: 21 };
+  if (s === '18' || s === '750' || s === '0.750' || s === '0.75') return { bucket: '18', num: 18 };
+  if (s === '22' || s === '916' || s === '0.916' || s === '916.6') return { bucket: '22', num: 22 };
+  if (s === '24' || s === '999' || s === '999.9' || s === '995' || s === '0.999' || s === '1000') return { bucket: '24', num: 24 };
+  if (s.includes('18')) return { bucket: '18', num: 18 };
+  if (s.includes('21')) return { bucket: '21', num: 21 };
+  if (s.includes('22')) return { bucket: '22', num: 22 };
+  if (s.includes('24')) return { bucket: '24', num: 24 };
+  const parsed = parseFloat(s);
+  if (Number.isFinite(parsed) && parsed > 0 && parsed <= 24) return { bucket: 'other', num: parsed };
+  return { bucket: 'other', num: 21 };
+}
+
 /**
  * محرك استبدال الوسوم الديناميكي الشامل لأي قالب HTML بدون أي قيود أو ثوابت.
  * يكتشف الوسوم والجداول وهيكلتها برمجياً ويستبدلها بالقيم الحقيقية تلقائياً.
@@ -1341,7 +1473,7 @@ export function tafqeetArabicJS(value, currency = 'SAR') {
 export function fillDynamicTemplateHtml(rawHtml, { issuer = {}, client = {}, voucher = null, invoice = null, extra = {} } = {}) {
   if (!rawHtml) return '';
 
-  rawHtml = rawHtml.replace(/<img\b[^>]*src=["']\{\{\s*(logo|seller_logo|company_logo|شعار|الشعار)\s*\}\}["'][^>]*>/gi, '{{logo}}');
+  rawHtml = rawHtml.replace(/<img\b[^>]*src=["']\{\{\s*(logo|seller_logo|company_logo|issuer_logo|store_logo|logo_html|شعار|الشعار)\s*\}\}["'][^>]*>/gi, '{{logo}}');
   rawHtml = rawHtml.replace(/<img\b[^>]*src=["']\{\{\s*(qr_code|qr|qrcode|barcode|zatca_qr|zatca_code|zatca_payload|رمز_الاستجابة|الباركود|باركود)\s*\}\}["'][^>]*>/gi, '{{qr_code}}');
   // استبدال أي رمز خطأ قديم تسبب في إظهار "جل جلاله" بدلاً من رمز الريال
   rawHtml = rawHtml.replace(/&#xFDFB;/gi, '{{sar_symbol}}').replace(/&#65019;/g, '{{sar_symbol}}').replace(/\uFDFB/g, '{{sar_symbol}}');
@@ -1424,25 +1556,83 @@ export function fillDynamicTemplateHtml(rawHtml, { issuer = {}, client = {}, vou
       return p > 0 ? p.toFixed(2) : '0.00';
     }
     if (k === 'seller_activity') return issuer?.activity || issuer?.description || 'صناعة و بيع وشراء المعادن الثمينة والأحجار الكريمة';
-    if (k === 'total_weight') return (invoice?.lines || invoice?.items || []).reduce((sum,line) => sum + Number(line.quantity || 0),0).toFixed(2);
+    const invLines = invoice?.lines || invoice?.items || [];
+    const goldMode = invoice?.gold_invoice_type || 'PRICE_AND_WAGE';
+    const computeGoldStats = () => {
+      const weights = { 18: 0, 21: 0, 22: 0, 24: 0, other: 0 };
+      let totalW = 0;
+      let equiv21 = 0;
+      let goldVal = 0;
+      let wageVal = 0;
+      let goldTax = 0;
+      let wageTax = 0;
+      for (const line of invLines) {
+        const qty = Number(line.quantity || 0);
+        totalW += qty;
+        let gp = Number(line.gram_price || 0);
+        let w = Number(line.wage || 0);
+        const up = Number(line.unit_price || 0);
+        if (goldMode === 'PRICE_ONLY') {
+          w = 0;
+          if (gp === 0 && up > 0) gp = up;
+        } else if (goldMode === 'WAGE_ONLY') {
+          gp = 0;
+          if (w === 0 && up > 0) w = up;
+        } else if (gp === 0 && w === 0 && up > 0) {
+          gp = up;
+        }
+        const lg = qty * gp;
+        const lw = qty * w;
+        goldVal += lg;
+        wageVal += lw;
+
+        const lt = Number(line.tax_amount || 0);
+        if (goldMode === 'PRICE_ONLY') {
+          goldTax += lt;
+        } else if (goldMode === 'WAGE_ONLY') {
+          wageTax += lt;
+        } else if (lg + lw > 0 && lt > 0) {
+          const gt = Math.round((lt * (lg / (lg + lw))) * 100) / 100;
+          goldTax += gt;
+          wageTax += lt - gt;
+        }
+        const kb = normalizeKaratBucketJS(line.karat);
+        weights[kb.bucket] += qty;
+        equiv21 += qty * (kb.num / 21);
+      }
+      if (wageVal === 0 && goldMode === 'WAGE_ONLY' && Number(invoice?.subtotal || 0) > 0) {
+        wageVal = Number(invoice.subtotal);
+      }
+      if (goldVal === 0 && goldMode === 'PRICE_ONLY' && Number(invoice?.subtotal || 0) > 0) {
+        goldVal = Number(invoice.subtotal);
+      }
+      const invTax = Number(invoice?.tax_amount || 0);
+      if (goldMode === 'PRICE_ONLY' && goldTax === 0 && invTax > 0) goldTax = invTax;
+      else if (goldMode === 'WAGE_ONLY' && wageTax === 0 && invTax > 0) wageTax = invTax;
+      else if (goldTax + wageTax === 0 && invTax > 0) goldTax = invTax;
+      return { weights, totalW, equiv21, goldVal, wageVal, goldTax, wageTax };
+    };
+    const fmt2 = (v) => Number(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    if (k === 'total_weight') return computeGoldStats().totalW.toFixed(2);
     if (k === 'bags_weight' || k === 'bag_weight') return Number(invoice?.bags_weight || invoice?.bag_weight || 0).toFixed(2);
     if (k === 'gross_weight' || k === 'total_weight_with_bags') {
-      const tot = (invoice?.lines || invoice?.items || []).reduce((sum,line) => sum + Number(line.quantity || 0),0);
+      const tot = computeGoldStats().totalW;
       const bags = Number(invoice?.bags_weight || invoice?.bag_weight || 0);
       return (tot + bags).toFixed(2);
     }
-    if (/^weight_(18|21|22|24)$/.test(k)) return (invoice?.lines || invoice?.items || []).filter(line => String(line.karat || '21').trim() === k.slice(7)).reduce((sum,line) => sum + Number(line.quantity || 0),0).toFixed(2);
-    if (k === 'total_wage' || k === 'total_wages' || k === 'wage_total' || k === 'wage_amount' || k === 'total_wage_amount') {
-      const tw = (invoice?.lines || invoice?.items || []).reduce((sum, line) => {
-        const qty = Number(line.quantity || 0);
-        let w = Number(line.wage || 0);
-        if (w === 0 && !line.gram_price && Number(line.unit_price || 0) > 0) {
-          w = Number(line.unit_price);
-        }
-        return sum + (qty * w);
-      }, 0);
-      const finalTw = tw > 0 ? tw : (Number(invoice?.subtotal ?? 0));
-      return finalTw.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (/^weight_(18|21|22|24|other)$/.test(k)) return computeGoldStats().weights[k.slice(7)].toFixed(2);
+    if (k === 'weight_21_equiv' || k === 'equivalent_21k' || k === 'prevalent_weight') return computeGoldStats().equiv21.toFixed(2);
+    if (k === 'total_gold_value' || k === 'gold_value' || k === 'gold_total') return fmt2(computeGoldStats().goldVal);
+    if (k === 'total_wage' || k === 'total_wages' || k === 'wage_total' || k === 'wage_amount' || k === 'total_wage_amount') return fmt2(computeGoldStats().wageVal);
+    if (k === 'gold_tax_amount' || k === 'gold_tax') return fmt2(computeGoldStats().goldTax);
+    if (k === 'wage_tax_amount' || k === 'wage_tax') return fmt2(computeGoldStats().wageTax);
+    if (k === 'gold_amount_in_words') {
+      const w = computeGoldStats().totalW;
+      return w > 0 ? tafqeetGoldArabicJS(w, 'عيار 875') : '';
+    }
+    if (k === 'total_weight_words' || k === 'gold_weight_in_words') {
+      return tafqeetGoldArabicJS(computeGoldStats().totalW, '');
     }
 
     // 2. بيانات المنشأة المصدرة
@@ -1472,8 +1662,16 @@ export function fillDynamicTemplateHtml(rawHtml, { issuer = {}, client = {}, vou
     }
     if (k === 'seller_phone' || k === 'company_phone' || k === 'phone') return issuer.phone || issuer.mobile || '';
     if (k === 'seller_email' || k === 'company_email' || k === 'email') return issuer.email || '';
-    if (k === 'seller_iban' || k === 'iban' || k === 'bank_account') return issuer.iban || '';
+    if (k === 'seller_iban' || k === 'iban' || k === 'bank_account') return issuer.bank_iban || issuer.iban || '';
     if (k === 'bank_name' || k === 'seller_bank') return issuer.bank_name || '';
+    if (k === 'bank_info') {
+      const b = String(issuer.bank_name || '').trim();
+      const ib = String(issuer.bank_iban || issuer.iban || '').trim();
+      const parts = [];
+      if (b) parts.push(`الحساب البنكي: ${b}`);
+      if (ib) parts.push(`IBAN: ${ib}`);
+      return parts.join(' · ');
+    }
 
     // ترويسات بيانات المنشأة الذكية - تظهر فقط القيم المتوفرة بدون ثوابت فارغة
     if (k === 'seller_meta_ar') {
@@ -1656,25 +1854,25 @@ export function fillDynamicTemplateHtml(rawHtml, { issuer = {}, client = {}, vou
     }
 
     // 7. الشعار والباركود والرموز الخاصة
-    if (k === 'logo' || k === 'seller_logo' || k === 'company_logo') {
-      const logoSrc = issuer?.logo_data || issuer?.logo;
+    if (k === 'logo' || k === 'seller_logo' || k === 'company_logo' || k === 'issuer_logo' || k === 'store_logo' || k === 'logo_html' || k === 'شعار' || k === 'الشعار') {
+      const logoSrc = String(issuer?.logo_data || issuer?.logo || '').trim();
       if (logoSrc) {
-        return `<img src="${logoSrc}" alt="شعار المنشأة" class="doc-logo-img" style="max-height:75px; max-width:200px; object-fit:contain; display:block;" />`;
+        return `<img src="${esc(logoSrc)}" alt="شعار المنشأة" class="doc-logo-img" style="max-height:75px; max-width:200px; object-fit:contain; display:block;" />`;
       }
-      return `<div class="doc-logo-placeholder" style="display:inline-flex; align-items:center; justify-content:center; padding:8px 16px; border:1.5px dashed #94a3b8; border-radius:6px; font-weight:700; color:#64748b; font-size:12px;">شعار المنشأة</div>`;
+      return '';
     }
 
     if (k === 'qr_code' || k === 'barcode' || k === 'qr' || k === 'zatca_qr') {
       let qrPayload = invoice?.qr_payload || invoice?.qr_code || '';
-      const isPhase2 = (invoice?.zatca_phase === 'PHASE2') || (invoice?.signature_mode && invoice?.signature_mode !== 'NONE');
-      if (!qrPayload || (isPhase2 && qrPayload.length < 150)) {
+      const isPhase2 = invoice?.zatca_phase === 'PHASE2';
+      if (!qrPayload || (isPhase2 && qrPayload.length < 150) || (!isPhase2 && qrPayload.length > 150)) {
         qrPayload = buildZatcaTlv(
           invoice?.seller_name || issuer?.name_ar || 'شركة تجريبية للتقنية',
           invoice?.seller_tax || issuer?.tax_number || '300000000000003',
           (invoice?.issue_date ? invoice.issue_date + 'T' + (invoice?.issue_time || '12:00:00') + 'Z' : ''),
           invoice?.grand_total || '1150.00',
           invoice?.tax_amount || '150.00',
-          { isPhase2, invoiceHash: invoice?.invoice_hash, signature: invoice?.signature, publicKey: invoice?.public_key },
+          { isPhase2, invoiceHash: isPhase2 ? invoice?.invoice_hash : '', signature: isPhase2 ? invoice?.signature : '', publicKey: isPhase2 ? invoice?.public_key : '' },
         );
       }
       const svg = qrSvg(qrPayload, { scale: 4, margin: 2 });
@@ -1742,7 +1940,7 @@ export function fillDynamicTemplateHtml(rawHtml, { issuer = {}, client = {}, vou
     return '';
   };
 
-  let result = rawHtml.replace(/\{\{\s*([a-zA-Z0-9_\-\.]+)\s*\}\}/g, (match, key) => {
+  let result = rawHtml.replace(/\{\{\s*([a-zA-Z0-9_\-\.\u0600-\u06FF]+)\s*\}\}/g, (match, key) => {
     const val = resolveTagValue(key);
     return val !== undefined ? val : match;
   });
@@ -1925,7 +2123,7 @@ body { width: 210mm !important; max-width: 210mm !important; box-sizing: border-
   }
   if (voucher) result = applyVoucherPageStyle(result);
 
-  return result;
+  return applyEmptyLogoHideStyle(result);
 }
 
 /**

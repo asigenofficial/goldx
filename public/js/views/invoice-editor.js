@@ -117,8 +117,9 @@ function lineTotals(line, percent = 0, pricesIncludeTax = false) {
 }
 
 const DRAFT_KEY = 'zs.invoice_draft';
+let draftSaveTimer = null;
 
-function saveDraft(state) {
+function writeDraftNow(state) {
   if (!state || state.is_edit) return;
   try {
     const hasLines = state.lines && state.lines.some((l) => (l.item_name && l.item_name.trim()) || l.unit_price > 0 || l.gram_price > 0 || l.wage > 0);
@@ -151,6 +152,32 @@ function saveDraft(state) {
   } catch { /* ignore storage error */ }
 }
 
+function saveDraft(state) {
+  if (!state || state.is_edit) return;
+  if (draftSaveTimer) clearTimeout(draftSaveTimer);
+  draftSaveTimer = setTimeout(() => {
+    draftSaveTimer = null;
+    writeDraftNow(state);
+  }, 250);
+}
+
+function flushDraft(state) {
+  if (!draftSaveTimer) return;
+  clearTimeout(draftSaveTimer);
+  draftSaveTimer = null;
+  writeDraftNow(state);
+}
+
+function clearDraft() {
+  if (draftSaveTimer) {
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer = null;
+  }
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+  } catch {}
+}
+
 function loadDraft() {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
@@ -161,12 +188,6 @@ function loadDraft() {
     }
   } catch {}
   return null;
-}
-
-function clearDraft() {
-  try {
-    localStorage.removeItem(DRAFT_KEY);
-  } catch {}
 }
 
 export async function render(view, ctx) {
@@ -353,7 +374,7 @@ export async function render(view, ctx) {
     return `<div class="tiny muted tax-excl-hint ${roleCls}" style="font-size:10.5px;margin-top:3px;white-space:nowrap;line-height:1.2">${text}</div>`;
   };
 
-  const linesHtml = () => state.lines.map((l, i) => {
+  const lineRowHtml = (l, i) => {
     if (!l.karat) l.karat = '21';
     const is24k = String(l.karat).trim() === '24';
     if (is24k) l.tax_rate = 0;
@@ -396,7 +417,7 @@ export async function render(view, ctx) {
     `;
 
     return `<tr data-key="${l.key}">
-      <td class="text-center tiny">${i + 1}</td>
+      <td class="text-center tiny col-line-idx">${i + 1}</td>
       <td style="min-width:200px">
         <div class="rel">
           <input type="text" data-f="item_name" value="${esc(l.item_name)}" placeholder="اكتب اسم الصنف (خاتم، سوار، سبيكة…) أو ابحث…" autocomplete="off" />
@@ -426,7 +447,9 @@ export async function render(view, ctx) {
         <button class="btn btn-sm btn-danger" data-act="rm" type="button" title="حذف البند">${icon.trash({ size: 13, style: 'vertical-align:text-bottom;margin-left:2px' })}حذف</button>
       </td>
     </tr>`;
-  }).join('');
+  };
+
+  const linesHtml = () => state.lines.map((l, i) => lineRowHtml(l, i)).join('');
 
   const totalsHtml = () => {
     const t = totals();
@@ -731,10 +754,19 @@ export async function render(view, ctx) {
     $('#totals', view).innerHTML = totalsHtml();
     saveDraft(state);
   };
+  const renumberLineRows = () => {
+    const tbody = $('#lines', view);
+    if (!tbody) return;
+    Array.from(tbody.rows).forEach((tr, idx) => {
+      const cell = tr.querySelector('.col-line-idx') || tr.cells[0];
+      if (cell) cell.textContent = String(idx + 1);
+    });
+  };
   const refreshTotals = () => {
     $('#totals', view).innerHTML = totalsHtml();
     saveDraft(state);
   };
+  let cleanupGlobalListeners = null;
 
   function applyItem(line, item) {
     line.item_id = item.id;
@@ -935,9 +967,15 @@ export async function render(view, ctx) {
       l.tax_rate = defaultRate();
       l.item_code = generateNextItemCode(state.lines, store.items);
       state.lines.push(l);
-      refreshLines();
-      const inputs = $$('#lines tr [data-f=item_name]', view);
-      if (inputs.length) inputs[inputs.length - 1].focus();
+      const tbody = $('#lines', view);
+      if (tbody) {
+        tbody.insertAdjacentHTML('beforeend', lineRowHtml(l, state.lines.length - 1));
+        refreshTotals();
+        const newInput = tbody.lastElementChild?.querySelector('[data-f="item_name"]');
+        if (newInput) newInput.focus();
+      } else {
+        refreshLines();
+      }
     });
     $('#reset', view)?.addEventListener('click', async () => {
       if (!await confirmDialog({ title: 'تفريغ الفاتورة', message: 'سيتم مسح كل البنود والبيانات المدخلة.' })) return;
@@ -1115,22 +1153,33 @@ export async function render(view, ctx) {
     });
 
     delegate($('#lines', view), 'click', '[data-act]', (e, btn) => {
-      const key = btn.closest('tr').dataset.key;
+      const tr = btn.closest('tr');
+      const key = tr?.dataset.key;
       const idx = state.lines.findIndex((l) => l.key === key);
       if (idx < 0) return;
       if (btn.dataset.act === 'rm') {
         if (state.lines.length === 1) {
           state.lines = [emptyLine()];
           state.lines[0].tax_rate = defaultRate();
-        } else state.lines.splice(idx, 1);
+          refreshLines();
+          return;
+        }
+        state.lines.splice(idx, 1);
+        tr.remove();
+        renumberLineRows();
+        refreshTotals();
+        return;
       } else if (btn.dataset.act === 'dup') {
         const dupLine = { ...state.lines[idx], key: Math.random().toString(36).slice(2) };
         if (!dupLine.item_id) {
           dupLine.item_code = generateNextItemCode(state.lines, store.items);
         }
         state.lines.splice(idx + 1, 0, dupLine);
+        tr.insertAdjacentHTML('afterend', lineRowHtml(dupLine, idx + 1));
+        renumberLineRows();
+        refreshTotals();
+        return;
       }
-      refreshLines();
     });
 
     // اختصارات لوحة المفاتيح والتحكم الذكي بالأسهم و Enter
@@ -1207,9 +1256,19 @@ export async function render(view, ctx) {
       closePopover();
     };
 
+    if (cleanupGlobalListeners) {
+      cleanupGlobalListeners();
+      cleanupGlobalListeners = null;
+    }
     window.addEventListener('scroll', onWindowReposition, { passive: true });
     window.addEventListener('resize', onWindowReposition, { passive: true });
     document.addEventListener('mousedown', onGlobalClick);
+    cleanupGlobalListeners = () => {
+      window.removeEventListener('scroll', onWindowReposition);
+      window.removeEventListener('resize', onWindowReposition);
+      document.removeEventListener('mousedown', onGlobalClick);
+      closePopover();
+    };
 
     $('#save', view).addEventListener('click', save);
     $('#save2', view).addEventListener('click', save);
@@ -1488,7 +1547,13 @@ export async function render(view, ctx) {
   }
 
   draw();
-  return undefined;
+  return () => {
+    flushDraft(state);
+    if (cleanupGlobalListeners) {
+      cleanupGlobalListeners();
+      cleanupGlobalListeners = null;
+    }
+  };
 }
 
 

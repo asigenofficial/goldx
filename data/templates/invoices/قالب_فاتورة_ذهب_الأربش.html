@@ -872,10 +872,11 @@
         return words.join(" ");
       }
 
-      // شعار الأربش
+      // إخفاء حاوية الشعار إذا لم يكن هناك شعار مرفوع للمنشأة
       var logoShell = document.querySelector('.arbash-logo-shell');
       if (logoShell && (logoShell.innerHTML.indexOf('{{') !== -1 || !logoShell.querySelector('img, svg'))) {
-        logoShell.innerHTML = '<svg viewBox="0 0 100 100" width="70" height="70" xmlns="http://www.w3.org/2000/svg"><path d="M26 80 L50 20 L74 80 M34 58 L66 58" fill="none" stroke="#000" stroke-width="9" stroke-linecap="square" stroke-linejoin="miter"/><circle cx="76" cy="22" r="11" fill="none" stroke="#000" stroke-width="4.5"/></svg>';
+        var logoBox = document.querySelector('.header-logo-box');
+        if (logoBox) logoBox.style.display = 'none';
       }
 
       // باركود QR موسع مطابق للصورة

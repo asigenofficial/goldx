@@ -119,6 +119,7 @@ func (d *DB) initSchema() error {
 	_, _ = d.Exec("CREATE INDEX IF NOT EXISTS idx_client_ledger_client_date ON client_ledger(client_id, transaction_date)")
 	_, _ = d.Exec("CREATE INDEX IF NOT EXISTS idx_client_ledger_doc ON client_ledger(doc_type, doc_id)")
 	_, _ = d.Exec("CREATE INDEX IF NOT EXISTS idx_invoices_client_status ON invoices(client_id, status)")
+	_, _ = d.Exec("CREATE INDEX IF NOT EXISTS idx_invoices_issuer_date_seq ON invoices(issuer_id, issue_date DESC, sequence_no DESC)")
 	_, _ = d.Exec("CREATE INDEX IF NOT EXISTS idx_items_category ON items(category_id)")
 	_, _ = d.Exec("CREATE INDEX IF NOT EXISTS idx_items_search_p ON items(is_active, category_id, name_ar)")
 	return nil

@@ -2,7 +2,7 @@
 //  سندات القبض: قائمة، سند مجمّع بتوزيع على عدة فواتير، عرض وطباعة وإلغاء.
 // ==========================================================================
 import { api, qs } from '../core/api.js';
-import { store, loadClients, can, currencyLabel, getFilterState, setFilterState, clearFilterState } from '../core/store.js';
+import { store, loadClients, loadTemplates, can, currencyLabel, getFilterState, setFilterState, clearFilterState } from '../core/store.js';
 
 const syncNotify = (entity, action, payload) => (typeof store.syncNotify === 'function' ? store.syncNotify(entity, action, payload) : null);
 const onSync = (cb) => (typeof store.onSync === 'function' ? store.onSync(cb) : () => { });
@@ -634,7 +634,7 @@ export async function showVoucher(id, onChange) {
   const [issuer, client, templatesRes] = await Promise.all([
     api.get(`/api/issuers/${voucher.issuer_id}`),
     api.get(`/api/clients/${voucher.client_id}`),
-    api.get('/api/invoices/templates?type=documents').catch(() => []),
+    loadTemplates('documents').catch(() => []),
   ]);
 
   const availableTemplates = Array.isArray(templatesRes) ? templatesRes : (templatesRes?.data || []);
@@ -963,7 +963,7 @@ async function getVoucherRenderedData(voucherId) {
   const [issuer, client, templatesRes] = await Promise.all([
     api.get(`/api/issuers/${voucher.issuer_id}`).catch(() => store.issuers.find((i) => i.id === voucher.issuer_id) || store.activeIssuer || {}),
     api.get(`/api/clients/${voucher.client_id}`).catch(() => store.clients.find((c) => c.id === voucher.client_id) || { name: voucher.client_name }),
-    api.get('/api/invoices/templates?type=documents').catch(() => []),
+    loadTemplates('documents').catch(() => []),
   ]);
 
   const availableTemplates = Array.isArray(templatesRes) ? templatesRes : (templatesRes?.data || []);
@@ -1446,8 +1446,7 @@ export async function render(view, ctx) {
 const kindLabel=kind=>kind==='WAGES'?'قبض أجور بذهب عيار 24':'قبض معدن كسر';
 export async function showGoldReceipt(id) {
  try {
-  const result=await api.get('/api/invoices/templates?type=documents');
-  const templates=Array.isArray(result)?result:(result?.data||[]);
+  const templates=await loadTemplates('documents').catch(()=>[]);
   let style=localStorage.getItem('zs.gold_receipt_style')||'';
   if(!templates.some(t=>t.id===style))style='';
   let {html:documentHTML}=await api.get(`/api/vouchers/gold/${encodeURIComponent(id)}/html?style=${encodeURIComponent(style)}`);

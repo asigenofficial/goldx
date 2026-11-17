@@ -13,8 +13,9 @@ export const store = {
   clients: [],
   items: [],
   categories: [],
+  templatesByType: {},
   activeIssuerId: localStorage.getItem(LS_ISSUER) || '',
-  loaded: { clients: false, items: false, categories: false, issuers: false },
+  loaded: { clients: false, items: false, categories: false, issuers: false, templates: {} },
 };
 
 const listeners = new Set();
@@ -99,13 +100,38 @@ export async function loadCategories(force = false) {
   return store.categories;
 }
 
+export async function loadTemplates(type = 'invoices', force = false) {
+  const key = type || 'all';
+  if (!store.loaded.templates || typeof store.loaded.templates !== 'object') {
+    store.loaded.templates = {};
+  }
+  if (!store.templatesByType) store.templatesByType = {};
+  if (store.loaded.templates[key] && !force && Array.isArray(store.templatesByType[key])) {
+    return store.templatesByType[key];
+  }
+  const res = await api.get(qs('/api/invoices/templates', { type: key }));
+  const list = Array.isArray(res) ? res : (res?.data || []);
+  store.templatesByType[key] = list;
+  store.loaded.templates[key] = true;
+  return list;
+}
+
 export async function loadLookups(force = false) {
   await Promise.all([loadIssuers(force), loadClients(force), loadItems(force), loadCategories(force)]);
 }
 
 export function invalidate(key) {
-  if (key) store.loaded[key] = false;
-  else Object.keys(store.loaded).forEach((k) => { store.loaded[k] = false; });
+  if (key === 'templates') {
+    store.loaded.templates = {};
+    store.templatesByType = {};
+  } else if (key) {
+    store.loaded[key] = false;
+  } else {
+    Object.keys(store.loaded).forEach((k) => {
+      store.loaded[k] = k === 'templates' ? {} : false;
+    });
+    store.templatesByType = {};
+  }
   emit();
 }
 

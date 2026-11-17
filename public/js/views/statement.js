@@ -23,7 +23,7 @@ async function renderStatementFromStoredTemplate(statement, issuer, client) {
     <td>${esc(money(Math.max(0, entry.balance_after || 0)))}</td><td>${esc(money(Math.max(0, -(entry.balance_after || 0))))}</td></tr>`).join('');
   const logo = issuer?.logo_data
     ? `<img src="${esc(issuer.logo_data)}" alt="شعار المنشأة" class="issuer-logo">`
-    : `<div class="logo-placeholder">${esc(issuer?.name_ar || '')}</div>`;
+    : '';
   const issuerAddress = [issuer?.city, issuer?.district, issuer?.street, issuer?.building_no, issuer?.postal_code].filter(Boolean).join(' - ');
   const issuerAddressEn = issuer?.address_en || [issuer?.city_en, issuer?.district_en, issuer?.street_en, issuer?.building_no, issuer?.postal_code].filter(Boolean).join(' - ');
   return fillStoredTemplate(template, {

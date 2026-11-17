@@ -159,7 +159,7 @@ function renderShell() {
           <button class="sidebar-desk-toggle" id="sidebar-desk-toggle" type="button" aria-label="طي القائمة الجانبية" title="طي / توسيع القائمة الجانبية">
             ${raw(icon.chevronRight({ size: 18 }))}
           </button>
-          <div class="gold-store-chip" style="display:flex;align-items:center;gap:8px;padding:5px 14px;background:rgba(255,255,255,0.85);backdrop-filter:blur(14px);border:1px solid rgba(212,175,55,0.45);border-radius:20px;font-size:12.5px;font-weight:700;color:var(--text);box-shadow:0 2px 8px rgba(184,134,11,0.08)">
+          <div class="gold-store-chip" style="display:flex;align-items:center;gap:8px;padding:5px 14px;background:rgba(255,255,255,0.95);border:1px solid rgba(212,175,55,0.45);border-radius:20px;font-size:12.5px;font-weight:700;color:var(--text);box-shadow:0 2px 8px rgba(184,134,11,0.08)">
             ${raw(icon.goldBar({ size: 16, style: 'color:#d4af37;vertical-align:middle' }))}
             <label for="issuer-select">المتجر المصدر</label>
             <select id="issuer-select" aria-label="اختيار المتجر المصدر">${raw(issuerOptions())}</select>
@@ -229,13 +229,29 @@ function renderShell() {
   $('#burger').addEventListener('click', () => toggleSidebar());
   $('#sidebar-backdrop').addEventListener('click', () => toggleSidebar(false));
   delegate($('#nav'), 'click', '.nav-item', () => toggleSidebar(false));
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') toggleSidebar(false);
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
-      e.preventDefault();
-      toggleDesktopSidebar();
-    }
-  });
+  if (!window.__goldxKeydownBound) {
+    window.__goldxKeydownBound = true;
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const sb = $('#sidebar');
+        const bd = $('#sidebar-backdrop');
+        if (sb) sb.classList.remove('open');
+        if (bd) bd.classList.remove('active');
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        const layoutNode = app.querySelector('.layout');
+        if (!layoutNode) return;
+        const collapsed = !layoutNode.classList.contains('sidebar-collapsed');
+        layoutNode.classList.toggle('sidebar-collapsed', collapsed);
+        localStorage.setItem('goldx_sidebar_collapsed', collapsed ? '1' : '0');
+        const edge = $('#sidebar-edge-toggle .ico-toggle-arrow');
+        const desk = $('#sidebar-desk-toggle');
+        if (edge) edge.innerHTML = collapsed ? icon.chevronLeft({ size: 16 }) : icon.chevronRight({ size: 16 });
+        if (desk) desk.innerHTML = collapsed ? icon.chevronLeft({ size: 18 }) : icon.chevronRight({ size: 18 });
+      }
+    });
+  }
   $('#user-chip').addEventListener('click', openUserMenu);
 
   // أدوات مراقبة المزامنة ظاهرة للمدير فقط، بينما يستمر محرك المزامنة لكل المستخدمين.
@@ -402,6 +418,7 @@ function registerRoutes() {
         window.scrollTo({ top: 0, behavior: 'instant' });
         finishRouteProgress();
         sendHeartbeat(name);
+        requestAnimationFrame(() => initTableScrolls(view));
         return cleanup;
       } catch (err) {
         if (seq !== navSeq) return undefined;
@@ -429,19 +446,12 @@ function registerRoutes() {
   });
 }
 
-function preloadViews() {
-  const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 300));
-  idle(() => {
-    Object.values(VIEWS).forEach((loader) => {
-      try { loader().catch(() => { }); } catch { /* ignore */ }
-    });
-  });
-}
-
 // -------------------------------------------------------------------- البدء
 async function boot() {
-  await loadMeta();
-  if (!store.user) await loadSession();
+  await Promise.all([
+    loadMeta(),
+    store.user ? Promise.resolve(store.user) : loadSession(),
+  ]);
   if (!store.user) {
     renderLogin();
     return;
@@ -454,21 +464,18 @@ async function boot() {
     location.hash = '#/issuers';
   }
   router.start();
-  preloadViews();
   startSync();
 
-  const viewEl = document.getElementById('view');
-  if (viewEl && window.MutationObserver) {
-    let tTimer = null;
-    const mo = new MutationObserver(() => {
-      clearTimeout(tTimer);
-      tTimer = setTimeout(() => initTableScrolls(viewEl), 50);
-    });
-    mo.observe(viewEl, { childList: true, subtree: true });
+  if (!window.__goldxResizeBound) {
+    window.__goldxResizeBound = true;
+    let rTimer = null;
     window.addEventListener('resize', () => {
-      clearTimeout(tTimer);
-      tTimer = setTimeout(() => initTableScrolls(viewEl), 80);
-    });
+      clearTimeout(rTimer);
+      rTimer = setTimeout(() => {
+        const curView = document.getElementById('view');
+        if (curView) initTableScrolls(curView);
+      }, 120);
+    }, { passive: true });
   }
 }
 

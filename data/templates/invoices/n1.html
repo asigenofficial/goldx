@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>n1 — الإماراتي العامري (الميزان الثنائي)</title>
+<style>
+  @page { size: A4 portrait; margin: 0; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0;
+    direction: rtl;
+    background: #ffffff;
+    color: #111827;
+    font: 10.5px/1.4 'goldx Document', Tahoma, Arial, sans-serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  h1, h2, h3, p { margin: 0; }
+  .invoice-container {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 8mm;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    position: relative;
+    overflow: visible;
+  }
+  .top-content-wrap {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .n1-header {
+    display: grid;
+    grid-template-columns: 1fr 120px 1fr;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 8px;
+    border-bottom: 2.5px solid #111827;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+  .n1-seller-ar {
+    text-align: right;
+    direction: rtl;
+  }
+  .n1-seller-ar h2 {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: #111827;
+    margin-bottom: 3px;
+  }
+  .n1-seller-ar p, .n1-seller-en p {
+    font-size: 9.5px;
+    color: #374151;
+    line-height: 1.45;
+  }
+  .n1-seller-en {
+    text-align: left;
+    direction: ltr;
+  }
+  .n1-seller-en h2 {
+    font-size: 13px;
+    font-weight: 800;
+    color: #111827;
+    margin-bottom: 3px;
+  }
+  .n1-center-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    text-align: center;
+  }
+  .logo-shell {
+    max-width: 110px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .logo-shell img, .logo-shell svg {
+    max-width: 110px;
+    max-height: 54px;
+    object-fit: contain;
+    display: block;
+  }
+  .n1-title-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #111827;
+    color: #f8f6f0;
+    padding: 5px 12px;
+    margin-bottom: 8px;
+    border-bottom: 2px solid #9a7328;
+    flex-shrink: 0;
+  }
+  .n1-title-bar h1 {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+  }
+  .n1-title-bar .n1-inv-no {
+    font-size: 12px;
+    font-weight: 700;
+    color: #f5d896;
+    font-variant-numeric: tabular-nums;
+  }
+  .n1-title-bar .n1-doc-type {
+    font-size: 9.5px;
+    color: #e5dfd0;
+  }
+  .n1-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 132px;
+    gap: 10px;
+    align-items: stretch;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .n1-meta-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    border: 1.5px solid #111827;
+    font-size: 9.5px;
+  }
+  .n1-meta-table th, .n1-meta-table td {
+    border: 1px solid #9ca3af;
+    padding: 4px 6px;
+    vertical-align: middle;
+  }
+  .n1-meta-table th {
+    background: #f7f4ec;
+    color: #111827;
+    font-weight: 700;
+    text-align: right;
+    width: 19%;
+  }
+  .n1-meta-table td {
+    color: #111827;
+    text-align: right;
+    font-weight: 600;
+    width: 31%;
+    overflow-wrap: anywhere;
+  }
+  .n1-meta-table th small {
+    display: block;
+    font-size: 7.5px;
+    color: #6b7280;
+    font-weight: 400;
+  }
+  .qr-box {
+    width: 130px;
+    height: 130px;
+    min-width: 130px;
+    min-height: 130px;
+    background: #ffffff;
+    border: 1.5px solid #111827;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    overflow: hidden;
+  }
+  .qr-box svg, .qr-box img {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+    object-fit: contain;
+  }
+  .items-table-container {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .items-main-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    border: 1.5px solid #111827;
+  }
+  .items-main-table thead th {
+    background: #f7f4ec;
+    color: #111827;
+    border: 1px solid #111827;
+    border-bottom: 2px solid #9a7328;
+    padding: 5px 3px;
+    text-align: center;
+    font-size: 9.5px;
+    font-weight: 800;
+    line-height: 1.25;
+  }
+  .items-main-table thead th small {
+    display: block;
+    font-size: 7.5px;
+    color: #6b5322;
+    font-weight: 600;
+  }
+  .items-main-table tbody td {
+    border: 1px solid #d1d5db;
+    padding: 5px 3px;
+    text-align: center;
+    font-size: 9.5px;
+    vertical-align: top;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .items-main-table tbody td:nth-child(2) {
+    text-align: right;
+  }
+  .items-main-table tbody tr:nth-child(even) {
+    background: #faf9f5;
+  }
+  .items-main-table tfoot td {
+    background: #111827;
+    color: #f8f6f0;
+    border: 1px solid #111827;
+    padding: 5px 3px;
+    text-align: center;
+    font-size: 9.5px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  .items-main-table tfoot td.n1-foot-lbl {
+    text-align: right;
+    color: #f5d896;
+  }
+  .bottom-content {
+    margin-top: auto;
+    padding-top: 8px;
+    flex-shrink: 0;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .n1-summary-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 0.95fr;
+    gap: 10px;
+    align-items: stretch;
+    margin-bottom: 8px;
+  }
+  .n1-gold-box {
+    border: 1.5px solid #111827;
+    display: flex;
+    flex-direction: column;
+  }
+  .n1-box-head {
+    background: #111827;
+    color: #f5d896;
+    padding: 4px 8px;
+    font-size: 10px;
+    font-weight: 800;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1.5px solid #9a7328;
+  }
+  .n1-karat-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 9.5px;
+  }
+  .n1-karat-table th, .n1-karat-table td {
+    border: 1px solid #d1d5db;
+    padding: 4px 3px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .n1-karat-table th {
+    background: #f7f4ec;
+    color: #111827;
+    font-weight: 800;
+  }
+  .n1-karat-table td {
+    font-weight: 700;
+    color: #111827;
+    font-size: 10px;
+  }
+  .n1-gold-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid #9a7328;
+    background: #faf8f2;
+  }
+  .n1-gold-kpis > div {
+    padding: 4px 6px;
+    text-align: center;
+    border-left: 1px solid #e5dfd0;
+  }
+  .n1-gold-kpis > div:last-child {
+    border-left: 0;
+  }
+  .n1-gold-kpis span {
+    display: block;
+    font-size: 8px;
+    color: #6b7280;
+  }
+  .n1-gold-kpis b {
+    font-size: 10px;
+    color: #111827;
+    font-variant-numeric: tabular-nums;
+  }
+  .n1-words-strip {
+    padding: 5px 8px;
+    border-top: 1px solid #d1d5db;
+    font-size: 9px;
+    color: #1f2937;
+    line-height: 1.45;
+    background: #ffffff;
+    flex: 1 1 auto;
+  }
+  .n1-words-strip b {
+    color: #9a7328;
+  }
+  .n1-money-table {
+    width: 100%;
+    height: 100%;
+    border-collapse: collapse;
+    border: 1.5px solid #111827;
+    font-size: 9.5px;
+  }
+  .n1-money-table th, .n1-money-table td {
+    border: 1px solid #d1d5db;
+    padding: 4px 8px;
+    vertical-align: middle;
+  }
+  .n1-money-table th {
+    background: #f7f4ec;
+    color: #111827;
+    text-align: right;
+    font-weight: 700;
+    width: 58%;
+  }
+  .n1-money-table td {
+    text-align: left;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #111827;
+  }
+  .n1-money-table tr.n1-grand th {
+    background: #111827;
+    color: #f5d896;
+    font-size: 10.5px;
+    font-weight: 800;
+    border-color: #111827;
+  }
+  .n1-money-table tr.n1-grand td {
+    background: #f5edd9;
+    color: #111827;
+    font-size: 11px;
+    font-weight: 900;
+    border-color: #9a7328;
+  }
+  .n1-notes-sigs {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 10px;
+    align-items: stretch;
+    margin-bottom: 6px;
+  }
+  .n1-notes-box {
+    border: 1px solid #9ca3af;
+    padding: 5px 8px;
+    font-size: 9px;
+    background: #fafafa;
+  }
+  .n1-notes-box strong {
+    display: block;
+    font-size: 9px;
+    color: #111827;
+    margin-bottom: 2px;
+  }
+  .n1-sigs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border: 1px solid #111827;
+  }
+  .n1-sig-cell {
+    border-left: 1px solid #111827;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: center;
+    min-height: 48px;
+  }
+  .n1-sig-cell:last-child {
+    border-left: 0;
+  }
+  .n1-sig-head {
+    background: #f7f4ec;
+    border-bottom: 1px solid #d1d5db;
+    padding: 3px 4px;
+    font-size: 8.5px;
+    font-weight: 700;
+    color: #111827;
+  }
+  .n1-sig-foot {
+    border-top: 1px dashed #9ca3af;
+    padding: 2px 4px;
+    font-size: 8px;
+    color: #6b7280;
+  }
+  .n1-footer {
+    border-top: 1.5px solid #9a7328;
+    padding-top: 4px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 8.5px;
+    color: #4b5563;
+  }
+  .sar-amount {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    direction: rtl !important;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .sar-amount bdi { direction: ltr; unicode-bidi: isolate; }
+  .sar-amount svg { width: .72em !important; height: .82em !important; flex: 0 0 auto; fill: currentColor; }
+  @media print { * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+  <div class="invoice-container" data-gold-design="n1" data-gold-invoice-type="{{gold_invoice_type}}">
+    <div class="top-content-wrap">
+      <header class="n1-header">
+        <div class="n1-seller-ar">
+          <h2>{{seller_name}}</h2>
+          <p>{{seller_address}}</p>
+          <p>الرقم الضريبي: {{seller_tax}} · السجل التجاري: {{seller_cr}}</p>
+          <p>هاتف: {{seller_phone}}</p>
+        </div>
+        <div class="n1-center-brand">
+          <div class="logo-shell">{{logo}}</div>
+        </div>
+        <div class="n1-seller-en">
+          <h2>{{seller_name_en}}</h2>
+          <p>{{seller_address_en}}</p>
+          <p>VAT No.: {{seller_tax}} · C.R.: {{seller_cr}}</p>
+          <p>Tel: {{seller_phone}}</p>
+        </div>
+      </header>
+
+      <div class="n1-title-bar">
+        <h1>{{invoice_type}} — الذهب والمجوهرات</h1>
+        <span class="n1-doc-type">{{gold_type_label}} · {{zatca_phase_name}}</span>
+        <span class="n1-inv-no">Invoice No. {{invoice_number}}</span>
+      </div>
+
+      <section class="n1-meta-grid">
+        <table class="n1-meta-table">
+          <tbody>
+            <tr>
+              <th>اسم العميل <small>Customer Name</small></th>
+              <td colspan="3">{{buyer_name}}</td>
+            </tr>
+            <tr>
+              <th>العنوان <small>Address</small></th>
+              <td colspan="3">{{buyer_address}}</td>
+            </tr>
+            <tr>
+              <th>الرقم الضريبي <small>VAT No.</small></th>
+              <td>{{buyer_tax}}</td>
+              <th>رقم الهاتف <small>Phone</small></th>
+              <td>{{buyer_phone}}</td>
+            </tr>
+            <tr>
+              <th>التاريخ والوقت <small>Date &amp; Time</small></th>
+              <td>{{issue_date}} — {{issue_time}}</td>
+              <th>نوع الفاتورة <small>Payment</small></th>
+              <td>{{payment_method}}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="qr-box">{{qr_code}}</div>
+      </section>
+
+      <section class="items-table-container">
+        <table class="items-main-table">
+          <thead>
+            <tr>
+              <th style="width:4%">#</th>
+              <th style="width:22%">الصنف <small>Item</small></th>
+              <th style="width:6%">العيار <small>Karat</small></th>
+              <th style="width:9%">الوزن (جم) <small>Weight</small></th>
+              <th style="width:10%">سعر الجرام <small>Gold Price</small></th>
+              <th style="width:8%">الأجور <small>Making</small></th>
+              <th style="width:11%">قبل الضريبة <small>Taxable</small></th>
+              <th style="width:7%">نسبة % <small>VAT %</small></th>
+              <th style="width:10%">قيمة الضريبة <small>VAT</small></th>
+              <th style="width:13%">شامل الضريبة <small>Total</small></th>
+            </tr>
+          </thead>
+          <tbody>{{items_rows}}</tbody>
+          <tfoot>
+            <tr>
+              <td></td>
+              <td class="n1-foot-lbl">الإجمالي الكلي / Total</td>
+              <td>—</td>
+              <td>{{total_weight}} جم</td>
+              <td>{{total_gold_value}}</td>
+              <td>{{total_wage}}</td>
+              <td>{{taxable_amount}}</td>
+              <td>—</td>
+              <td>{{tax_amount}}</td>
+              <td>{{grand_total}}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </section>
+    </div>
+
+    <div class="bottom-content bottom-content-wrap">
+      <section class="n1-summary-grid">
+        <div class="n1-gold-box">
+          <div class="n1-box-head">
+            <span>ملخص الذهب وإجماليات الجرامات</span>
+            <span>Summary of Gold (Grams)</span>
+          </div>
+          <table class="n1-karat-table">
+            <thead>
+              <tr>
+                <th>18K عيار 18</th>
+                <th>21K عيار 21</th>
+                <th>22K عيار 22</th>
+                <th>24K عيار 24</th>
+                <th>أخرى / Other</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{{weight_18}}</td>
+                <td>{{weight_21}}</td>
+                <td>{{weight_22}}</td>
+                <td>{{weight_24}}</td>
+                <td>{{weight_other}}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="n1-gold-kpis">
+            <div><span>إجمالي الوزن القائم</span><b>{{total_weight}} جم</b></div>
+            <div><span>المكافئ بعيار 21</span><b>{{weight_21_equiv}} جم</b></div>
+            <div><span>عدد البنود / القطع</span><b>{{total_pieces}}</b></div>
+          </div>
+          <div class="n1-words-strip">
+            <div><b>المبلغ كتابة:</b> {{total_in_words}}</div>
+            <div><b>الوزن كتابة:</b> {{total_weight_words}}</div>
+          </div>
+        </div>
+
+        <table class="n1-money-table">
+          <tbody>
+            <tr>
+              <th>إجمالي قيمة الذهب / Gold Value</th>
+              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{total_gold_value}}</bdi>{{sar_symbol}}</span></td>
+            </tr>
+            <tr>
+              <th>إجمالي الأجور / Making Charges</th>
+              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{total_wage}}</bdi>{{sar_symbol}}</span></td>
+            </tr>
+            <tr>
+              <th>الخصم / Discount</th>
+              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{discount}}</bdi>{{sar_symbol}}</span></td>
+            </tr>
+            <tr>
+              <th>الإجمالي قبل الضريبة / Total Before VAT</th>
+              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{taxable_amount}}</bdi>{{sar_symbol}}</span></td>
+            </tr>
+            <tr>
+              <th>إجمالي ضريبة القيمة المضافة / Total VAT</th>
+              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{tax_amount}}</bdi>{{sar_symbol}}</span></td>
+            </tr>
+            <tr class="n1-grand">
+              <th>الإجمالي الصافي / Net Total</th>
+              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{grand_total}}</bdi>{{sar_symbol}}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="n1-notes-sigs">
+        <div class="n1-notes-box">
+          <strong>ملاحظات وشروط / Notes:</strong>
+          <div>{{notes}}</div>
+        </div>
+        <div class="n1-sigs-grid">
+          <div class="n1-sig-cell">
+            <div class="n1-sig-head">أنشأ بواسطة / Created By</div>
+            <div class="n1-sig-foot">التوقيع / Signature</div>
+          </div>
+          <div class="n1-sig-cell">
+            <div class="n1-sig-head">اعتمد بواسطة / Approved By</div>
+            <div class="n1-sig-foot">التوقيع / Signature</div>
+          </div>
+          <div class="n1-sig-cell">
+            <div class="n1-sig-head">العميل / Customer</div>
+            <div class="n1-sig-foot">التوقيع / Signature</div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="n1-footer">
+        <span>{{seller_name}} · {{seller_phone}}</span>
+        <span>عيار 24 معفى (0%) · عيارات 18 و21 و22 خاضعة لضريبة 15%</span>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

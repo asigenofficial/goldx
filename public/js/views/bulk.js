@@ -3,7 +3,7 @@
 //  (المسودات المحفوظة، التعديل التفاعلي، إصدار عينة تجريبية، طباعة المعاينة، سندات القبض الآلية)
 // ==========================================================================
 import { api } from '../core/api.js';
-import { store, loadClients, loadItems, loadCategories, currencyLabel } from '../core/store.js';
+import { store, loadClients, loadItems, loadCategories, loadTemplates, currencyLabel } from '../core/store.js';
 import * as router from '../core/router.js';
 import {
   html, raw, esc, money, num, timeToMinutes, toNum, today,
@@ -78,17 +78,14 @@ export async function render(view) {
 
   let availableTemplates = [];
   try {
-    const res = await api.get('/api/invoices/templates?type=invoices');
-    availableTemplates = Array.isArray(res) ? res : (res?.data || []);
+    availableTemplates = await loadTemplates('invoices');
     if (!availableTemplates.length) {
-      const fallbackRes = await api.get('/api/invoices/templates?type=all');
-      const allList = Array.isArray(fallbackRes) ? fallbackRes : (fallbackRes?.data || []);
+      const allList = await loadTemplates('all');
       availableTemplates = allList.filter((t) => !t.category || t.category === 'invoices' || t.category === 'custom' || t.category === 'custom_invoices');
     }
   } catch {
     try {
-      const fallbackRes = await api.get('/api/invoices/templates?type=all');
-      const allList = Array.isArray(fallbackRes) ? fallbackRes : (fallbackRes?.data || []);
+      const allList = await loadTemplates('all');
       availableTemplates = allList.filter((t) => !t.category || t.category === 'invoices' || t.category === 'custom' || t.category === 'custom_invoices');
     } catch {
       availableTemplates = [];
@@ -549,7 +546,11 @@ export async function render(view) {
     `;
   };
 
+  let cleanupBulkListeners = null;
+
   const draw = () => {
+    cleanupBulkListeners?.();
+    cleanupBulkListeners = null;
     view.innerHTML = html`
       <div class="page-head">
         <div class="titles">
@@ -1234,6 +1235,11 @@ export async function render(view) {
     window.addEventListener('scroll', onBulkWindowReposition, { passive: true });
     window.addEventListener('resize', onBulkWindowReposition, { passive: true });
     document.addEventListener('mousedown', onBulkGlobalClick);
+    cleanupBulkListeners = () => {
+      window.removeEventListener('scroll', onBulkWindowReposition);
+      window.removeEventListener('resize', onBulkWindowReposition);
+      document.removeEventListener('mousedown', onBulkGlobalClick);
+    };
 
     // تغيير اختيار الصنف السريع لملء رقم الصنف واسمه وسعره ووحدته التلقائية
     delegate(view, 'change', '#quick-catalog-item-select', (e, sel) => {
@@ -1529,6 +1535,8 @@ export async function render(view) {
         if (state.preview && state.preview.invoices) {
           state.preview.invoices.forEach((inv) => {
             inv.zatca_phase = state.zatca_phase;
+            inv.qr_payload = '';
+            if (state.zatca_phase !== 'PHASE2') inv.invoice_hash = '';
           });
           const area = $('#preview-area', view);
           if (area) area.innerHTML = previewHtml();
@@ -2376,7 +2384,10 @@ export async function render(view) {
   }
 
   draw();
-  return undefined;
+  return () => {
+    cleanupBulkListeners?.();
+    cleanupBulkListeners = null;
+  };
 }
 
 

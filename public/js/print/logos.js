@@ -105,13 +105,6 @@ export const PRESET_LOGOS = [
 /**
  * بديل احترافي لشعار الذهب عند عدم رفع شعار خاص
  */
-export function buildLogoPlaceholderSvg({
-  brandColor = '#d4af37',
-  brandDark = '#b45309',
-  width = '26mm',
-  height = '22mm',
-} = {}) {
-  return `<div class="logo-fallback" style="width:${width};height:${height};border-radius:10px;overflow:hidden;border:1px solid rgba(212,175,55,0.4);" title="شعار GOLDX">
-    <img src="/img/logo-banner.jpg" alt="GOLDX" style="width:100%;height:100%;object-fit:cover;" />
-  </div>`;
+export function buildLogoPlaceholderSvg() {
+  return '';
 }

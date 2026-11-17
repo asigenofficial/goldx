@@ -642,13 +642,12 @@ a:hover {
   min-width: 0;
   min-height: calc(100vh - var(--topbar-height));
   position: relative;
-  transition: opacity 0.18s ease, filter 0.18s ease;
+  transition: opacity 0.16s ease;
 }
 
 .content.view-switching {
   opacity: 0.78;
   pointer-events: none;
-  filter: blur(0.4px);
 }
 
 .view-enter {

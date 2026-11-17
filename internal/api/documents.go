@@ -323,10 +323,10 @@ func (s *Server) failPDF(kind, id string, revision int64, renderErr error) {
 // Invalidate cached PDFs when their rendering rules change.
 func documentPDFStyleKey(kind, style string) string {
 	if kind == "voucher" {
-		return style + "|amount-grouping-v1|receipt-svg-v2"
+		return style + "|amount-grouping-v1|receipt-svg-v3|no-logo-v1"
 	}
 	if kind == "invoice" {
-		return style + "|invoice-table-fill-v7"
+		return style + "|invoice-table-fill-v9|no-logo-v1|qr-phase-v1"
 	}
 	return style
 }
@@ -605,9 +605,6 @@ func (s *Server) fillReceiptTemplate(tpl string, issuer *models.Issuer, values m
 	}
 	symbol := s.templates.SARSymbolSVG()
 	tpl = strings.NewReplacer("{{sar_symbol}}", symbol, "{{currency_symbol}}", symbol).Replace(tpl)
-	logo := `<span class="gold-mark">◇</span>`
-	if issuer.LogoData != nil && *issuer.LogoData != "" {
-		logo = `<img style="max-width:130px;max-height:80px;object-fit:contain;" src="` + html.EscapeString(*issuer.LogoData) + `" alt="شعار المتجر">`
-	}
-	return injectVoucherPrintStyle(strings.ReplaceAll(tpl, "{{logo}}", logo))
+	logo := services.BuildIssuerLogoHTML(issuer.LogoData, 130, 80)
+	return injectVoucherPrintStyle(services.ReplaceLogoTags(tpl, logo))
 }

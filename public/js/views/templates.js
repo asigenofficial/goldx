@@ -3,7 +3,7 @@
 //  إدارة وتوليد تقارير المستندات وقوالب Excel المعتمدة للفواتير والسندات والتقارير
 // ==========================================================================
 import { api } from '../core/api.js';
-import { store, can } from '../core/store.js';
+import { store, can, invalidate, loadTemplates as loadStoreTemplates } from '../core/store.js';
 import {
   html, raw, esc, printDoc, modal, toastOk, toastErr, $, $$, exportExcel, downloadPdfFromHtml,
   fillDynamicTemplateHtml, fillStoredTemplate, num, icon,
@@ -145,15 +145,15 @@ export async function render(view) {
   } catch { /* التراجع للمنشأة المتاحة */ }
 
   let excelTemplates = [];
-  async function loadTemplates() {
+  async function loadTemplates(force = false) {
     try {
-      const res = await api.get('/api/invoices/templates?type=all');
-      excelTemplates = Array.isArray(res) ? res : (res?.data || []);
+      if (force) invalidate('templates');
+      excelTemplates = await loadStoreTemplates('all', force);
     } catch {
       excelTemplates = [];
     }
   }
-  await loadTemplates();
+  await loadTemplates(false);
 
   // جلب فواتير وعملاء وسندات حقيقية للمنشأة لتكون المعاينة ديناميكية بالكامل بدون أي بيانات ثابتة
   let liveClients = [];
@@ -681,7 +681,7 @@ export async function render(view) {
                     شعار المنشأة المعتمد
                   </label>
                   <span class="badge ${activeIssuer.logo_data ? 'green' : 'gray'}" id="badge-logo-status" style="font-size:.72rem;">
-                    ${activeIssuer.logo_data ? 'شعار نشط' : 'بديل الشعار التلقائي'}
+                    ${activeIssuer.logo_data ? 'شعار نشط' : 'بدون شعار'}
                   </span>
                 </div>
 
@@ -689,7 +689,7 @@ export async function render(view) {
                   <div id="logo-preview-box" style="width:72px; height:58px; border-radius:6px; border:1px solid var(--line); background:#fff; display:grid; place-items:center; overflow:hidden; flex-shrink:0; padding:3px; box-shadow:0 2px 6px rgba(0,0,0,0.15);">
                     ${activeIssuer.logo_data
         ? `<img src="${esc(activeIssuer.logo_data)}" alt="شعار" style="max-width:100%; max-height:100%; object-fit:contain;" />`
-        : `<div style="font-size:.68rem; color:#64748b; text-align:center; font-weight:700; line-height:1.2;">بديل<br>الشعار</div>`}
+        : `<div style="font-size:.68rem; color:#64748b; text-align:center; font-weight:700; line-height:1.2;">لا يوجد<br>شعار</div>`}
                   </div>
                   <div style="flex:1;">
                     <div class="flex gap-sm" style="flex-wrap:wrap;">
@@ -975,6 +975,9 @@ export async function render(view) {
       address_en: activeIssuer?.address_en || (activeIssuer?.city_en ? [activeIssuer.city_en, activeIssuer.district_en, activeIssuer.street_en].filter(Boolean).join(' - ') : 'City - District - Street'),
       phone: activeIssuer?.phone || activeIssuer?.mobile || '05xxxxxxxx',
       mobile: activeIssuer?.mobile || activeIssuer?.phone || '05xxxxxxxx',
+      bank_name: activeIssuer?.bank_name || '',
+      bank_iban: activeIssuer?.bank_iban || '',
+      iban: activeIssuer?.bank_iban || '',
       currency: activeIssuer?.currency || 'SAR',
       logo: activeIssuer?.logo || '',
       logo_data: activeIssuer?.logo_data || '',
@@ -2268,6 +2271,7 @@ export async function render(view) {
               uploadModal.close();
 
               activeHubTab = chosenCategory;
+              invalidate('templates');
 
               templateHtmlCache.clear();
               await loadTemplates();
@@ -2396,7 +2400,7 @@ export async function render(view) {
           rows_html: sampleRows,
           stats_html: '<div><strong>إجمالي الإيرادات</strong><br>32,700.00</div><div><strong>عدد العمليات</strong><br>21</div><div><strong>صافي الفترة</strong><br>27,350.00</div>',
           footer_html: '<tr><td>الإجمالي</td><td>21</td><td>32,700.00</td><td>5,350.00</td></tr>',
-          logo_html: '<div style="width:130px;height:54px;border:1.5px dashed #97aac1;border-radius:8px;display:grid;place-items:center;color:#617d9b;font-size:12px">شعار المنشأة</div>',
+          logo_html: activeIssuer?.logo_data ? `<img src="${esc(activeIssuer.logo_data)}" alt="شعار المنشأة" class="issuer-logo">` : '',
         };
         const docHtml = fillStoredTemplate(rawTemplate, values, ['headers_html', 'rows_html', 'stats_html', 'footer_html', 'logo_html']);
         openStoredDocumentPreview(tpl, docHtml, isStatement ? 'كشف حساب' : 'تقرير مالي');
@@ -2419,7 +2423,7 @@ export async function render(view) {
         for (const key of ['template_style', 'voucher_template_style', 'report_template_style', 'statement_template_style']) {
           if (printCfg[key] === deletedId) printCfg[key] = '';
         }
-        await loadTemplates();
+        await loadTemplates(true);
         normalizeTemplateDefaults();
         await api.put(`/api/issuers/${activeIssuer.id}`, { ...activeIssuer, print_settings: printCfg, qr_settings: qrCfg });
         activeIssuer.print_settings = printCfg;
@@ -2613,7 +2617,7 @@ export async function render(view) {
           if (printCfg.voucher_template_style === tplId) printCfg.voucher_template_style = '';
           if (printCfg.report_template_style === tplId) printCfg.report_template_style = '';
           if (printCfg.statement_template_style === tplId) printCfg.statement_template_style = '';
-          await loadTemplates();
+          await loadTemplates(true);
           normalizeTemplateDefaults();
           await api.put(`/api/issuers/${activeIssuer.id}`, {
             ...activeIssuer,
@@ -2643,7 +2647,7 @@ export async function render(view) {
     $('#btn-reset-templates', view)?.addEventListener('click', async () => {
       try {
         await api.post('/api/invoices/templates/reset');
-        await loadTemplates();
+        await loadTemplates(true);
         renderView();
         toastOk('تمت مزامنة وفحص القوالب من القرص بنجاح');
       } catch (err) {
@@ -2932,19 +2936,22 @@ export async function render(view) {
       }
 
       $('#zoom-fit', view)?.addEventListener('click', fitTemplateZoom);
-      window.addEventListener('resize', fitTemplateZoom);
-      setTimeout(fitTemplateZoom, 50);
+      view.__cleanupZoomResize?.();
+      window.addEventListener('resize', fitTemplateZoom, { passive: true });
+      view.__cleanupZoomResize = () => window.removeEventListener('resize', fitTemplateZoom);
+      setTimeout(() => { if (document.body.contains(view)) fitTemplateZoom(); }, 50);
     }
   }
 
   // فحص تلقائي وتحديث حي عند عودة التركيز للنافذة عند إضافة أي ملفات جديدة بالقرص
   let isCheckingLive = false;
   const onFocusOrVisible = async () => {
-    if (document.hidden || isCheckingLive) return;
+    if (document.hidden || isCheckingLive || !document.body.contains(view)) return;
     isCheckingLive = true;
     try {
       const prevIds = excelTemplates.map((t) => t.id).sort().join(',');
-      await loadTemplates();
+      await loadTemplates(true);
+      if (!document.body.contains(view)) return;
       const newIds = excelTemplates.map((t) => t.id).sort().join(',');
       if (prevIds !== newIds) {
         renderView();
@@ -2957,5 +2964,10 @@ export async function render(view) {
   document.addEventListener('visibilitychange', onFocusOrVisible);
 
   renderView();
-  return undefined;
+  return () => {
+    window.removeEventListener('focus', onFocusOrVisible);
+    document.removeEventListener('visibilitychange', onFocusOrVisible);
+    view.__cleanupZoomResize?.();
+    view.__cleanupZoomResize = null;
+  };
 }

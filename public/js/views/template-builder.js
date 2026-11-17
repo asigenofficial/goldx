@@ -3,6 +3,7 @@
 //  يتيح تنظيم كامل، إدراج وتخصيص أي جداول، والتحكم الشامل في خلفية وإطار القوالب
 // ==========================================================================
 import { api } from '../core/api.js';
+import { loadTemplates, invalidate } from '../core/store.js';
 import { toastOk, toastErr, $, $$, esc, qrSvg, cleanStrayTableRowsAndFixTables } from '../core/util.js';
 import { code39Svg } from '../print/code39.js';
 import { openAiPromptModal } from './ai-prompt-modal.js';
@@ -46,6 +47,7 @@ let selectedTable = null;
 let copiedBlock = null;
 let zoomPercent = 100;
 let activeTab = 'elements'; // 'elements' | 'background' | 'typography'
+let cleanupBuilderListeners = null;
 
 let docMeta = {
   type: 'invoices',
@@ -2133,7 +2135,7 @@ async function loadPresetsDropdown() {
   const selPreset = $('#sel-preset-template', view);
   if (!selPreset) return;
   try {
-    const list = await api.get('/api/invoices/templates?type=' + (docMeta.type || 'all'));
+    const list = await loadTemplates(docMeta.type || 'all');
     if (Array.isArray(list) && list.length > 0) {
       selPreset.innerHTML = '<option value="">قوالب جاهزة معتمدة ▾</option>' +
         list.map(t => `<option value="${t.id}" data-color="${t.color_hex || ''}" data-name="${esc(t.name_ar)}">${esc(t.name_ar)} (${t.badge || 'معتمد'})</option>`).join('');
@@ -2549,6 +2551,9 @@ function restoreEditorContent(content) {
 
 function attachAppEvents() {
   if (!view) return;
+  cleanupBuilderListeners?.();
+  cleanupBuilderListeners = null;
+  let onBuilderDocClick = null;
 
   const canvas = $('#editor-canvas-sheet', view);
 
@@ -2638,8 +2643,13 @@ function attachAppEvents() {
     applyBuilderZoom(Number(e.target.value));
   });
   $('#btn-builder-zoom-fit', view)?.addEventListener('click', fitBuilderZoom);
-  window.addEventListener('resize', fitBuilderZoom);
-  setTimeout(fitBuilderZoom, 60);
+  const onBuilderResize = () => { if (view && document.body.contains(view)) fitBuilderZoom(); };
+  window.addEventListener('resize', onBuilderResize, { passive: true });
+  setTimeout(() => { if (view && document.body.contains(view)) fitBuilderZoom(); }, 60);
+  cleanupBuilderListeners = () => {
+    window.removeEventListener('resize', onBuilderResize);
+    if (onBuilderDocClick) document.removeEventListener('click', onBuilderDocClick);
+  };
 
   $('#rng-block-scale', view)?.addEventListener('input', (e) => {
     if (!selectedBlock) return;
@@ -2989,9 +2999,10 @@ function attachAppEvents() {
       e.stopPropagation();
       dropTags.style.display = dropTags.style.display === 'none' ? 'block' : 'none';
     };
-    document.addEventListener('click', () => {
+    onBuilderDocClick = () => {
       if (dropTags) dropTags.style.display = 'none';
-    });
+    };
+    document.addEventListener('click', onBuilderDocClick);
   }
 
   $$('.tag-opt-item', view).forEach(item => {
@@ -3151,6 +3162,7 @@ function attachAppEvents() {
         if (res?.id) {
           editingId = res.id;
         }
+        invalidate('templates');
 
         toastOk(`تم حفظ القالب «${chosenName}» بنجاح في النظام وملفات القوالب!`);
       } catch (err) {
@@ -3167,7 +3179,14 @@ function attachAppEvents() {
 // ─── Entry Point ──────────────────────────────────────────────────────────
 
 export async function render(container) {
+  cleanupBuilderListeners?.();
+  cleanupBuilderListeners = null;
   view = container;
+  const cleanup = () => {
+    cleanupBuilderListeners?.();
+    cleanupBuilderListeners = null;
+    view = null;
+  };
   document.querySelector('head #preset-custom-style')?.remove();
   editingId = null;
   saving = false;
@@ -3208,7 +3227,7 @@ export async function render(container) {
     docMeta.name_ar = aiNames[docMeta.type] || aiNames.invoices;
     renderView();
     loadRawHtmlIntoCanvas(aiHtml, docMeta.name_ar);
-    return;
+    return cleanup;
   }
 
   const routeParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
@@ -3225,7 +3244,7 @@ export async function render(container) {
         renderView();
         loadRawHtmlIntoCanvas(htmlToLoad, docMeta.name_ar);
         if (config.preset_styles) applyPresetStyles(config.preset_styles);
-        return;
+        return cleanup;
       }
     } catch (err) {
       toastErr('تعذر فتح القالب: ' + (err.message || 'خطأ غير متوقع'));
@@ -3241,4 +3260,5 @@ export async function render(container) {
     docMeta.name_ar = defaultNames[requestedType];
   }
   renderView();
+  return cleanup;
 }

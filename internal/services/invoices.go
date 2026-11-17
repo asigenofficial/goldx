@@ -21,11 +21,62 @@ type InvoiceService struct {
 }
 
 func NewInvoiceService(d *db.DB, iss *IssuerService, masterKey []byte) *InvoiceService {
-	return &InvoiceService{
+	s := &InvoiceService{
 		db:        d,
 		issuers:   iss,
 		masterKey: masterKey,
 	}
+	s.normalizePhase1QrPayloads()
+	return s
+}
+
+// normalizePhase1QrPayloads repairs any PHASE1 invoices whose stored QR payload contains Phase 2 tags (>5 tags).
+func (s *InvoiceService) normalizePhase1QrPayloads() {
+	if s == nil || s.db == nil {
+		return
+	}
+	rows, err := s.db.Query(`
+		SELECT id, seller_name, seller_tax_number, issue_datetime, grand_total, tax_amount, qr_payload, signature_mode
+		FROM invoices WHERE zatca_phase != 'PHASE2'
+	`)
+	if err != nil {
+		return
+	}
+	type fixItem struct {
+		id, qr string
+	}
+	var fixes []fixItem
+	for rows.Next() {
+		var id, seller, taxNo, dt, qr, sigMode string
+		var total, vat int64
+		if err := rows.Scan(&id, &seller, &taxNo, &dt, &total, &vat, &qr, &sigMode); err != nil {
+			continue
+		}
+		tags, err := zatca.ParseQrPayload(qr)
+		if err != nil || len(tags) != 5 || sigMode != "NONE" {
+			cleanQr := zatca.BuildQrPayload(zatca.QrParams{
+				SellerName: seller,
+				VatNumber:  taxNo,
+				Timestamp:  dt,
+				Total:      models.FmtMoney(total),
+				VatTotal:   models.FmtMoney(vat),
+			})
+			fixes = append(fixes, fixItem{id: id, qr: cleanQr})
+		}
+	}
+	rows.Close()
+	if len(fixes) == 0 {
+		return
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return
+	}
+	for _, f := range fixes {
+		_, _ = tx.Exec(`UPDATE invoices SET qr_payload = ?, signature = '', signature_mode = 'NONE' WHERE id = ?`, f.qr, f.id)
+		_, _ = tx.Exec(`UPDATE document_pdfs SET revision = revision + 1, status = 'PENDING', error = '' WHERE kind = 'invoice' AND document_id = ?`, f.id)
+	}
+	_ = tx.Commit()
 }
 
 type CreateInvoiceLineInput struct {
@@ -353,17 +404,17 @@ func (s *InvoiceService) createInvoiceTx(tx *sql.Tx, input CreateInvoiceInput, a
 	invHash := zatca.InvoiceHash(xml)
 
 	qrParams := zatca.QrParams{
-		SellerName:  issuer.NameAr,
-		VatNumber:   issuer.TaxNumber,
-		Timestamp:   issueDatetime,
-		Total:       models.FmtMoney(grandTotalMinor),
-		VatTotal:    models.FmtMoney(taxTotalMinor),
-		InvoiceHash: invHash,
+		SellerName: issuer.NameAr,
+		VatNumber:  issuer.TaxNumber,
+		Timestamp:  issueDatetime,
+		Total:      models.FmtMoney(grandTotalMinor),
+		VatTotal:   models.FmtMoney(taxTotalMinor),
 	}
 
 	signature := ""
 	signatureMode := "NONE"
 	if zatcaPhase == "PHASE2" {
+		qrParams.InvoiceHash = invHash
 		signature, qrParams.PublicKey, err = s.signInvoiceHashTx(tx, issuer.ID, invHash)
 		if err != nil {
 			return nil, err
@@ -575,6 +626,20 @@ func (s *InvoiceService) GetInvoice(id string) (*InvoiceView, error) {
 	)
 	if err != nil {
 		return nil, errors.New("الفاتورة غير موجودة")
+	}
+	if inv.ZatcaPhase != "PHASE2" {
+		inv.Signature = ""
+		inv.SignatureMode = "NONE"
+		if tags, pErr := zatca.ParseQrPayload(inv.QrPayload); pErr != nil || len(tags) != 5 {
+			inv.QrPayload = zatca.BuildQrPayload(zatca.QrParams{
+				SellerName: inv.SellerName,
+				VatNumber:  inv.SellerTaxNumber,
+				Timestamp:  inv.IssueDatetime,
+				Total:      models.FmtMoney(inv.GrandTotal),
+				VatTotal:   models.FmtMoney(inv.TaxAmount),
+			})
+			_, _ = s.db.Exec(`UPDATE invoices SET qr_payload = ?, signature = '', signature_mode = 'NONE' WHERE id = ?`, inv.QrPayload, inv.ID)
+		}
 	}
 	inv.ShowSarSymbol = models.BoolPtr(showSarInt != 0)
 
@@ -1460,17 +1525,17 @@ func (s *InvoiceService) UpdateInvoice(id string, input CreateInvoiceInput, acto
 	invHash := zatca.InvoiceHash(xml)
 
 	qrParams := zatca.QrParams{
-		SellerName:  issuer.NameAr,
-		VatNumber:   issuer.TaxNumber,
-		Timestamp:   issueDatetime,
-		Total:       models.FmtMoney(grandTotalMinor),
-		VatTotal:    models.FmtMoney(taxTotalMinor),
-		InvoiceHash: invHash,
+		SellerName: issuer.NameAr,
+		VatNumber:  issuer.TaxNumber,
+		Timestamp:  issueDatetime,
+		Total:      models.FmtMoney(grandTotalMinor),
+		VatTotal:   models.FmtMoney(taxTotalMinor),
 	}
 
 	signature := ""
 	signatureMode := "NONE"
 	if zatcaPhase == "PHASE2" {
+		qrParams.InvoiceHash = invHash
 		signature, qrParams.PublicKey, err = s.signInvoiceHashTx(tx, issuer.ID, invHash)
 		if err != nil {
 			return nil, err

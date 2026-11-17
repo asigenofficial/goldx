@@ -3,6 +3,7 @@ package api
 import (
 	"archive/zip"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -17,6 +18,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"goldx/internal/config"
@@ -3222,9 +3224,8 @@ func (s *Server) Handler() http.Handler {
 			path = "index.html"
 		}
 
-		// Try opening file from publicFS
-		f, err := s.publicFS.Open(path)
-		if err != nil {
+		// Check existence via Stat (avoids double open on hot static paths)
+		if _, err := fs.Stat(s.publicFS, path); err != nil {
 			// SPA Fallback to index.html
 			fIndex, errIndex := s.publicFS.Open("index.html")
 			if errIndex != nil {
@@ -3232,25 +3233,27 @@ func (s *Server) Handler() http.Handler {
 				return
 			}
 			defer fIndex.Close()
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.Header().Set("Cache-Control", "no-cache, must-revalidate")
 			_, _ = io.Copy(w, fIndex)
 			return
 		}
-		defer f.Close()
 
-		// Set anti-stale cache control for ES module scripts and html
+		// Set cache headers: revalidate code modules cleanly (with 304 ETag) while caching heavy fonts/images
 		if strings.HasSuffix(path, ".js") {
 			w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
 			w.Header().Set("Cache-Control", "no-cache, must-revalidate")
 		} else if strings.HasSuffix(path, ".html") || strings.HasSuffix(path, ".css") {
 			w.Header().Set("Cache-Control", "no-cache, must-revalidate")
+		} else if strings.HasPrefix(path, "fonts/") || strings.HasPrefix(path, "img/") || path == "favicon.ico" {
+			w.Header().Set("Cache-Control", "public, max-age=604800")
 		}
 
 		fileServer.ServeHTTP(w, r)
 	})
 
-	// Wrap with standard middleware
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// Wrap with standard middleware + streaming gzip compression
+	return withGzip(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 		w.Header().Set("Referrer-Policy", "same-origin")
@@ -3258,6 +3261,106 @@ func (s *Server) Handler() http.Handler {
 			return
 		}
 		mux.ServeHTTP(w, r)
+	}))
+}
+
+var gzipWriterPool = sync.Pool{
+	New: func() any {
+		gw, _ := gzip.NewWriterLevel(io.Discard, gzip.BestSpeed)
+		return gw
+	},
+}
+
+type gzipResponseWriter struct {
+	http.ResponseWriter
+	gz          *gzip.Writer
+	wroteHeader bool
+	passthrough bool
+}
+
+func shouldSkipGzipContentType(ct string) bool {
+	if ct == "" {
+		return false
+	}
+	lower := strings.ToLower(ct)
+	return strings.HasPrefix(lower, "image/jpeg") ||
+		strings.HasPrefix(lower, "image/png") ||
+		strings.HasPrefix(lower, "image/webp") ||
+		strings.HasPrefix(lower, "image/gif") ||
+		strings.HasPrefix(lower, "image/x-icon") ||
+		strings.HasPrefix(lower, "application/pdf") ||
+		strings.HasPrefix(lower, "application/zip") ||
+		strings.HasPrefix(lower, "application/gzip") ||
+		strings.HasPrefix(lower, "application/vnd.") ||
+		strings.HasPrefix(lower, "application/octet-stream") ||
+		strings.HasPrefix(lower, "text/event-stream")
+}
+
+func (g *gzipResponseWriter) WriteHeader(code int) {
+	if g.wroteHeader {
+		return
+	}
+	g.wroteHeader = true
+	if code == http.StatusNoContent || code == http.StatusNotModified ||
+		g.Header().Get("Content-Encoding") != "" ||
+		shouldSkipGzipContentType(g.Header().Get("Content-Type")) {
+		g.passthrough = true
+		g.ResponseWriter.WriteHeader(code)
+		return
+	}
+	g.Header().Set("Content-Encoding", "gzip")
+	g.Header().Add("Vary", "Accept-Encoding")
+	g.Header().Del("Content-Length")
+	gw := gzipWriterPool.Get().(*gzip.Writer)
+	gw.Reset(g.ResponseWriter)
+	g.gz = gw
+	g.ResponseWriter.WriteHeader(code)
+}
+
+func (g *gzipResponseWriter) Write(b []byte) (int, error) {
+	if !g.wroteHeader {
+		if g.Header().Get("Content-Type") == "" {
+			g.Header().Set("Content-Type", http.DetectContentType(b))
+		}
+		g.WriteHeader(http.StatusOK)
+	}
+	if g.passthrough || g.gz == nil {
+		return g.ResponseWriter.Write(b)
+	}
+	return g.gz.Write(b)
+}
+
+func (g *gzipResponseWriter) Flush() {
+	if g.gz != nil {
+		_ = g.gz.Flush()
+	}
+	if fl, ok := g.ResponseWriter.(http.Flusher); ok {
+		fl.Flush()
+	}
+}
+
+func withGzip(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := r.URL.Path
+		if r.Method == http.MethodHead ||
+			!strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") ||
+			r.Header.Get("Range") != "" ||
+			r.Header.Get("Upgrade") != "" ||
+			p == "/api/sync/events" ||
+			strings.HasSuffix(p, "/pdf") ||
+			strings.Contains(p, "/export-") {
+			next.ServeHTTP(w, r)
+			return
+		}
+		gw := &gzipResponseWriter{ResponseWriter: w}
+		defer func() {
+			if gw.gz != nil {
+				_ = gw.gz.Close()
+				gw.gz.Reset(io.Discard)
+				gzipWriterPool.Put(gw.gz)
+			}
+		}()
+		next.ServeHTTP(gw, r)
 	})
 }
 
@@ -3687,6 +3790,7 @@ func (s *Server) handleImportSystemPackage(w http.ResponseWriter, r *http.Reques
 		}
 
 		if templatesCount > 0 || dbRestored {
+			s.templates.InvalidateCache()
 			_ = s.templates.SyncDiskTemplates()
 		}
 
@@ -3730,6 +3834,7 @@ func (s *Server) handleImportSystemPackage(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	s.templates.InvalidateCache()
 	_ = s.templates.SyncDiskTemplates()
 
 	var preBackupFilename string

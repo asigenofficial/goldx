@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>n4 — الحداثة الصافية (العصري المرن)</title>
+<style>
+  @page { size: A4 portrait; margin: 0; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0;
+    direction: rtl;
+    background: #ffffff;
+    color: #0f172a;
+    font: 10.5px/1.45 'goldx Document', Tahoma, Arial, sans-serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  h1, h2, h3, p { margin: 0; }
+  .invoice-container {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 8mm;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    position: relative;
+    overflow: visible;
+  }
+  .top-content-wrap {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .n4-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .n4-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-shell {
+    width: 64px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .logo-shell img, .logo-shell svg {
+    max-width: 64px;
+    max-height: 54px;
+    object-fit: contain;
+    display: block;
+  }
+  .n4-brand h2 {
+    font-size: 16px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 2px;
+  }
+  .n4-brand p {
+    font-size: 9px;
+    color: #64748b;
+    line-height: 1.4;
+  }
+  .n4-doc-badge {
+    text-align: left;
+  }
+  .n4-doc-badge .n4-eyebrow {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #b45309;
+    margin-bottom: 2px;
+  }
+  .n4-doc-badge h1 {
+    font-size: 19px;
+    font-weight: 900;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+  }
+  .n4-doc-badge p {
+    font-size: 9px;
+    color: #64748b;
+  }
+  .n4-hero-strip {
+    background: #f8fafc;
+    border-right: 4px solid #b45309;
+    padding: 8px 14px;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .n4-hero-cell span {
+    display: block;
+    font-size: 8.5px;
+    color: #64748b;
+    margin-bottom: 2px;
+  }
+  .n4-hero-cell strong {
+    font-size: 14px;
+    font-weight: 900;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+  }
+  .n4-hero-cell.n4-accent strong {
+    color: #b45309;
+  }
+  .n4-parties-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .n4-col-label {
+    font-size: 8.5px;
+    font-weight: 800;
+    color: #b45309;
+    margin-bottom: 4px;
+  }
+  .n4-party-name {
+    font-size: 12px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 2px;
+  }
+  .n4-party-meta {
+    font-size: 9.5px;
+    color: #475569;
+    line-height: 1.5;
+  }
+  .n4-facts-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 12px;
+    font-size: 9.5px;
+  }
+  .n4-facts-list div span {
+    color: #64748b;
+    display: block;
+    font-size: 8.5px;
+  }
+  .n4-facts-list div b {
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+  }
+  .items-table-container {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .items-main-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .items-main-table thead th {
+    background: #ffffff;
+    color: #475569;
+    border-top: 1.5px solid #0f172a;
+    border-bottom: 1.5px solid #0f172a;
+    border-inline: 0;
+    padding: 6px 4px;
+    text-align: center;
+    font-size: 9.5px;
+    font-weight: 800;
+  }
+  .items-main-table thead th:nth-child(2) {
+    text-align: right;
+  }
+  .items-main-table tbody td {
+    border-inline: 0;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 6px 4px;
+    text-align: center;
+    font-size: 9.5px;
+    color: #0f172a;
+    vertical-align: top;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .items-main-table tbody td:nth-child(2) {
+    text-align: right;
+    font-weight: 600;
+  }
+  .bottom-content {
+    margin-top: auto;
+    padding-top: 10px;
+    flex-shrink: 0;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .n4-karat-pills {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    padding: 8px 0;
+    border-top: 1.5px solid #0f172a;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 10px;
+  }
+  .n4-k-item {
+    background: #f8fafc;
+    border-bottom: 2px solid #cbd5e1;
+    padding: 5px 6px;
+    text-align: center;
+  }
+  .n4-k-item.n4-k-main {
+    background: #fffbeb;
+    border-bottom-color: #b45309;
+  }
+  .n4-k-item span {
+    display: block;
+    font-size: 8px;
+    color: #64748b;
+  }
+  .n4-k-item b {
+    font-size: 10.5px;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+  }
+  .n4-bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 130px 0.95fr;
+    gap: 14px;
+    align-items: start;
+    margin-bottom: 8px;
+  }
+  .n4-info-col {
+    font-size: 9px;
+    color: #475569;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .n4-bank-chip {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 5px 8px;
+    border-radius: 4px;
+    color: #0f172a;
+    direction: rtl;
+  }
+  .n4-bank-chip:empty {
+    display: none;
+  }
+  .qr-box {
+    width: 130px;
+    height: 130px;
+    min-width: 130px;
+    min-height: 130px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .qr-box svg, .qr-box img {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+    object-fit: contain;
+  }
+  .n4-totals-clean {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5px;
+  }
+  .n4-totals-clean th, .n4-totals-clean td {
+    padding: 4px 2px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .n4-totals-clean th {
+    text-align: right;
+    color: #64748b;
+    font-weight: 600;
+  }
+  .n4-totals-clean td {
+    text-align: left;
+    color: #0f172a;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .n4-totals-clean tr.n4-grand th, .n4-totals-clean tr.n4-grand td {
+    border-top: 2px solid #0f172a;
+    border-bottom: 0;
+    padding-top: 7px;
+    font-size: 11.5px;
+    font-weight: 900;
+    color: #0f172a;
+  }
+  .n4-totals-clean tr.n4-grand td {
+    color: #b45309;
+  }
+  .n4-footer {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 6px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 8.5px;
+    color: #64748b;
+  }
+  .sar-amount {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    direction: rtl !important;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .sar-amount bdi { direction: ltr; unicode-bidi: isolate; }
+  .sar-amount svg { width: .72em !important; height: .82em !important; flex: 0 0 auto; fill: currentColor; }
+  @media print { * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+  <div class="invoice-container" data-gold-design="n4" data-gold-invoice-type="{{gold_invoice_type}}">
+    <div class="top-content-wrap">
+      <header class="n4-head">
+        <div class="n4-brand">
+          <div class="logo-shell">{{logo}}</div>
+          <div>
+            <h2>{{seller_name}}</h2>
+            <p dir="ltr" style="text-align:right">{{seller_name_en}}</p>
+            <p>{{seller_address}} · هاتف: {{seller_phone}}</p>
+            <p>الرقم الضريبي: {{seller_tax}} · السجل التجاري: {{seller_cr}}</p>
+          </div>
+        </div>
+        <div class="n4-doc-badge">
+          <div class="n4-eyebrow">{{invoice_type}} · {{gold_type_label}}</div>
+          <h1>#{{invoice_number}}</h1>
+          <p>{{issue_date}} · {{issue_time}}</p>
+        </div>
+      </header>
+
+      <section class="n4-hero-strip">
+        <div class="n4-hero-cell n4-accent">
+          <span>المستحق الإجمالي</span>
+          <strong><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{grand_total}}</bdi>{{sar_symbol}}</span></strong>
+        </div>
+        <div class="n4-hero-cell">
+          <span>إجمالي الوزن القائم</span>
+          <strong>{{total_weight}} جم</strong>
+        </div>
+        <div class="n4-hero-cell">
+          <span>المكافئ بعيار 21 · السداد</span>
+          <strong>{{weight_21_equiv}} جم · {{payment_method}}</strong>
+        </div>
+      </section>
+
+      <section class="n4-parties-grid">
+        <div>
+          <div class="n4-col-label">العميل / المشتري</div>
+          <div class="n4-party-name">{{buyer_name}}</div>
+          <div class="n4-party-meta">
+            <div>{{buyer_address}}</div>
+            <div>الرقم الضريبي: {{buyer_tax}} · هاتف: {{buyer_phone}}</div>
+          </div>
+        </div>
+        <div class="n4-facts-list">
+          <div><span>إجمالي قيمة الذهب</span><b>{{total_gold_value}}</b></div>
+          <div><span>إجمالي الأجور</span><b>{{total_wage}}</b></div>
+          <div><span>ضريبة الذهب / الأجور</span><b>ذهب {{gold_tax_amount}} · أجور {{wage_tax_amount}}</b></div>
+          <div><span>عدد القطع / عيار آخر</span><b>{{total_pieces}} · {{weight_other}} جم</b></div>
+        </div>
+      </section>
+
+      <section class="items-table-container">
+        <table class="items-main-table">
+          <thead>
+            <tr>
+              <th style="width:4%">#</th>
+              <th style="width:24%">الصنف والوصف</th>
+              <th style="width:7%">العيار</th>
+              <th style="width:9%">الوزن (جم)</th>
+              <th style="width:10%">سعر الجرام</th>
+              <th style="width:9%">الأجور</th>
+              <th style="width:12%">قبل الضريبة</th>
+              <th style="width:11%">مبلغ الضريبة</th>
+              <th style="width:14%">شامل الضريبة</th>
+            </tr>
+          </thead>
+          <tbody>{{items_rows}}</tbody>
+        </table>
+      </section>
+    </div>
+
+    <div class="bottom-content bottom-content-wrap">
+      <section class="n4-karat-pills">
+        <div class="n4-k-item n4-k-main"><span>إجمالي الجرامات</span><b>{{total_weight}} جم</b></div>
+        <div class="n4-k-item"><span>عيار 18 (18K)</span><b>{{weight_18}} جم</b></div>
+        <div class="n4-k-item"><span>عيار 21 (21K)</span><b>{{weight_21}} جم</b></div>
+        <div class="n4-k-item"><span>عيار 22 (22K)</span><b>{{weight_22}} جم</b></div>
+        <div class="n4-k-item"><span>عيار 24 (24K)</span><b>{{weight_24}} جم</b></div>
+        <div class="n4-k-item"><span>المكافئ عيار 21</span><b>{{weight_21_equiv}} جم</b></div>
+      </section>
+
+      <section class="n4-bottom-grid">
+        <div class="n4-info-col">
+          <div><b>المبلغ كتابة:</b> {{total_in_words}}</div>
+          <div><b>الوزن كتابة:</b> {{total_weight_words}}</div>
+          <div class="n4-bank-chip">{{bank_info}}</div>
+          <div><b>ملاحظات:</b> {{notes}}</div>
+        </div>
+
+        <div class="qr-box">{{qr_code}}</div>
+
+        <table class="n4-totals-clean">
+          <tbody>
+            <tr>
+              <th>قيمة الذهب الصافي</th>
+              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{total_gold_value}}</bdi>{{sar_symbol}}</span></td>
+            </tr>
+            <tr>
+              <th>إجمالي الأجور</th>
+              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{total_wage}}</bdi>{{sar_symbol}}</span></td>
+            </tr>
+            <tr>
+              <th>الخصم</th>
+              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{discount}}</bdi>{{sar_symbol}}</span></td>
+            </tr>
+            <tr>
+              <th>قبل الضريبة</th>
+              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{taxable_amount}}</bdi>{{sar_symbol}}</span></td>
+            </tr>
+            <tr>
+              <th>ضريبة القيمة المضافة</th>
+              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{tax_amount}}</bdi>{{sar_symbol}}</span></td>
+            </tr>
+            <tr class="n4-grand">
+              <th>الإجمالي المستحق</th>
+              <td><span class="sar-amount" dir="rtl"><bdi dir="ltr">{{grand_total}}</bdi>{{sar_symbol}}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <footer class="n4-footer">
+        <span>{{seller_name}} · {{seller_email}} · {{seller_phone}}</span>
+        <span>عيار 24: ضريبة 0% · عيارات 18 و21 و22: ضريبة 15%</span>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>
