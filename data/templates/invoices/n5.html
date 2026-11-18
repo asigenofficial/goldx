@@ -53,11 +53,16 @@
     padding: 8px 12px;
     border-bottom: 3px solid #b8862d;
     display: grid;
-    grid-template-columns: 1fr 90px 1fr;
+    grid-template-columns: minmax(0, 1fr) 90px minmax(0, 1fr);
     gap: 10px;
     align-items: center;
     margin-bottom: 5px;
     flex-shrink: 0;
+  }
+  .n5-ar {
+    grid-column: 1;
+    text-align: right;
+    direction: rtl;
   }
   .n5-ar h2 {
     font-size: 14px;
@@ -69,8 +74,18 @@
     font-size: 8.8px;
     color: #e9d8f5;
     line-height: 1.38;
+    overflow-wrap: anywhere;
+  }
+  .n5-logo-col {
+    grid-column: 2;
+    width: 90px;
+    min-height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .n5-en {
+    grid-column: 3;
     direction: ltr;
     text-align: left;
   }
@@ -412,7 +427,9 @@
             <p>{{seller_address}}</p>
             <p>الرقم الضريبي: {{seller_tax}} · س.ت: {{seller_cr}}</p>
           </div>
-          <div class="logo-shell">{{logo}}</div>
+          <div class="n5-logo-col">
+            <div class="logo-shell">{{logo}}</div>
+          </div>
           <div class="n5-en">
             <h2>{{seller_name_en}}</h2>
             <p>{{seller_address_en}}</p>

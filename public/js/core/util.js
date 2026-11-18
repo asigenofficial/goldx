@@ -1035,6 +1035,7 @@ export function translateCityArToEn(cityAr) {
   if (c.includes('الرياض')) return 'Riyadh';
   if (c.includes('مكة') || c.includes('مكه')) return 'Makkah';
   if (c.includes('الدمام')) return 'Dammam';
+  if (/[\u0600-\u06FF]/.test(c)) return '';
   return c;
 }
 
@@ -1507,12 +1508,13 @@ export function fillDynamicTemplateHtml(rawHtml, { issuer = {}, client = {}, vou
     if (o.address_en && o.address_en.trim()) return o.address_en.trim();
     if (invoice?.seller_address_en && invoice.seller_address_en.trim()) return invoice.seller_address_en.trim();
     const parts = [];
-    if (o.city_en && o.city_en.trim()) parts.push(o.city_en.trim());
-    if (o.district_en && o.district_en.trim()) {
+    const cityEn = (o.city_en && o.city_en.trim()) ? o.city_en.trim() : translateCityArToEn(o.city || '');
+    if (cityEn) parts.push(cityEn);
+    if (o.district_en && o.district_en.trim() && !/[\u0600-\u06FF]/.test(o.district_en)) {
       const d = o.district_en.trim();
       parts.push(d.toLowerCase().includes('dist') ? d : `${d} Dist.`);
     }
-    if (o.street_en && o.street_en.trim()) {
+    if (o.street_en && o.street_en.trim() && !/[\u0600-\u06FF]/.test(o.street_en)) {
       const s = o.street_en.trim();
       parts.push(s.toLowerCase().includes('st') || s.toLowerCase().includes('rd') ? s : `${s} St.`);
     }
@@ -1523,7 +1525,7 @@ export function fillDynamicTemplateHtml(rawHtml, { issuer = {}, client = {}, vou
       parts.push(String(o.postal_code).trim());
     }
     if (parts.length > 0) return parts.join(' - ');
-    return o.address_en || o.street_en || o.city_en || '';
+    return '';
   };
   const addr = formatAddrObj(issuer) || issuer.address || issuer.city || '';
   const addrEn = formatAddrObjEn(issuer) || invoice?.seller_address_en || issuer.address_en || '';
@@ -1653,6 +1655,18 @@ export function fillDynamicTemplateHtml(rawHtml, { issuer = {}, client = {}, vou
     }
     if (k === 'seller_city' || k === 'issuer_city' || k === 'city') {
       return issuer.city || '';
+    }
+    if (k === 'seller_street' || k === 'issuer_street') {
+      return issuer.street || '';
+    }
+    if (k === 'seller_district' || k === 'issuer_district') {
+      return issuer.district || '';
+    }
+    if (k === 'seller_building_no' || k === 'issuer_building_no') {
+      return issuer.building_no || '';
+    }
+    if (k === 'seller_postal_code' || k === 'issuer_postal_code') {
+      return issuer.postal_code || '';
     }
     if (k === 'seller_country_en' || k === 'country_en') {
       return 'SA';

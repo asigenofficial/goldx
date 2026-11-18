@@ -1362,6 +1362,16 @@ func translateCityArToEn(cityAr string) string {
 		return "Yanbu"
 	case "القطيف":
 		return "Qatif"
+	case "الخرج":
+		return "Al-Kharj"
+	case "حفر الباطن":
+		return "Hafar Al-Batin"
+	case "الباحة", "الباحه":
+		return "Al-Baha"
+	case "سكاكا", "الجوف":
+		return "Sakaka"
+	case "عرعر":
+		return "Arar"
 	}
 	if strings.Contains(c, "جدة") || strings.Contains(c, "جده") {
 		return "Jeddah"
@@ -1372,8 +1382,14 @@ func translateCityArToEn(cityAr string) string {
 	if strings.Contains(c, "مكة") || strings.Contains(c, "مكه") {
 		return "Makkah"
 	}
+	if strings.Contains(c, "المدينة") || strings.Contains(c, "المدينه") {
+		return "Madinah"
+	}
 	if strings.Contains(c, "الدمام") {
 		return "Dammam"
+	}
+	if containsArabicText(c) {
+		return ""
 	}
 	return c
 }
@@ -1383,29 +1399,22 @@ func formatNationalAddressEn(cityEn, districtEn, streetEn, buildingNo, postalCod
 	c := strings.TrimSpace(cityEn)
 	if c == "" && len(arFallback) > 0 && arFallback[0] != "" {
 		c = translateCityArToEn(arFallback[0])
+	} else if containsArabicText(c) {
+		c = translateCityArToEn(c)
 	}
 	d := strings.TrimSpace(districtEn)
-	if d == "" && len(arFallback) > 1 && arFallback[1] != "" {
-		d = arFallback[1]
-		d = strings.TrimPrefix(d, "حي ")
-		if strings.Contains(d, "بني مالك") {
-			d = "Bani Malik"
-		}
-		if !strings.Contains(strings.ToLower(d), "dist") {
-			d = d + " Dist."
-		}
+	if containsArabicText(d) {
+		d = ""
+	}
+	if d != "" && !strings.Contains(strings.ToLower(d), "dist") {
+		d = d + " Dist."
 	}
 	s := strings.TrimSpace(streetEn)
-	if s == "" && len(arFallback) > 2 && arFallback[2] != "" {
-		s = arFallback[2]
-		s = strings.TrimPrefix(s, "شارع ")
-		s = strings.TrimPrefix(s, "طريق ")
-		if strings.Contains(s, "الأمير ماجد") || strings.Contains(s, "الامير ماجد") {
-			s = "Prince Majid"
-		}
-		if !strings.Contains(strings.ToLower(s), "st") && !strings.Contains(strings.ToLower(s), "street") && !strings.Contains(strings.ToLower(s), "rd") {
-			s = s + " St."
-		}
+	if containsArabicText(s) {
+		s = ""
+	}
+	if s != "" && !strings.Contains(strings.ToLower(s), "st") && !strings.Contains(strings.ToLower(s), "street") && !strings.Contains(strings.ToLower(s), "rd") {
+		s = s + " St."
 	}
 
 	parts := []string{}
@@ -1510,6 +1519,7 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 	}
 
 	sellerName, sellerTax, sellerAddress, sellerCR, sellerCity, sellerCountry := "", "", "", "", "", ""
+	sellerStreet, sellerDistrict, sellerBuildingNo, sellerPostalCode := "", "", "", ""
 	sellerNameEn, sellerAddressEn, sellerPhone, sellerEmail := "", "", "", ""
 	sellerBank, sellerIban := "", ""
 	sellerLogoHtml := ""
@@ -1518,6 +1528,10 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 		sellerNameEn = inv.IssuerSnapshot.NameEn
 		sellerTax = inv.IssuerSnapshot.TaxNumber
 		sellerCity = inv.IssuerSnapshot.City
+		sellerStreet = inv.IssuerSnapshot.Street
+		sellerDistrict = inv.IssuerSnapshot.District
+		sellerBuildingNo = inv.IssuerSnapshot.BuildingNo
+		sellerPostalCode = inv.IssuerSnapshot.PostalCode
 		sellerCountry = inv.IssuerSnapshot.Country
 		sellerCR = inv.IssuerSnapshot.CommercialRegister
 		sellerPhone = inv.IssuerSnapshot.Phone
@@ -1529,21 +1543,19 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 		if sellerAddress == "" {
 			sellerAddress = strings.TrimSpace(inv.IssuerSnapshot.Street + " " + inv.IssuerSnapshot.City)
 		}
-		sellerAddressEn = formatNationalAddressEn(
-			inv.IssuerSnapshot.CityEn,
-			inv.IssuerSnapshot.DistrictEn,
-			inv.IssuerSnapshot.StreetEn,
-			inv.IssuerSnapshot.BuildingNo,
-			inv.IssuerSnapshot.PostalCode,
-			inv.IssuerSnapshot.City,
-			inv.IssuerSnapshot.District,
-			inv.IssuerSnapshot.Street,
-		)
+		sellerAddressEn = strings.TrimSpace(inv.IssuerSnapshot.AddressEn)
 		if sellerAddressEn == "" {
-			sellerAddressEn = inv.IssuerSnapshot.AddressEn
-			if sellerAddressEn == "" {
-				sellerAddressEn = strings.TrimSpace(inv.IssuerSnapshot.StreetEn + " " + inv.IssuerSnapshot.CityEn)
-			}
+			sellerAddressEn = formatNationalAddressEn(
+				inv.IssuerSnapshot.CityEn,
+				inv.IssuerSnapshot.DistrictEn,
+				inv.IssuerSnapshot.StreetEn,
+				inv.IssuerSnapshot.BuildingNo,
+				inv.IssuerSnapshot.PostalCode,
+				inv.IssuerSnapshot.City,
+			)
+		}
+		if sellerAddressEn == "" {
+			sellerAddressEn = strings.TrimSpace(inv.IssuerSnapshot.StreetEn + " " + inv.IssuerSnapshot.CityEn)
 		}
 		sellerLogoHtml = BuildIssuerLogoHTML(inv.IssuerSnapshot.LogoData, 140, 75)
 	}
@@ -1565,21 +1577,36 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 	if sellerAddressEn == "" && inv.SellerAddressEn != "" {
 		sellerAddressEn = inv.SellerAddressEn
 	}
-	if (sellerAddress == "" || sellerAddressEn == "") && inv.IssuerID != "" && s != nil && s.db != nil {
+	if (sellerAddress == "" || sellerAddressEn == "" || sellerCity == "" || sellerStreet == "" || sellerDistrict == "" || sellerBuildingNo == "" || sellerPostalCode == "") && inv.IssuerID != "" && s != nil && s.db != nil {
 		var aEn, cEn, dEn, sEn, bNo, pCode, cityAr, distAr, strtAr, bldAr, postAr sql.NullString
 		_ = s.db.QueryRow(`
 			SELECT address_en, city_en, district_en, street_en, building_no, postal_code,
 			       city, district, street, building_no, postal_code
 			FROM issuers WHERE id = ?
 		`, inv.IssuerID).Scan(&aEn, &cEn, &dEn, &sEn, &bNo, &pCode, &cityAr, &distAr, &strtAr, &bldAr, &postAr)
+		if sellerCity == "" && cityAr.Valid {
+			sellerCity = cityAr.String
+		}
+		if sellerDistrict == "" && distAr.Valid {
+			sellerDistrict = distAr.String
+		}
+		if sellerStreet == "" && strtAr.Valid {
+			sellerStreet = strtAr.String
+		}
+		if sellerBuildingNo == "" && bldAr.Valid {
+			sellerBuildingNo = bldAr.String
+		}
+		if sellerPostalCode == "" && postAr.Valid {
+			sellerPostalCode = postAr.String
+		}
 		if sellerAddress == "" && cityAr.Valid {
 			sellerAddress = formatNationalAddress(cityAr.String, distAr.String, strtAr.String, bldAr.String, postAr.String)
 		}
 		if sellerAddressEn == "" {
-			if aEn.Valid && aEn.String != "" {
-				sellerAddressEn = aEn.String
-			} else if cEn.Valid {
-				sellerAddressEn = formatNationalAddressEn(cEn.String, dEn.String, sEn.String, bNo.String, pCode.String)
+			if aEn.Valid && strings.TrimSpace(aEn.String) != "" {
+				sellerAddressEn = strings.TrimSpace(aEn.String)
+			} else if cEn.Valid || dEn.Valid || sEn.Valid || cityAr.Valid {
+				sellerAddressEn = formatNationalAddressEn(cEn.String, dEn.String, sEn.String, bNo.String, pCode.String, cityAr.String)
 			}
 		}
 	}
@@ -1857,6 +1884,10 @@ func (s *TemplateService) substituteInvoiceTags(tpl string, inv *InvoiceView) st
 		"{{seller_cr}}", sellerCR,
 		"{{seller_city}}", sellerCity,
 		"{{seller_city_en}}", sellerCityEn,
+		"{{seller_street}}", sellerStreet,
+		"{{seller_district}}", sellerDistrict,
+		"{{seller_building_no}}", sellerBuildingNo,
+		"{{seller_postal_code}}", sellerPostalCode,
 		"{{seller_country}}", sellerCountry,
 		"{{seller_phone}}", sellerPhone,
 		"{{seller_email}}", sellerEmail,

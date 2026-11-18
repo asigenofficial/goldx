@@ -53,7 +53,7 @@
     border-radius: 11px;
     padding: 7px 12px;
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: minmax(0, 1fr) 88px minmax(0, 1fr);
     align-items: center;
     gap: 10px;
     margin-bottom: 6px;
@@ -61,6 +61,7 @@
     flex-shrink: 0;
   }
   .n7-seller-ar {
+    grid-column: 1;
     text-align: right;
     direction: rtl;
   }
@@ -74,8 +75,18 @@
     font-size: 8.8px;
     color: #475569;
     line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+  .n7-logo-col {
+    grid-column: 2;
+    width: 88px;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .n7-seller-en {
+    grid-column: 3;
     text-align: left;
     direction: ltr;
   }
@@ -133,6 +144,9 @@
     font-size: 9px;
     font-weight: 700;
     color: #475569;
+  }
+  .n7-branch-sub:empty {
+    display: none;
   }
 
   /* ── 3 بطاقات مستديرة للعميل والمستند والباركود ── */
@@ -417,7 +431,9 @@
             <p>الرقم الضريبي: {{seller_tax}} · السجل التجاري: {{seller_cr}}</p>
             <p>هاتف: {{seller_phone}}</p>
           </div>
-          <div class="logo-shell">{{logo}}</div>
+          <div class="n7-logo-col">
+            <div class="logo-shell">{{logo}}</div>
+          </div>
           <div class="n7-seller-en">
             <h2>{{seller_name_en}}</h2>
             <p>{{seller_address_en}}</p>

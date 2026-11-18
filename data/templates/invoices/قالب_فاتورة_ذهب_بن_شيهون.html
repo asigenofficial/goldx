@@ -1076,25 +1076,25 @@
             <tbody>
               <tr>
                 <td class="addr-lbl" style="width:18%;">المنطقة</td>
-                <td class="addr-val" style="width:40%;" id="seller-addr-reg">مكة المكرمة</td>
+                <td class="addr-val" style="width:40%;" id="seller-addr-reg">{{seller_city}}</td>
                 <td class="addr-lbl" style="width:24%;">رقم المبنى</td>
-                <td class="addr-val" style="width:18%;" id="seller-addr-bno"></td>
+                <td class="addr-val" style="width:18%;" id="seller-addr-bno">{{seller_building_no}}</td>
               </tr>
               <tr>
                 <td class="addr-lbl">المدينة</td>
-                <td class="addr-val" id="seller-addr-city">جدة</td>
+                <td class="addr-val" id="seller-addr-city">{{seller_city}}</td>
                 <td class="addr-lbl">الرقم الإضافي</td>
                 <td class="addr-val" id="seller-addr-extra"></td>
               </tr>
               <tr>
                 <td class="addr-lbl">الحي</td>
-                <td class="addr-val" id="seller-addr-dist">الورود</td>
+                <td class="addr-val" id="seller-addr-dist">{{seller_district}}</td>
                 <td class="addr-lbl">الرمز البريدي</td>
-                <td class="addr-val" id="seller-addr-post"></td>
+                <td class="addr-val" id="seller-addr-post">{{seller_postal_code}}</td>
               </tr>
               <tr>
                 <td class="addr-lbl">الشارع</td>
-                <td colspan="3" class="addr-val" id="seller-addr-street">طريق الملك عبدالله</td>
+                <td colspan="3" class="addr-val" id="seller-addr-street">{{seller_street}}</td>
               </tr>
             </tbody>
           </table>
@@ -1506,32 +1506,6 @@
           setVal('val-tafqeet-money', 'صفر ريال سعودي');
           setVal('val-tafqeet-gold', 'صفر جرام ذهب');
 
-          // تعبئة بيانات الرأس في وضع المعاينة لتطابق الصورة تماماً
-          setVal('seller-name-cell', 'شركة عالم بن شيهون للصناعة');
-          setVal('seller-cr-cell', '4030535411');
-          setVal('seller-vat-cell', '311085830500003');
-          setVal('seller-addr-reg', 'مكة المكرمة');
-          setVal('seller-addr-city', 'جدة');
-          setVal('seller-addr-dist', 'الورود');
-          setVal('seller-addr-street', 'طريق الملك عبدالله');
-
-          setVal('inv-type-cell', 'فاتورة أجور تصنيع آجلة');
-          setVal('inv-num-cell', '610600111');
-          setVal('inv-time-cell', '19:23:38');
-          setVal('inv-date-cell', '07/10/2026');
-
-          setVal('buyer-name-cell', 'مؤسسة سالم عبدالله علي الصبيعي للذهب والمجو');
-          setVal('buyer-code-cell', '6053');
-          setVal('buyer-cr-cell', '7007937142');
-          setVal('buyer-vat-cell', '301206259100003');
-          setVal('buyer-desc-cell', 'فاتورة مؤسسة سالم عبدالله علي الصبيعي');
-          setVal('buyer-addr-bno', '3578');
-          setVal('buyer-addr-reg', 'الخرج');
-          setVal('buyer-addr-extra', '8723');
-          setVal('buyer-addr-city', 'الرياض');
-          setVal('buyer-addr-post', '16439');
-          setVal('buyer-addr-dist', 'حي العالية');
-
         } else {
           rows.forEach(function (tr, idx) {
             var cells = tr.querySelectorAll('td');
@@ -1582,22 +1556,8 @@
 
       }
 
-      // ضمان ظهور عنوان الشركة كاملاً وتثبيت المنطقة لمكة المكرمة في المعاينة والفواتير المباشرة
+      // ضبط الإجماليات عند المعاينة الفارغة بدون أي قيم عناوين ثابتة
       var setCompanyAddrIfEmpty = function() {
-        var setIfEmpty = function(id, val) {
-          var el = document.getElementById(id);
-          if (el) {
-            var txt = el.textContent.trim();
-            if (!txt || txt.indexOf('{{') !== -1 || txt === '0' || txt === '0.00' || (id === 'seller-addr-reg' && txt === 'جدة')) {
-              el.textContent = val;
-            }
-          }
-        };
-        setIfEmpty('seller-addr-reg', 'مكة المكرمة');
-        setIfEmpty('seller-addr-city', 'جدة');
-        setIfEmpty('seller-addr-dist', 'الورود');
-        setIfEmpty('seller-addr-street', 'طريق الملك عبدالله');
-
         // إجمالي قيمة الذهب يظل دائماً 0.00 لفواتير أجور التصنيع
         var goldTotEl = document.getElementById('val-tot-gold');
         if (goldTotEl) {

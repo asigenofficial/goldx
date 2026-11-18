@@ -36,7 +36,7 @@
   }
   .n1-header {
     display: grid;
-    grid-template-columns: 1fr 120px 1fr;
+    grid-template-columns: minmax(0, 1fr) 120px minmax(0, 1fr);
     align-items: center;
     gap: 10px;
     padding-bottom: 8px;
@@ -45,6 +45,7 @@
     flex-shrink: 0;
   }
   .n1-seller-ar {
+    grid-column: 1;
     text-align: right;
     direction: rtl;
   }
@@ -58,8 +59,10 @@
     font-size: 9.5px;
     color: #374151;
     line-height: 1.45;
+    overflow-wrap: anywhere;
   }
   .n1-seller-en {
+    grid-column: 3;
     text-align: left;
     direction: ltr;
   }
@@ -70,6 +73,7 @@
     margin-bottom: 3px;
   }
   .n1-center-brand {
+    grid-column: 2;
     display: flex;
     flex-direction: column;
     align-items: center;
