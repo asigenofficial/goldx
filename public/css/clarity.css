@@ -1,7 +1,7 @@
 /* ===================================================================
    ثيم الذهب والأبيض الملكي الفاخر (Gold & White Theme Only)
    =================================================================== */
-html, html[data-theme], html[data-theme], html[data-theme="dark"] {
+html, html[data-theme="gold"] {
   color-scheme: light;
 
   --brand: #b8860b; --brand-dark: #8c6d1f; --brand-light: #fef9e7;
@@ -1762,4 +1762,101 @@ select[data-f="karat"] {
 
 .spin-icon {
   animation: spin 0.8s linear infinite;
+}
+
+/* ===================================================================
+   الثيم الأسود والذهبي الفاخر (Obsidian Black & Royal Gold Theme)
+   =================================================================== */
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --brand: #d4af37; --brand-dark: #f5d061; --brand-light: rgba(212, 175, 55, 0.14);
+  --primary: #d4af37; --accent: #f5d061; --brand-glow: 0 4px 20px rgba(212, 175, 55, 0.25);
+  --gold-main: #d4af37; --gold-light: #f5d061; --gold-dark: #b8860b;
+  --gold-gradient: linear-gradient(135deg, #f5d061 0%, #b8860b 100%);
+  --gold-gradient-soft: linear-gradient(135deg, rgba(212, 175, 55, 0.14) 0%, rgba(184, 134, 11, 0.08) 100%);
+
+  --bg: #0b0c10;
+  --canvas: radial-gradient(circle at 12% 10%, rgba(212, 175, 55, 0.07) 0%, transparent 42%), radial-gradient(circle at 88% 90%, rgba(212, 175, 55, 0.05) 0%, transparent 42%);
+  --card: #12141a;
+  --card-solid: #12141a;
+  --card-hover: #181b23;
+  --sidebar: rgba(15, 17, 23, 0.96);
+  --sidebar-hover: rgba(212, 175, 55, 0.12);
+  --topbar: rgba(15, 17, 23, 0.94);
+  --field-bg: #181b23;
+  --field-focus-bg: #1f232d;
+  --bg-alt: #151820;
+  --card-bg: #12141a;
+  --card-sub: #181b23;
+  --border-color: rgba(212, 175, 55, 0.22);
+
+  --text: #f3f4f6; --text-heading: #f5d061; --muted: #9ca3af; --dim: #6b7280;
+
+  --line: rgba(212, 175, 55, 0.22); --line-strong: rgba(212, 175, 55, 0.5); --line-hover: #d4af37;
+
+  --success: #34d399; --success-light: rgba(16, 185, 129, 0.14); --success-border: rgba(52, 211, 153, 0.35);
+  --warn:    #fbbf24; --warn-light:    rgba(245, 158, 11, 0.14); --warn-border:    rgba(251, 191, 36, 0.35);
+  --danger:  #f87171; --danger-light:  rgba(239, 68, 68, 0.14);  --danger-border:  rgba(248, 113, 113, 0.35);
+  --info:    #38bdf8; --info-light:    rgba(14, 165, 233, 0.14); --info-border:    rgba(56, 189, 248, 0.35);
+
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.65);
+}
+
+html[data-theme="dark"] body {
+  background: var(--bg);
+  background-image: var(--canvas);
+  color: var(--text);
+}
+
+html[data-theme="dark"] .sidebar,
+html[data-theme="dark"] .topbar,
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .stat,
+html[data-theme="dark"] .modal,
+html[data-theme="dark"] .login-card {
+  background: var(--card);
+  border-color: var(--line);
+  color: var(--text);
+}
+
+html[data-theme="dark"] .gold-store-chip {
+  background: var(--field-bg) !important;
+  border-color: var(--line-strong) !important;
+  color: var(--text) !important;
+}
+
+html[data-theme="dark"] .btn:not(.btn-primary):not(.btn-danger):not(.tb-tool-btn):not(.tb-tab-btn) {
+  background: #1b1e27;
+  color: var(--text);
+  border-color: var(--line);
+}
+html[data-theme="dark"] .btn:not(.btn-primary):not(.btn-danger):not(.tb-tool-btn):not(.tb-tab-btn):hover {
+  background: rgba(212, 175, 55, 0.16);
+  color: #f5d061;
+  border-color: var(--brand);
+}
+
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] select option {
+  background: var(--field-bg);
+  color: var(--text);
+  border-color: var(--line);
+}
+
+html[data-theme="dark"] table.tbl thead th,
+html[data-theme="dark"] table.tbl tfoot td {
+  background: #1a1d26;
+  color: #f5d061;
+  border-bottom: 1.5px solid rgba(212, 175, 55, 0.3);
+}
+html[data-theme="dark"] table.tbl tbody tr:hover {
+  background: rgba(212, 175, 55, 0.06);
+}
+html[data-theme="dark"] .modal-paper-sheet {
+  background: #ffffff;
+  color: #000000;
 }

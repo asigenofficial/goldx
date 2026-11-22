@@ -165,6 +165,10 @@ function renderShell() {
             <select id="issuer-select" aria-label="اختيار المتجر المصدر">${raw(issuerOptions())}</select>
           </div>
           <div class="spacer"></div>
+          <button class="btn btn-sm" id="theme-toggle" type="button" aria-label="تبديل المظهر (أبيض / أسود)" title="تبديل المظهر (أبيض / أسود)" style="display:inline-flex;align-items:center;gap:6px;border-radius:20px;padding:5px 12px;font-weight:700">
+            <span id="theme-toggle-ico">${theme.current() === 'dark' ? '☀️' : '🌙'}</span>
+            <span id="theme-toggle-lbl" class="tiny">${theme.current() === 'dark' ? 'أبيض' : 'أسود'}</span>
+          </button>
           ${raw(store.user?.role === 'ADMIN' ? `
             <button class="sync-badge online" id="sync-badge" type="button" aria-label="حالة المزامنة والاتصال" title="المزامنة اللحظية نشطة">
               <span class="sync-dot"></span>
@@ -227,6 +231,13 @@ function renderShell() {
     router.render();
   });
   $('#burger').addEventListener('click', () => toggleSidebar());
+  $('#theme-toggle')?.addEventListener('click', () => {
+    const next = theme.toggle();
+    const icoEl = $('#theme-toggle-ico');
+    const lblEl = $('#theme-toggle-lbl');
+    if (icoEl) icoEl.textContent = next === 'dark' ? '☀️' : '🌙';
+    if (lblEl) lblEl.textContent = next === 'dark' ? 'أبيض' : 'أسود';
+  });
   $('#sidebar-backdrop').addEventListener('click', () => toggleSidebar(false));
   delegate($('#nav'), 'click', '.nav-item', () => toggleSidebar(false));
   if (!window.__goldxKeydownBound) {

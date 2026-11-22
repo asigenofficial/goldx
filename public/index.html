@@ -16,12 +16,16 @@
   <link rel="stylesheet" href="/css/app.css?v=1.5.0" />
   <link rel="stylesheet" href="/css/clarity.css?v=12" />
   <link rel="stylesheet" href="/css/print.css" media="print" />
-  <!-- تطبيق الثيم الذهبي والأبيض فوراً قبل رسم الصفحة لمنع أي وميض -->
+  <!-- تطبيق الثيم المحفوظ فوراً قبل رسم الصفحة لمنع أي وميض -->
   <script>
     (function(){
-      document.documentElement.setAttribute('data-theme', 'gold');
-      document.documentElement.setAttribute('color-scheme', 'light');
-      localStorage.setItem('goldx_theme', 'gold');
+      var saved = localStorage.getItem('goldx_theme');
+      var t = saved === 'dark' ? 'dark' : 'gold';
+      var isDark = t === 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+      document.documentElement.setAttribute('color-scheme', isDark ? 'dark' : 'light');
+      document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+      localStorage.setItem('goldx_theme', t);
     })();
   </script>
   <!-- مولد رمز QR (بدون أي اعتماد خارجي) -->
