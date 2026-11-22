@@ -196,6 +196,7 @@ export async function render(view, ctx) {
         </div>
         <div class="page-actions">
           ${raw(can('invoices.create') ? `<a class="btn btn-primary" href="#/invoice">${icon.invoicePlus({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' })}فاتورة ذهب جديدة</a>` : '')}
+          ${raw(can('vouchers.create') ? `<button class="btn" id="btn-batch-gold-receipts" type="button" style="background:rgba(212,175,55,0.16);color:#8c6d1f;border:1px solid rgba(212,175,55,0.45);font-weight:700" title="إنشاء سندات قبض ذهب دفعية لكل عملاء المورد بتسلسل موحد وتخطي يوم الجمعة">${icon.goldBar({ size: 15, style: 'vertical-align:text-bottom;margin-left:4px' })}سندات قبض ذهب دفعية</button>` : '')}
           <button class="btn btn-primary" id="btn-pdf-list" type="button">${raw(icon.pdf({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' }))}تحميل قائمة PDF</button>
           <button class="btn" id="print-list" type="button">${raw(icon.printer({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' }))}طباعة القائمة</button>
           ${raw(can('invoices.create') ? `<button class="btn" id="import-excel-btn" type="button">${icon.upload({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' })}استيراد Excel</button>` : '')}
@@ -495,6 +496,11 @@ export async function render(view, ctx) {
         footer_html: `<tr>${footer.map((cell) => `<td>${esc(cell ?? '')}</td>`).join('')}</tr>`,
       }, ['stats_html', 'headers_html', 'rows_html', 'footer_html']);
     };
+
+    $('#btn-batch-gold-receipts', view)?.addEventListener('click', async () => {
+      const { goldReceiptBatchModal } = await import('./vouchers.js');
+      goldReceiptBatchModal({ issuerId: state.issuer_id || store.activeIssuerId });
+    });
 
     $('#btn-pdf-list', view).addEventListener('click', async (e) => {
       e.target.disabled = true;

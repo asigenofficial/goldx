@@ -432,12 +432,37 @@ body > .receipt-card > *, body > .receipt-container > *, body > .receipt-page > 
 
 func (s *Server) registerGoldReceipts(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/vouchers/gold", func(w http.ResponseWriter, r *http.Request) {
-		items, err := s.vouchers.ListGoldReceipts(r.URL.Query().Get("issuer_id"), r.URL.Query().Get("invoice_id"))
+		q := r.URL.Query()
+		items, err := s.vouchers.ListGoldReceiptsFiltered(services.ListGoldReceiptsFilter{
+			IssuerID:  q.Get("issuer_id"),
+			ClientID:  q.Get("client_id"),
+			InvoiceID: q.Get("invoice_id"),
+			Kind:      q.Get("kind"),
+			Status:    q.Get("status"),
+			FromDate:  q.Get("from"),
+			ToDate:    q.Get("to"),
+			Search:    q.Get("q"),
+		})
 		if err != nil {
 			s.err(w, 500, err.Error())
 			return
 		}
 		s.json(w, 200, items)
+	})
+	mux.HandleFunc("GET /api/vouchers/gold/eligible-invoices", func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		res, err := s.vouchers.ListEligibleGoldInvoices(services.EligibleGoldInvoicesFilter{
+			IssuerID: q.Get("issuer_id"),
+			ClientID: q.Get("client_id"),
+			FromDate: q.Get("from"),
+			ToDate:   q.Get("to"),
+			Search:   q.Get("q"),
+		})
+		if err != nil {
+			s.err(w, 400, err.Error())
+			return
+		}
+		s.json(w, 200, res)
 	})
 	mux.HandleFunc("GET /api/vouchers/gold/price", func(w http.ResponseWriter, r *http.Request) {
 		var price int64
@@ -461,6 +486,80 @@ func (s *Server) registerGoldReceipts(mux *http.ServeMux) {
 		}
 		s.sync.Broadcast(services.SyncEvent{Type: "voucher:created", Entity: "voucher", Action: "create", Actor: actor, Data: map[string]any{"id": v.ID, "kind": v.Kind, "total_weight": v.TotalWeight}})
 		s.json(w, 200, v)
+	})
+	mux.HandleFunc("POST /api/vouchers/gold/batch", func(w http.ResponseWriter, r *http.Request) {
+		var input services.BatchCreateGoldReceiptsInput
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			s.err(w, 400, "بيانات الدفعة غير صالحة")
+			return
+		}
+		actor := "system"
+		if u := s.getSessionUser(r); u != nil {
+			actor = u.Username
+		}
+		res, err := s.vouchers.CreateGoldReceiptsBatch(input, actor, s.clientIP(r))
+		if err != nil {
+			s.err(w, 400, err.Error())
+			return
+		}
+		s.sync.Broadcast(services.SyncEvent{
+			Type:   "voucher:created",
+			Entity: "voucher",
+			Action: "batch_create",
+			Actor:  actor,
+			Data:   map[string]any{"count": res.Count, "total_weight": res.TotalWeight, "first_number": res.FirstNumber, "last_number": res.LastNumber},
+		})
+		s.json(w, 200, res)
+	})
+	mux.HandleFunc("POST /api/vouchers/gold/batch-html", func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			IDs   []string `json:"ids"`
+			Style string   `json:"style"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.IDs) == 0 {
+			s.err(w, 400, "حدد سنداً واحداً على الأقل للطباعة")
+			return
+		}
+		if len(req.IDs) > 250 {
+			s.err(w, 400, "الحد الأقصى للطباعة المجمعة هو 250 سنداً في المرة الواحدة")
+			return
+		}
+		doc, err := s.renderGoldReceiptsBatchHTML(req.IDs, req.Style)
+		if err != nil {
+			s.err(w, 400, err.Error())
+			return
+		}
+		s.json(w, 200, map[string]string{"html": doc})
+	})
+	mux.HandleFunc("PATCH /api/vouchers/gold/{id}", func(w http.ResponseWriter, r *http.Request) {
+		var input services.UpdateGoldReceiptInput
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			s.err(w, 400, "بيانات التعديل غير صالحة")
+			return
+		}
+		actor := "system"
+		if u := s.getSessionUser(r); u != nil {
+			actor = u.Username
+		}
+		v, err := s.vouchers.UpdateGoldReceipt(r.PathValue("id"), input, actor, s.clientIP(r))
+		if err != nil {
+			s.err(w, 400, err.Error())
+			return
+		}
+		s.sync.Broadcast(services.SyncEvent{Type: "voucher:updated", Entity: "voucher", Action: "update", Actor: actor, Data: map[string]any{"id": v.ID}})
+		s.json(w, 200, v)
+	})
+	mux.HandleFunc("DELETE /api/vouchers/gold/{id}", func(w http.ResponseWriter, r *http.Request) {
+		actor := "system"
+		if u := s.getSessionUser(r); u != nil {
+			actor = u.Username
+		}
+		if err := s.vouchers.DeleteGoldReceipt(r.PathValue("id"), actor, s.clientIP(r)); err != nil {
+			s.err(w, 400, err.Error())
+			return
+		}
+		s.sync.Broadcast(services.SyncEvent{Type: "voucher:deleted", Entity: "voucher", Action: "delete", Actor: actor})
+		s.json(w, 200, map[string]bool{"ok": true})
 	})
 	mux.HandleFunc("POST /api/vouchers/gold/{id}/cancel", func(w http.ResponseWriter, r *http.Request) {
 		actor := "system"
@@ -500,6 +599,97 @@ func (s *Server) registerGoldReceipts(mux *http.ServeMux) {
 	})
 }
 
+func gregorianToHijri(isoDate string) string {
+	t, err := time.Parse("2006-01-02", strings.TrimSpace(isoDate))
+	if err != nil {
+		return ""
+	}
+	y, m, d := t.Year(), int(t.Month()), t.Day()
+	if m < 3 {
+		y--
+		m += 12
+	}
+	a := y / 100
+	b := 2 - a + a/4
+	jd := int(365.25*float64(y+4716)) + int(30.6001*float64(m+1)) + d + b - 1524
+	l := jd - 1948440 + 10632
+	n := (l - 1) / 10631
+	l = l - 10631*n + 354
+	j := ((10985-l)/5316)*((50*l)/17719) + (l/5670)*((43*l)/15238)
+	l = l - ((30-j)/15)*((17719*j)/50) - (j/16)*((15238*j)/43) + 29
+	hm := (24 * l) / 709
+	hd := l - (709*hm)/24
+	hy := 30*n + j - 30
+	return fmt.Sprintf("%04d/%02d/%02d", hy, hm, hd)
+}
+
+func extractHTMLHeadAndBody(doc string) (head string, body string) {
+	lower := strings.ToLower(doc)
+	if hStart := strings.Index(lower, "<head"); hStart >= 0 {
+		if gt := strings.Index(lower[hStart:], ">"); gt >= 0 {
+			contentStart := hStart + gt + 1
+			if hEnd := strings.Index(lower[contentStart:], "</head>"); hEnd >= 0 {
+				head = doc[contentStart : contentStart+hEnd]
+			}
+		}
+	}
+	if bStart := strings.Index(lower, "<body"); bStart >= 0 {
+		if gt := strings.Index(lower[bStart:], ">"); gt >= 0 {
+			contentStart := bStart + gt + 1
+			if bEnd := strings.LastIndex(lower[contentStart:], "</body>"); bEnd >= 0 {
+				body = doc[contentStart : contentStart+bEnd]
+			} else {
+				body = doc[contentStart:]
+			}
+		}
+	} else {
+		body = doc
+	}
+	// Strip inline scripts when stitching multiple documents so duplicate element IDs don't clash.
+	for {
+		lowBody := strings.ToLower(body)
+		sIdx := strings.Index(lowBody, "<script")
+		if sIdx < 0 {
+			break
+		}
+		eIdx := strings.Index(lowBody[sIdx:], "</script>")
+		if eIdx < 0 {
+			body = body[:sIdx]
+			break
+		}
+		body = body[:sIdx] + body[sIdx+eIdx+len("</script>"):]
+	}
+	return head, body
+}
+
+func (s *Server) renderGoldReceiptsBatchHTML(ids []string, style string) (string, error) {
+	var headHTML string
+	var pages strings.Builder
+	for i, id := range ids {
+		doc, err := s.renderGoldReceiptHTML(id, style)
+		if err != nil {
+			return "", err
+		}
+		head, body := extractHTMLHeadAndBody(doc)
+		if i == 0 {
+			headHTML = head
+		}
+		pages.WriteString(`<div class="gold-batch-page">`)
+		pages.WriteString(body)
+		pages.WriteString(`</div>`)
+	}
+	batchStyle := `<style data-gold-batch>
+@page { size: A4 portrait; margin: 10mm !important; }
+html, body { height: auto !important; max-height: none !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }
+.gold-batch-page { page-break-after: always; break-after: page; page-break-inside: avoid; break-inside: avoid; }
+.gold-batch-page:last-child { page-break-after: auto; break-after: auto; }
+.gold-batch-page > .receipt-card, .gold-batch-page > .receipt-container, .gold-batch-page > .receipt-page, .gold-batch-page > .receipt, .gold-batch-page > .page {
+  width: 190mm !important; max-width: 190mm !important; min-height: 276mm !important; height: auto !important; margin: 0 auto !important; box-shadow: none !important;
+}
+</style>`
+	return "<!doctype html><html lang=\"ar\" dir=\"rtl\"><head><meta charset=\"utf-8\">" + headHTML + batchStyle + "</head><body>" + pages.String() + "</body></html>", nil
+}
+
 func (s *Server) renderGoldReceiptHTML(id, style string) (string, error) {
 	v, err := s.vouchers.GetGoldReceipt(id)
 	if err != nil {
@@ -524,7 +714,56 @@ func (s *Server) renderGoldReceiptHTML(id, style string) (string, error) {
 	if v.Status == "CANCELLED" {
 		title += " — ملغى"
 	}
-	replacements := map[string]string{"receipt_title": title, "receipt_subtitle": "Gold Receipt", "receipt_payment_label": "نوع القبض", "receipt_reference_label": "الفاتورة المرتبطة", "receipt_currency_label": "الوحدة / Unit", "receipt_currency": "ذهب بالجرام / Gold grams", "receipt_total_label": "إجمالي الذهب المقبوض", "receipt_unit": "جرام", "receipt_footer": "سند قبض ذهب — جميع الأوزان بالجرام", "seller_name": issuer.NameAr, "seller_name_en": issuer.NameEn, "seller_address": issuer.Street, "seller_address_en": issuer.AddressEn, "seller_tax": issuer.TaxNumber, "seller_cr": issuer.CommercialRegister, "seller_phone": issuer.Phone, "received_from": client.Name, "voucher_number": v.VoucherNumber, "voucher_date": v.VoucherDate, "payment_method": map[string]string{"METAL": "قبض معدن كسر", "WAGES": "قبض أجور بذهب عيار 24"}[v.Kind], "reference_no": v.InvoiceNumber, "paid_for": "قبض ذهب مقابل فاتورة رقم " + v.InvoiceNumber + " — " + v.Notes, "amount_in_words": ""}
+	sellerAddr := strings.TrimSpace(issuer.Street)
+	if sellerAddr == "" {
+		addrParts := make([]string, 0, 4)
+		for _, p := range []string{issuer.City, issuer.District, issuer.Street, issuer.BuildingNo} {
+			if strings.TrimSpace(p) != "" {
+				addrParts = append(addrParts, strings.TrimSpace(p))
+			}
+		}
+		sellerAddr = strings.Join(addrParts, " - ")
+	}
+	notesText := strings.TrimSpace(v.Notes)
+	if notesText == "" {
+		notesText = "قبض ذهب مقابل فاتورة رقم " + v.InvoiceNumber
+	}
+	paidFor := "قبض ذهب مقابل فاتورة رقم " + v.InvoiceNumber
+	if notesText != "" && notesText != paidFor {
+		paidFor = paidFor + " — " + notesText
+	}
+	replacements := map[string]string{
+		"receipt_title":           title,
+		"receipt_subtitle":        "Gold Receipt",
+		"receipt_payment_label":   "نوع القبض",
+		"receipt_reference_label": "الفاتورة المرتبطة",
+		"receipt_currency_label":  "الوحدة / Unit",
+		"receipt_currency":        "ذهب بالجرام / Gold grams",
+		"receipt_total_label":     "إجمالي الذهب المقبوض",
+		"receipt_unit":            "جرام",
+		"receipt_footer":          "سند قبض ذهب — جميع الأوزان بالجرام",
+		"seller_name":             issuer.NameAr,
+		"seller_name_en":          issuer.NameEn,
+		"seller_address":          sellerAddr,
+		"seller_address_en":       issuer.AddressEn,
+		"seller_tax":              issuer.TaxNumber,
+		"seller_cr":               issuer.CommercialRegister,
+		"seller_phone":            issuer.Phone,
+		"seller_mobile":           issuer.Phone,
+		"received_from":           client.Name,
+		"buyer_name":              client.Name,
+		"client_name":             client.Name,
+		"voucher_number":          v.VoucherNumber,
+		"voucher_date":            v.VoucherDate,
+		"voucher_date_hijri":      gregorianToHijri(v.VoucherDate),
+		"voucher_time":            "12:00:00",
+		"payment_method":          map[string]string{"METAL": "قبض معدن كسر", "WAGES": "قبض أجور بذهب عيار 24"}[v.Kind],
+		"reference_no":            v.InvoiceNumber,
+		"notes":                   notesText,
+		"paid_for":                paidFor,
+		"total_wage":              "0.00",
+		"amount_in_words":         "",
+	}
 	replacements["buyer_address"] = client.Address
 	if client.Address == "" {
 		replacements["buyer_address"] = strings.Join([]string{client.City, client.District, client.Street}, " ")
@@ -560,7 +799,7 @@ func (s *Server) renderGoldReceiptHTML(id, style string) (string, error) {
 	replacements["weight_21"] = fmt.Sprintf("%.3f", weights["21"])
 	replacements["weight_22"] = fmt.Sprintf("%.3f", weights["22"])
 	replacements["weight_24"] = fmt.Sprintf("%.3f", weights["24"])
-	replacements["weight_other"] = fmt.Sprintf("%.3f", weights["other"])
+	replacements["weight_other"] = fmt.Sprintf("%.3f", weights["22"]+weights["24"]+weights["other"])
 
 	items := `<table class="receipt-items"><thead><tr><th>#</th><th>الصنف / Stock Name</th><th>الوزن بالجرام / Weight</th><th>العيار / Purity</th></tr></thead><tbody>` + rows.String() + `</tbody></table>`
 	summary := `<table class="receipt-weight-summary"><caption>ملخص القبض حسب العيار</caption><tr><th>18K</th><th>21K</th><th>22K</th><th>24K</th></tr><tr>`

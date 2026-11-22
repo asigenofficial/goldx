@@ -90,7 +90,7 @@ func routePermission(pattern string) string {
 	if strings.HasSuffix(tail, "cancel") {
 		return resource + ".cancel"
 	}
-	if strings.HasSuffix(tail, "pdf") {
+	if strings.HasSuffix(tail, "pdf") || strings.HasSuffix(tail, "batch-html") {
 		return resource + ".view"
 	}
 	if method == "GET" || method == "HEAD" {
