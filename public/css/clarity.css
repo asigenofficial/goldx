@@ -1766,13 +1766,20 @@ select[data-f="karat"] {
 
 /* ===================================================================
    الثيم الأسود والذهبي الفاخر (Obsidian Black & Royal Gold Theme)
+   تغطية شاملة ودقيقة لكافة الصفحات والمكونات والنوافذ دون استثناء
    =================================================================== */
 html[data-theme="dark"] {
   color-scheme: dark;
 
-  --brand: #d4af37; --brand-dark: #f5d061; --brand-light: rgba(212, 175, 55, 0.14);
-  --primary: #d4af37; --accent: #f5d061; --brand-glow: 0 4px 20px rgba(212, 175, 55, 0.25);
-  --gold-main: #d4af37; --gold-light: #f5d061; --gold-dark: #b8860b;
+  --brand: #d4af37;
+  --brand-dark: #f5d061;
+  --brand-light: rgba(212, 175, 55, 0.14);
+  --primary: #d4af37;
+  --accent: #f5d061;
+  --brand-glow: 0 4px 20px rgba(212, 175, 55, 0.25);
+  --gold-main: #d4af37;
+  --gold-light: #f5d061;
+  --gold-dark: #b8860b;
   --gold-gradient: linear-gradient(135deg, #f5d061 0%, #b8860b 100%);
   --gold-gradient-soft: linear-gradient(135deg, rgba(212, 175, 55, 0.14) 0%, rgba(184, 134, 11, 0.08) 100%);
 
@@ -1781,82 +1788,516 @@ html[data-theme="dark"] {
   --card: #12141a;
   --card-solid: #12141a;
   --card-hover: #181b23;
-  --sidebar: rgba(15, 17, 23, 0.96);
+  --sidebar: #0f1117;
   --sidebar-hover: rgba(212, 175, 55, 0.12);
-  --topbar: rgba(15, 17, 23, 0.94);
+  --topbar: #0f1117;
   --field-bg: #181b23;
   --field-focus-bg: #1f232d;
   --bg-alt: #151820;
+  --bg-subtle: #141720;
   --card-bg: #12141a;
   --card-sub: #181b23;
-  --border-color: rgba(212, 175, 55, 0.22);
+  --border-color: rgba(212, 175, 55, 0.24);
 
-  --text: #f3f4f6; --text-heading: #f5d061; --muted: #9ca3af; --dim: #6b7280;
+  --text: #f3f4f6;
+  --text-heading: #f5d061;
+  --muted: #9ca3af;
+  --dim: #6b7280;
 
-  --line: rgba(212, 175, 55, 0.22); --line-strong: rgba(212, 175, 55, 0.5); --line-hover: #d4af37;
+  --line: rgba(212, 175, 55, 0.22);
+  --line-strong: rgba(212, 175, 55, 0.48);
+  --line-hover: #d4af37;
 
-  --success: #34d399; --success-light: rgba(16, 185, 129, 0.14); --success-border: rgba(52, 211, 153, 0.35);
-  --warn:    #fbbf24; --warn-light:    rgba(245, 158, 11, 0.14); --warn-border:    rgba(251, 191, 36, 0.35);
-  --danger:  #f87171; --danger-light:  rgba(239, 68, 68, 0.14);  --danger-border:  rgba(248, 113, 113, 0.35);
-  --info:    #38bdf8; --info-light:    rgba(14, 165, 233, 0.14); --info-border:    rgba(56, 189, 248, 0.35);
+  --success: #34d399;
+  --success-light: rgba(16, 185, 129, 0.15);
+  --success-border: rgba(52, 211, 153, 0.35);
+  --warn: #fbbf24;
+  --warn-light: rgba(245, 158, 11, 0.15);
+  --warn-border: rgba(251, 191, 36, 0.35);
+  --danger: #f87171;
+  --danger-light: rgba(239, 68, 68, 0.15);
+  --danger-border: rgba(248, 113, 113, 0.35);
+  --info: #38bdf8;
+  --info-light: rgba(14, 165, 233, 0.15);
+  --info-border: rgba(56, 189, 248, 0.35);
 
   --shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.65);
 }
 
-html[data-theme="dark"] body {
-  background: var(--bg);
-  background-image: var(--canvas);
-  color: var(--text);
-}
-
-html[data-theme="dark"] .sidebar,
-html[data-theme="dark"] .topbar,
-html[data-theme="dark"] .card,
-html[data-theme="dark"] .stat,
-html[data-theme="dark"] .modal,
-html[data-theme="dark"] .login-card {
-  background: var(--card);
-  border-color: var(--line);
-  color: var(--text);
-}
-
-html[data-theme="dark"] .gold-store-chip {
-  background: var(--field-bg) !important;
-  border-color: var(--line-strong) !important;
+/* ── 1. الخلفية الرئيسية والتخطيط والشريط العلوي والجانبي ───────────────── */
+html[data-theme="dark"] body,
+html[data-theme="dark"] .layout,
+html[data-theme="dark"] .main,
+html[data-theme="dark"] .content,
+html[data-theme="dark"] .login-wrap {
+  background: var(--bg) !important;
+  background-image: var(--canvas) !important;
   color: var(--text) !important;
 }
 
-html[data-theme="dark"] .btn:not(.btn-primary):not(.btn-danger):not(.tb-tool-btn):not(.tb-tab-btn) {
-  background: #1b1e27;
-  color: var(--text);
-  border-color: var(--line);
-}
-html[data-theme="dark"] .btn:not(.btn-primary):not(.btn-danger):not(.tb-tool-btn):not(.tb-tab-btn):hover {
-  background: rgba(212, 175, 55, 0.16);
-  color: #f5d061;
-  border-color: var(--brand);
+html[data-theme="dark"] .sidebar,
+html[data-theme="dark"] .topbar {
+  background: #0f1117 !important;
+  border-color: var(--line) !important;
+  color: var(--text) !important;
 }
 
-html[data-theme="dark"] input,
+html[data-theme="dark"] .nav-item {
+  color: #d1d5db !important;
+}
+html[data-theme="dark"] .nav-item:hover,
+html[data-theme="dark"] .nav-item.active {
+  background: rgba(212, 175, 55, 0.14) !important;
+  color: #f5d061 !important;
+}
+html[data-theme="dark"] .nav-item.active .ico,
+html[data-theme="dark"] .nav-item:hover .ico {
+  color: #f5d061 !important;
+}
+html[data-theme="dark"] .nav-badge {
+  background: #1f232d !important;
+  color: #f5d061 !important;
+  border-color: rgba(212, 175, 55, 0.3) !important;
+}
+
+html[data-theme="dark"] .user-chip,
+html[data-theme="dark"] .gold-store-chip,
+html[data-theme="dark"] .sync-badge,
+html[data-theme="dark"] .sidebar-desk-toggle,
+html[data-theme="dark"] .sidebar-edge-toggle,
+html[data-theme="dark"] #sidebar-edge-toggle,
+html[data-theme="dark"] .burger,
+html[data-theme="dark"] .theme-toggle {
+  background: #181b23 !important;
+  background-color: #181b23 !important;
+  border-color: rgba(212, 175, 55, 0.35) !important;
+  color: #f3f4f6 !important;
+}
+html[data-theme="dark"] .user-chip:hover,
+html[data-theme="dark"] .sidebar-desk-toggle:hover,
+html[data-theme="dark"] .sidebar-edge-toggle:hover,
+html[data-theme="dark"] .burger:hover {
+  background: #222633 !important;
+  color: #f5d061 !important;
+}
+
+/* ── 2. البطاقات واللوحات والنوافذ المنبثقة ────────────────────────────── */
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .filter-box,
+html[data-theme="dark"] .stat,
+html[data-theme="dark"] .modal,
+html[data-theme="dark"] .modal-head,
+html[data-theme="dark"] .modal-foot,
+html[data-theme="dark"] .modal-footer,
+html[data-theme="dark"] .login-card,
+html[data-theme="dark"] .table-wrap,
+html[data-theme="dark"] .pager,
+html[data-theme="dark"] .inv-form-box,
+html[data-theme="dark"] .inv-addr-box,
+html[data-theme="dark"] .gold-mode-card,
+html[data-theme="dark"] .mini-card,
+html[data-theme="dark"] .mini-bar,
+html[data-theme="dark"] .totals-box,
+html[data-theme="dark"] .summary-box,
+html[data-theme="dark"] .kv,
+html[data-theme="dark"] .toast,
+html[data-theme="dark"] .global-item-search-popover,
+html[data-theme="dark"] .global-item-search-popover .popover-head,
+html[data-theme="dark"] .no-internet-modal,
+html[data-theme="dark"] .perm-grid .perm {
+  background: #12141a !important;
+  background-color: #12141a !important;
+  border-color: rgba(212, 175, 55, 0.24) !important;
+  color: #f3f4f6 !important;
+}
+
+html[data-theme="dark"] .no-internet-icon-wrap {
+  background: rgba(212, 175, 55, 0.14) !important;
+}
+html[data-theme="dark"] .no-internet-offline-hint {
+  background: rgba(239, 68, 68, 0.14) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(248, 113, 113, 0.35) !important;
+}
+
+/* ── 3. النصوص والعناوين والتباين ─────────────────────────────────────── */
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] h4,
+html[data-theme="dark"] .page-head h1,
+html[data-theme="dark"] .stat .stat-val,
+html[data-theme="dark"] .modal-head h3,
+html[data-theme="dark"] .sidebar-title,
+html[data-theme="dark"] .login-card h1,
+html[data-theme="dark"] .user-meta b,
+html[data-theme="dark"] .totals-box .grand,
+html[data-theme="dark"] .kv dd,
+html[data-theme="dark"] .tpl-section-title,
+html[data-theme="dark"] .tpl-card-title,
+html[data-theme="dark"] .tpl-mini-title,
+html[data-theme="dark"] .doc-tpl-card-title {
+  color: #f5d061 !important;
+}
+
+html[data-theme="dark"] .field > label,
+html[data-theme="dark"] .check,
+html[data-theme="dark"] label {
+  color: #e5e7eb !important;
+}
+
+html[data-theme="dark"] .stat .stat-lab,
+html[data-theme="dark"] .page-head p,
+html[data-theme="dark"] .muted,
+html[data-theme="dark"] .hint,
+html[data-theme="dark"] .kv dt {
+  color: #9ca3af !important;
+}
+
+/* ── 4. الحقول والمدخلات والأزرار ─────────────────────────────────────── */
+html[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]),
 html[data-theme="dark"] select,
 html[data-theme="dark"] textarea,
+html[data-theme="dark"] .input,
+html[data-theme="dark"] .issuer-pick select,
+html[data-theme="dark"] .gold-store-chip select,
+html[data-theme="dark"] #lines-tbl select[data-f="karat"],
+html[data-theme="dark"] table.tbl select[data-f="karat"],
+html[data-theme="dark"] select[data-f="karat"] {
+  background: #181b23 !important;
+  background-color: #181b23 !important;
+  color: #f3f4f6 !important;
+  border-color: rgba(212, 175, 55, 0.3) !important;
+}
+html[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):focus,
+html[data-theme="dark"] select:focus,
+html[data-theme="dark"] textarea:focus {
+  background: #1f232d !important;
+  border-color: #d4af37 !important;
+}
+html[data-theme="dark"] input:disabled,
+html[data-theme="dark"] select:disabled,
+html[data-theme="dark"] textarea:disabled {
+  background: #141720 !important;
+  color: #6b7280 !important;
+}
 html[data-theme="dark"] select option {
-  background: var(--field-bg);
-  color: var(--text);
-  border-color: var(--line);
+  background: #181b23 !important;
+  color: #f3f4f6 !important;
+}
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder {
+  color: #6b7280 !important;
 }
 
+html[data-theme="dark"] .btn:not(.btn-primary):not(.btn-danger):not(.btn-open-ai-prompt):not(.btn-palette-col):not(.btn-bg-tint) {
+  background: #1b1e27 !important;
+  background-color: #1b1e27 !important;
+  color: #f3f4f6 !important;
+  border-color: rgba(212, 175, 55, 0.28) !important;
+}
+html[data-theme="dark"] .btn:not(.btn-primary):not(.btn-danger):not(.btn-open-ai-prompt):not(.btn-palette-col):not(.btn-bg-tint):hover {
+  background: rgba(212, 175, 55, 0.16) !important;
+  color: #f5d061 !important;
+  border-color: #d4af37 !important;
+}
+html[data-theme="dark"] .btn-ghost {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: #e5e7eb !important;
+}
+html[data-theme="dark"] .btn-ghost:hover:not(:disabled) {
+  background: rgba(212, 175, 55, 0.14) !important;
+  color: #f5d061 !important;
+}
+
+/* ── 5. الجداول وأشرطة التمرير ─────────────────────────────────────────── */
+html[data-theme="dark"] table.tbl,
+html[data-theme="dark"] table.tbl tbody tr,
+html[data-theme="dark"] table.tbl tbody td {
+  background: #12141a !important;
+  color: #f3f4f6 !important;
+  border-color: rgba(212, 175, 55, 0.14) !important;
+}
 html[data-theme="dark"] table.tbl thead th,
 html[data-theme="dark"] table.tbl tfoot td {
-  background: #1a1d26;
-  color: #f5d061;
-  border-bottom: 1.5px solid rgba(212, 175, 55, 0.3);
+  background: #1a1d26 !important;
+  color: #f5d061 !important;
+  border-bottom: 1.5px solid rgba(212, 175, 55, 0.3) !important;
 }
-html[data-theme="dark"] table.tbl tbody tr:hover {
-  background: rgba(212, 175, 55, 0.06);
+html[data-theme="dark"] table.tbl tbody tr:hover td {
+  background: rgba(212, 175, 55, 0.07) !important;
 }
-html[data-theme="dark"] .modal-paper-sheet {
-  background: #ffffff;
-  color: #000000;
+html[data-theme="dark"] tr.row-warn > td {
+  background: rgba(245, 158, 11, 0.12) !important;
+}
+html[data-theme="dark"] tr.row-open > td {
+  background: rgba(14, 165, 233, 0.1) !important;
+}
+html[data-theme="dark"] .table-top-scroll,
+html[data-theme="dark"] .table-wrap::-webkit-scrollbar-track,
+html[data-theme="dark"] .table-top-scroll::-webkit-scrollbar-track,
+html[data-theme="dark"] .doc-tpl-grid::-webkit-scrollbar-track,
+html[data-theme="dark"] .bulk-drafts-grid::-webkit-scrollbar-track,
+html[data-theme="dark"] .invoices-list::-webkit-scrollbar-track {
+  background: #0f1117 !important;
+}
+
+/* ── 6. الفلاتر ومجموعات الأزرار والتوليد الدفعي (bulk.js & vouchers.js) ── */
+html[data-theme="dark"] .filter-btn-group,
+html[data-theme="dark"] .filter-check,
+html[data-theme="dark"] .tab-pill-group,
+html[data-theme="dark"] #w-mode-bar,
+html[data-theme="dark"] .segmented-control,
+html[data-theme="dark"] .bulk-options-bar,
+html[data-theme="dark"] .bulk-items-bar,
+html[data-theme="dark"] .check-pill,
+html[data-theme="dark"] .distribution-cards,
+html[data-theme="dark"] .distribution-card,
+html[data-theme="dark"] .progress,
+html[data-theme="dark"] .bar-chart .bar-track {
+  background: #141720 !important;
+  background-color: #141720 !important;
+  border-color: rgba(212, 175, 55, 0.26) !important;
+  color: #f3f4f6 !important;
+}
+
+html[data-theme="dark"] .filter-btn-group .btn,
+html[data-theme="dark"] .tab-pill-group .btn,
+html[data-theme="dark"] #w-mode-bar .btn {
+  background: transparent !important;
+  color: #e5e7eb !important;
+  border-color: transparent !important;
+}
+html[data-theme="dark"] .filter-btn-group .btn:hover,
+html[data-theme="dark"] .tab-pill-group .btn:hover,
+html[data-theme="dark"] #w-mode-bar .btn.active,
+html[data-theme="dark"] .filter-check:hover,
+html[data-theme="dark"] .check-pill:hover,
+html[data-theme="dark"] .distribution-card:hover {
+  background: rgba(212, 175, 55, 0.14) !important;
+  color: #f5d061 !important;
+  border-color: rgba(212, 175, 55, 0.45) !important;
+}
+
+html[data-theme="dark"] .segmented-option {
+  background: transparent !important;
+  color: #d1d5db !important;
+}
+html[data-theme="dark"] .segmented-option:hover {
+  background: rgba(212, 175, 55, 0.12) !important;
+  color: #f5d061 !important;
+}
+html[data-theme="dark"] .segmented-option.is-active,
+html[data-theme="dark"] .distribution-card.active,
+html[data-theme="dark"] .distribution-card:has(input:checked) {
+  background: rgba(212, 175, 55, 0.18) !important;
+  color: #f5d061 !important;
+  border-color: #d4af37 !important;
+}
+html[data-theme="dark"] .distribution-card b,
+html[data-theme="dark"] .check-pill-content b {
+  color: #f5d061 !important;
+}
+html[data-theme="dark"] .distribution-card span,
+html[data-theme="dark"] .check-pill-content span {
+  color: #9ca3af !important;
+}
+
+/* ── 7. صفحة القوالب والشارات (templates.js) ───────────────────────────── */
+html[data-theme="dark"] .doc-tpl-card,
+html[data-theme="dark"] .tpl-card,
+html[data-theme="dark"] .tpl-mini-card,
+html[data-theme="dark"] .tpl-compact-grid .tpl-card,
+html[data-theme="dark"] .tpl-card-mini,
+html[data-theme="dark"] .tpl-phase-toggle,
+html[data-theme="dark"] .tpl-switch-item,
+html[data-theme="dark"] .tpl-zoom-controls {
+  background: #12141a !important;
+  background-color: #12141a !important;
+  border-color: rgba(212, 175, 55, 0.26) !important;
+  color: #f3f4f6 !important;
+}
+html[data-theme="dark"] .doc-tpl-card.is-active {
+  background: #171a24 !important;
+  border-color: #d4af37 !important;
+}
+
+html[data-theme="dark"] .doc-tpl-chip,
+html[data-theme="dark"] .doc-tpl-chip-more,
+html[data-theme="dark"] .doc-tpl-badge,
+html[data-theme="dark"] .tpl-card-badge,
+html[data-theme="dark"] .tpl-mini-badge,
+html[data-theme="dark"] .tpl-filter-btn,
+html[data-theme="dark"] .tpl-filter-pill,
+html[data-theme="dark"] .tpl-zoom-btn,
+html[data-theme="dark"] .tab,
+html[data-theme="dark"] .chip,
+html[data-theme="dark"] .badge,
+html[data-theme="dark"] .badge.gray {
+  background: #1b1f2a !important;
+  background-color: #1b1f2a !important;
+  color: #e5e7eb !important;
+  border-color: rgba(212, 175, 55, 0.28) !important;
+}
+html[data-theme="dark"] .doc-tpl-chip b,
+html[data-theme="dark"] .doc-tpl-chip strong,
+html[data-theme="dark"] .doc-tpl-chip span,
+html[data-theme="dark"] .doc-tpl-badge {
+  color: #f5d061 !important;
+}
+html[data-theme="dark"] .doc-tpl-active-badge,
+html[data-theme="dark"] .btn-tpl-active-state,
+html[data-theme="dark"] .badge.green {
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #34d399 !important;
+  border-color: rgba(52, 211, 153, 0.35) !important;
+}
+html[data-theme="dark"] .badge.amber,
+html[data-theme="dark"] .tpl-mini-badge.amber {
+  background: rgba(212, 175, 55, 0.18) !important;
+  color: #f5d061 !important;
+  border-color: rgba(212, 175, 55, 0.4) !important;
+}
+html[data-theme="dark"] .badge.red {
+  background: rgba(239, 68, 68, 0.16) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(248, 113, 113, 0.35) !important;
+}
+html[data-theme="dark"] .tab.active,
+html[data-theme="dark"] .tpl-tab-btn.active,
+html[data-theme="dark"] .tpl-filter-btn:hover,
+html[data-theme="dark"] .tpl-filter-pill:hover,
+html[data-theme="dark"] .tpl-switch-item:hover,
+html[data-theme="dark"] .doc-tpl-tab-btn:hover,
+html[data-theme="dark"] .tpl-zoom-btn:hover {
+  background: rgba(212, 175, 55, 0.18) !important;
+  color: #f5d061 !important;
+  border-color: #d4af37 !important;
+}
+
+/* ── 8. محرر القوالب المرئي (template-builder.js) ونوافذه ─────────────── */
+html[data-theme="dark"] .visual-doc-editor,
+html[data-theme="dark"] .visual-doc-editor > header,
+html[data-theme="dark"] .visual-doc-editor > nav,
+html[data-theme="dark"] .builder-core-controls,
+html[data-theme="dark"] .builder-actions-row,
+html[data-theme="dark"] .tab-panel,
+html[data-theme="dark"] .builder-bottom-bar {
+  background: #12141a !important;
+  background-color: #12141a !important;
+  border-color: rgba(212, 175, 55, 0.25) !important;
+  color: #f3f4f6 !important;
+}
+html[data-theme="dark"] .builder-workspace,
+html[data-theme="dark"] .modal-paper-stage {
+  background: #0d1017 !important;
+  background-color: #0d1017 !important;
+}
+html[data-theme="dark"] .visual-doc-editor > nav .tab-btn {
+  background: transparent !important;
+  color: #9ca3af !important;
+}
+html[data-theme="dark"] .visual-doc-editor > nav .tab-btn:hover,
+html[data-theme="dark"] .visual-doc-editor > nav .tab-btn.active {
+  background: rgba(212, 175, 55, 0.16) !important;
+  color: #f5d061 !important;
+  border-bottom-color: #d4af37 !important;
+}
+html[data-theme="dark"] .btn-insert-blk,
+html[data-theme="dark"] .btn-tag-chip,
+html[data-theme="dark"] .btn-fmt,
+html[data-theme="dark"] .builder-actions-row .btn-clear-sheet,
+html[data-theme="dark"] .builder-actions-row .btn-print-sheet,
+html[data-theme="dark"] #btn-open-paste-modal,
+html[data-theme="dark"] #btn-cancel-paste-modal,
+html[data-theme="dark"] .builder-core-controls select,
+html[data-theme="dark"] .builder-core-controls input,
+html[data-theme="dark"] .tab-panel select,
+html[data-theme="dark"] .tab-panel input:not([type="color"]):not([type="range"]),
+html[data-theme="dark"] .builder-bottom-actions select {
+  background: #181b23 !important;
+  background-color: #181b23 !important;
+  color: #f3f4f6 !important;
+  border-color: rgba(212, 175, 55, 0.3) !important;
+}
+html[data-theme="dark"] .btn-insert-blk:hover,
+html[data-theme="dark"] .btn-tag-chip:hover,
+html[data-theme="dark"] .btn-fmt:hover,
+html[data-theme="dark"] #btn-open-paste-modal:hover {
+  background: rgba(212, 175, 55, 0.18) !important;
+  color: #f5d061 !important;
+  border-color: #d4af37 !important;
+}
+
+/* نوافذ محرر القوالب (الذكاء الاصطناعي، لصق HTML، توليد جدول) */
+html[data-theme="dark"] #modal-table-gen > div,
+html[data-theme="dark"] #modal-paste-html > div,
+html[data-theme="dark"] #modal-paste-html > div > div:first-child,
+html[data-theme="dark"] #modal-paste-html > div > div:last-child,
+html[data-theme="dark"] #modal-table-gen > div > div:first-child,
+html[data-theme="dark"] #modal-table-gen > div > div:last-child,
+html[data-theme="dark"] #modal-ai-prompt-studio > div,
+html[data-theme="dark"] #modal-ai-prompt-studio > div > div:first-child,
+html[data-theme="dark"] #modal-ai-prompt-studio > div > div:nth-child(2),
+html[data-theme="dark"] #txt-ai-prompt,
+html[data-theme="dark"] #ai-tags-view thead tr,
+html[data-theme="dark"] #ai-tags-view code,
+html[data-theme="dark"] #modal-ai-prompt-studio #btn-close-ai-modal,
+html[data-theme="dark"] #modal-paste-html div[style*="line-height: 1.6"],
+html[data-theme="dark"] #modal-ai-prompt-studio div[style*="border: 1px dashed"] {
+  background: #141720 !important;
+  background-color: #141720 !important;
+  color: #f3f4f6 !important;
+  border-color: rgba(212, 175, 55, 0.28) !important;
+}
+html[data-theme="dark"] .ai-tab-btn:not([style*="background: rgb(79, 70, 229)"]):not([style*="background: #4f46e5"]):not([style*="background: rgb(2, 132, 199)"]):not([style*="background: #0284c7"]) {
+  background: #1b1f2a !important;
+  color: #e5e7eb !important;
+}
+
+/* ── 9. التنبيهات والأنماط المضمنة المتبقية في الصفحات ─────────────────── */
+html[data-theme="dark"] .alert {
+  background: #161922 !important;
+  color: #f3f4f6 !important;
+  border-color: rgba(212, 175, 55, 0.28) !important;
+}
+html[data-theme="dark"] .alert.alert-danger {
+  background: rgba(239, 68, 68, 0.14) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(248, 113, 113, 0.35) !important;
+}
+html[data-theme="dark"] .alert.alert-warn {
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: #fde68a !important;
+  border-color: rgba(251, 191, 36, 0.35) !important;
+}
+html[data-theme="dark"] .skeleton-card,
+html[data-theme="dark"] .skeleton-table,
+html[data-theme="dark"] .skeleton-title,
+html[data-theme="dark"] .skeleton-sub {
+  background: #181b23 !important;
+}
+html[data-theme="dark"] .card[style*="background:#ffffff"],
+html[data-theme="dark"] .card[style*="background: #ffffff"],
+html[data-theme="dark"] .card[style*="background:#fff"],
+html[data-theme="dark"] .card[style*="background: #fff"],
+html[data-theme="dark"] .card[style*="rgba(254,249,231"],
+html[data-theme="dark"] .card[style*="rgba(254, 249, 231"],
+html[data-theme="dark"] .card[style*="rgba(255,253,245"] {
+  background: #12141a !important;
+  color: #f3f4f6 !important;
+}
+html[data-theme="dark"] .card p[style*="color:#334155"],
+html[data-theme="dark"] .card p[style*="color: #334155"] {
+  color: #d1d5db !important;
+}
+
+/* ── 10. إبقاء ورقة معاينة المستندات (الفواتير والسندات) بيضاء للطباعة ─── */
+html[data-theme="dark"] .modal-paper-sheet,
+html[data-theme="dark"] .tpl-paper-frame,
+html[data-theme="dark"] .tpl-iframe {
+  background: #ffffff !important;
+  color: #000000 !important;
 }
