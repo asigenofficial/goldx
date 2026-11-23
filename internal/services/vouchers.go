@@ -1939,3 +1939,654 @@ func (s *VoucherService) CancelGoldReceipt(id, actor, ip string) error {
 	}
 	return tx.Commit()
 }
+
+type EligibleCashInvoice struct {
+	ID              string  `json:"id"`
+	InvoiceNumber   string  `json:"invoice_number"`
+	SequenceNo      int64   `json:"sequence_no"`
+	IssueDate       string  `json:"issue_date"`
+	IssueTime       string  `json:"issue_time"`
+	IssuerID        string  `json:"issuer_id"`
+	IssuerName      string  `json:"issuer_name"`
+	ClientID        string  `json:"client_id"`
+	ClientName      string  `json:"client_name"`
+	ClientCode      string  `json:"client_code"`
+	GrandTotal      float64 `json:"grand_total"`
+	PaidAmount      float64 `json:"paid_amount"`
+	RemainingAmount float64 `json:"remaining_amount"`
+	Status          string  `json:"status"`
+}
+
+type EligibleCashInvoicesResult struct {
+	IssuerID        string                `json:"issuer_id"`
+	IssuerName      string                `json:"issuer_name"`
+	VoucherPrefix   string                `json:"voucher_prefix"`
+	SuggestedStart  string                `json:"suggested_start"`
+	ExistingNumbers []string              `json:"existing_numbers"`
+	Items           []EligibleCashInvoice `json:"items"`
+}
+
+type BatchCashReceiptGroupInput struct {
+	ClientID      string   `json:"client_id"`
+	InvoiceIDs    []string `json:"invoice_ids"`
+	VoucherNumber string   `json:"voucher_number,omitempty"`
+	VoucherDate   string   `json:"voucher_date,omitempty"`
+	Notes         string   `json:"notes,omitempty"`
+}
+
+type BatchCreateCashReceiptsInput struct {
+	IssuerID           string                       `json:"issuer_id"`
+	PaymentType        string                       `json:"payment_type"`
+	ReferenceNo        string                       `json:"reference_no"`
+	DateOffset         int                          `json:"date_offset"`
+	SkipFriday         *bool                        `json:"skip_friday"`
+	StartNumber        string                       `json:"start_number"`
+	SeqGapMin          int                          `json:"seq_gap_min"`
+	SeqGapMax          int                          `json:"seq_gap_max"`
+	InvoicesPerVoucher int                          `json:"invoices_per_voucher"`
+	Notes              string                       `json:"notes"`
+	InvoiceIDs         []string                     `json:"invoice_ids,omitempty"`
+	Groups             []BatchCashReceiptGroupInput `json:"groups,omitempty"`
+}
+
+type BatchCreateCashReceiptsResult struct {
+	Count          int           `json:"count"`
+	ClientCount    int           `json:"client_count"`
+	InvoiceCount   int           `json:"invoice_count"`
+	TotalAmount    float64       `json:"total_amount"`
+	FirstNumber    string        `json:"first_number"`
+	LastNumber     string        `json:"last_number"`
+	SkippedFridays int           `json:"skipped_fridays"`
+	Items          []VoucherView `json:"items"`
+}
+
+func BuildCashReceiptNotes(clientName string, invoiceNumbers []string) string {
+	cleanClient := strings.TrimSpace(clientName)
+	if cleanClient == "" {
+		cleanClient = "العميل"
+	}
+	return fmt.Sprintf("مقابل أجور وضريبة %s — فواتير رقم %s", cleanClient, strings.Join(invoiceNumbers, "، "))
+}
+
+func (s *VoucherService) ListEligibleCashInvoices(f EligibleGoldInvoicesFilter) (*EligibleCashInvoicesResult, error) {
+	issuerID := strings.TrimSpace(f.IssuerID)
+	if issuerID == "" {
+		return nil, errors.New("يرجى اختيار المورد (المتجر المصدر) أولاً")
+	}
+
+	var issuerName, voucherPrefix string
+	var voucherNextNo int64
+	if err := s.db.QueryRow(`SELECT name_ar, voucher_prefix, voucher_next_no FROM issuers WHERE id=?`, issuerID).Scan(&issuerName, &voucherPrefix, &voucherNextNo); err != nil {
+		return nil, errors.New("المورد / المتجر المصدر غير موجود")
+	}
+	cleanVPrefix := strings.TrimRight(strings.TrimSpace(voucherPrefix), "-")
+	if cleanVPrefix == "" {
+		cleanVPrefix = "RV"
+	}
+
+	existingNumbers := make([]string, 0)
+	var lastNumber string
+	exRows, err := s.db.Query(`SELECT voucher_number FROM receipt_vouchers WHERE issuer_id=? ORDER BY created_at DESC`, issuerID)
+	if err != nil {
+		return nil, err
+	}
+	for exRows.Next() {
+		var num string
+		if err = exRows.Scan(&num); err == nil {
+			if lastNumber == "" {
+				lastNumber = num
+			}
+			existingNumbers = append(existingNumbers, num)
+		}
+	}
+	exRows.Close()
+
+	suggestedStart := crypto.FormatSerial(cleanVPrefix, voucherNextNo, 5)
+	if lastNumber != "" {
+		p, _, pad := ParseVoucherSerialPattern(lastNumber, cleanVPrefix, voucherNextNo, 5)
+		maxNo := int64(0)
+		for _, ex := range existingNumbers {
+			ep, en, _ := ParseVoucherSerialPattern(ex, cleanVPrefix, 0, pad)
+			if ep == p && en > maxNo {
+				maxNo = en
+			}
+		}
+		if maxNo > 0 {
+			suggestedStart = crypto.FormatSerial(p, maxNo+1, pad)
+		}
+	}
+
+	where := `WHERE i.issuer_id = ? AND i.status IN ('UNPAID', 'PARTIAL') AND i.remaining_amount > 0`
+	args := []any{issuerID}
+	if strings.TrimSpace(f.ClientID) != "" {
+		where += ` AND i.client_id = ?`
+		args = append(args, strings.TrimSpace(f.ClientID))
+	}
+	if strings.TrimSpace(f.FromDate) != "" {
+		where += ` AND i.issue_date >= ?`
+		args = append(args, strings.TrimSpace(f.FromDate))
+	}
+	if strings.TrimSpace(f.ToDate) != "" {
+		where += ` AND i.issue_date <= ?`
+		args = append(args, strings.TrimSpace(f.ToDate))
+	}
+	if strings.TrimSpace(f.Search) != "" {
+		where += ` AND (i.invoice_number LIKE ? OR c.name LIKE ? OR c.client_code LIKE ?)`
+		like := "%" + strings.TrimSpace(f.Search) + "%"
+		args = append(args, like, like, like)
+	}
+
+	invQuery := fmt.Sprintf(`
+		SELECT i.id, i.invoice_number, i.sequence_no, i.issue_date, i.issue_time,
+		       i.issuer_id, s.name_ar, i.client_id, c.name, c.client_code,
+		       i.grand_total, i.paid_amount, i.remaining_amount, i.status
+		FROM invoices i
+		JOIN issuers s ON s.id = i.issuer_id
+		JOIN clients c ON c.id = i.client_id
+		%s
+		ORDER BY i.issue_date ASC, i.issue_time ASC, i.sequence_no ASC, i.invoice_number ASC
+	`, where)
+
+	invRows, err := s.db.Query(invQuery, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer invRows.Close()
+
+	items := make([]EligibleCashInvoice, 0)
+	for invRows.Next() {
+		var it EligibleCashInvoice
+		var grandMinor, paidMinor, remMinor int64
+		if err = invRows.Scan(
+			&it.ID, &it.InvoiceNumber, &it.SequenceNo, &it.IssueDate, &it.IssueTime,
+			&it.IssuerID, &it.IssuerName, &it.ClientID, &it.ClientName, &it.ClientCode,
+			&grandMinor, &paidMinor, &remMinor, &it.Status,
+		); err != nil {
+			return nil, err
+		}
+		it.GrandTotal = models.ToMajor(grandMinor)
+		it.PaidAmount = models.ToMajor(paidMinor)
+		it.RemainingAmount = models.ToMajor(remMinor)
+		items = append(items, it)
+	}
+	if err = invRows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &EligibleCashInvoicesResult{
+		IssuerID:        issuerID,
+		IssuerName:      issuerName,
+		VoucherPrefix:   cleanVPrefix,
+		SuggestedStart:  suggestedStart,
+		ExistingNumbers: existingNumbers,
+		Items:           items,
+	}, nil
+}
+
+// CreateCashReceiptsBatch creates grouped cash receipt vouchers across all clients of a supplier
+// in one atomic transaction with unified sequential numbering, configurable random gap,
+// date offset from the last invoice in each group, and Friday exclusion.
+func (s *VoucherService) CreateCashReceiptsBatch(input BatchCreateCashReceiptsInput, actor, ip string) (*BatchCreateCashReceiptsResult, error) {
+	issuerID := strings.TrimSpace(input.IssuerID)
+	if issuerID == "" {
+		return nil, errors.New("المورد (المتجر المصدر) مطلوب")
+	}
+	paymentType := strings.TrimSpace(input.PaymentType)
+	if paymentType == "" {
+		paymentType = "TRANSFER"
+	}
+	if _, ok := paymentLabels[paymentType]; !ok {
+		return nil, errors.New("طريقة السداد غير صالحة")
+	}
+	if input.DateOffset < 0 || input.DateOffset > 3650 {
+		return nil, errors.New("عدد أيام تأخير التاريخ غير صالح")
+	}
+	skipFriday := true
+	if input.SkipFriday != nil {
+		skipFriday = *input.SkipFriday
+	}
+	gapMin := input.SeqGapMin
+	if gapMin <= 0 {
+		gapMin = 1
+	}
+	gapMax := input.SeqGapMax
+	if gapMax <= 0 {
+		gapMax = gapMin
+	}
+	if gapMin > 10000 || gapMax > 10000 || gapMax < gapMin {
+		return nil, errors.New("قيمة الفارق بين السندات غير صالحة")
+	}
+	perVoucher := input.InvoicesPerVoucher
+	if perVoucher <= 0 {
+		perVoucher = 4
+	}
+	if perVoucher > 100 {
+		return nil, errors.New("الحد الأقصى للفواتير في السند الواحد هو 100 فاتورة")
+	}
+
+	s.db.WriteLock()
+	defer s.db.WriteUnlock()
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	var voucherPrefix string
+	var voucherNextNo int64
+	if err = tx.QueryRow(`SELECT voucher_prefix, voucher_next_no FROM issuers WHERE id=?`, issuerID).Scan(&voucherPrefix, &voucherNextNo); err != nil {
+		return nil, errors.New("المورد / المتجر المصدر غير موجود")
+	}
+	cleanVPrefix := strings.TrimRight(strings.TrimSpace(voucherPrefix), "-")
+	if cleanVPrefix == "" {
+		cleanVPrefix = "RV"
+	}
+
+	type invInfo struct {
+		id              string
+		clientID        string
+		clientName      string
+		invoiceNumber   string
+		sequenceNo      int64
+		issueDate       string
+		issueTime       string
+		grandTotal      int64
+		paidAmount      int64
+		remainingAmount int64
+	}
+
+	loadInvTx := func(invID string) (*invInfo, error) {
+		var it invInfo
+		var invIssuerID, status string
+		err := tx.QueryRow(`
+			SELECT i.id, i.issuer_id, i.client_id, c.name, i.invoice_number, i.sequence_no,
+			       i.issue_date, i.issue_time, i.grand_total, i.paid_amount, i.remaining_amount, i.status
+			FROM invoices i
+			JOIN clients c ON c.id = i.client_id
+			WHERE i.id = ?
+		`, invID).Scan(
+			&it.id, &invIssuerID, &it.clientID, &it.clientName, &it.invoiceNumber, &it.sequenceNo,
+			&it.issueDate, &it.issueTime, &it.grandTotal, &it.paidAmount, &it.remainingAmount, &status,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("الفاتورة غير موجودة (%s)", invID)
+		}
+		if invIssuerID != issuerID {
+			return nil, fmt.Errorf("الفاتورة %s لا تتبع المورد المحدد", it.invoiceNumber)
+		}
+		if status != "UNPAID" && status != "PARTIAL" {
+			return nil, fmt.Errorf("الفاتورة %s مسددة بالكامل أو ملغاة", it.invoiceNumber)
+		}
+		if it.remainingAmount <= 0 {
+			return nil, fmt.Errorf("لا يوجد مبلغ متبقٍ للسداد على الفاتورة %s", it.invoiceNumber)
+		}
+		return &it, nil
+	}
+
+	groups := input.Groups
+	if len(groups) == 0 && len(input.InvoiceIDs) > 0 {
+		// Group flat InvoiceIDs per client_id in chronological order by `perVoucher`.
+		seenFlat := map[string]bool{}
+		byClient := map[string][]*invInfo{}
+		clientOrder := make([]string, 0)
+		for _, rawID := range input.InvoiceIDs {
+			invID := strings.TrimSpace(rawID)
+			if invID == "" || seenFlat[invID] {
+				continue
+			}
+			seenFlat[invID] = true
+			info, e := loadInvTx(invID)
+			if e != nil {
+				return nil, e
+			}
+			if _, ok := byClient[info.clientID]; !ok {
+				clientOrder = append(clientOrder, info.clientID)
+			}
+			byClient[info.clientID] = append(byClient[info.clientID], info)
+		}
+		for _, cid := range clientOrder {
+			list := byClient[cid]
+			slices.SortFunc(list, func(a, b *invInfo) int {
+				if c := strings.Compare(a.issueDate, b.issueDate); c != 0 {
+					return c
+				}
+				if c := strings.Compare(a.issueTime, b.issueTime); c != 0 {
+					return c
+				}
+				if a.sequenceNo != b.sequenceNo {
+					if a.sequenceNo < b.sequenceNo {
+						return -1
+					}
+					return 1
+				}
+				return strings.Compare(a.invoiceNumber, b.invoiceNumber)
+			})
+			for i := 0; i < len(list); i += perVoucher {
+				end := i + perVoucher
+				if end > len(list) {
+					end = len(list)
+				}
+				ids := make([]string, 0, end-i)
+				for _, x := range list[i:end] {
+					ids = append(ids, x.id)
+				}
+				groups = append(groups, BatchCashReceiptGroupInput{
+					ClientID:   cid,
+					InvoiceIDs: ids,
+				})
+			}
+		}
+	}
+
+	if len(groups) == 0 {
+		return nil, errors.New("حدد فاتورة واحدة على الأقل لإنشاء السندات")
+	}
+	if len(groups) > 2000 {
+		return nil, errors.New("الحد الأقصى للدفعة الواحدة هو 2000 سند")
+	}
+
+	type preparedGroup struct {
+		clientID        string
+		clientName      string
+		invoices        []*invInfo
+		lastIssueDate   string
+		lastIssueTime   string
+		lastSeqNo       int64
+		lastInvNumber   string
+		voucherDate     string
+		voucherNumber   string
+		totalAmount     int64
+		notes           string
+		skippedFriday   bool
+	}
+
+	seenInv := map[string]bool{}
+	prepared := make([]preparedGroup, 0, len(groups))
+	allHaveExplicitNumbers := true
+	skippedFridays := 0
+
+	for _, g := range groups {
+		if len(g.InvoiceIDs) == 0 {
+			return nil, errors.New("يوجد سند بدون فواتير مرتبطة")
+		}
+		var pg preparedGroup
+		for _, rawID := range g.InvoiceIDs {
+			invID := strings.TrimSpace(rawID)
+			if invID == "" {
+				return nil, errors.New("معرّف الفاتورة مفقود في أحد السندات")
+			}
+			if seenInv[invID] {
+				return nil, errors.New("توجد فاتورة مكررة في نفس الدفعة")
+			}
+			seenInv[invID] = true
+			info, e := loadInvTx(invID)
+			if e != nil {
+				return nil, e
+			}
+			if pg.clientID == "" {
+				pg.clientID = info.clientID
+				pg.clientName = info.clientName
+			} else if pg.clientID != info.clientID {
+				return nil, errors.New("لا يمكن دمج فواتير لعملاء مختلفين في سند قبض واحد")
+			}
+			if g.ClientID != "" && g.ClientID != info.clientID {
+				return nil, fmt.Errorf("الفاتورة %s لا تتبع العميل المحدد", info.invoiceNumber)
+			}
+			pg.invoices = append(pg.invoices, info)
+			pg.totalAmount += info.remainingAmount
+		}
+
+		// Sort invoices in group chronologically so the last invoice determines the base date.
+		slices.SortFunc(pg.invoices, func(a, b *invInfo) int {
+			if c := strings.Compare(a.issueDate, b.issueDate); c != 0 {
+				return c
+			}
+			if c := strings.Compare(a.issueTime, b.issueTime); c != 0 {
+				return c
+			}
+			if a.sequenceNo != b.sequenceNo {
+				if a.sequenceNo < b.sequenceNo {
+					return -1
+				}
+				return 1
+			}
+			return strings.Compare(a.invoiceNumber, b.invoiceNumber)
+		})
+		lastInv := pg.invoices[len(pg.invoices)-1]
+		pg.lastIssueDate = lastInv.issueDate
+		pg.lastIssueTime = lastInv.issueTime
+		pg.lastSeqNo = lastInv.sequenceNo
+		pg.lastInvNumber = lastInv.invoiceNumber
+
+		vDate := strings.TrimSpace(g.VoucherDate)
+		if vDate != "" {
+			isFri, errDate := IsFridayDate(vDate)
+			if errDate != nil {
+				return nil, fmt.Errorf("تاريخ السند للفاتورة %s غير صالح", lastInv.invoiceNumber)
+			}
+			if skipFriday && isFri {
+				return nil, fmt.Errorf("تاريخ السند (%s) يوافق يوم الجمعة ولا يُسمح بإصدار سندات يوم الجمعة", vDate)
+			}
+			if skipFriday {
+				if adj, adjSkipped, errAdj := AdjustVoucherDate(lastInv.issueDate, input.DateOffset, true); errAdj == nil && adjSkipped && adj == vDate {
+					pg.skippedFriday = true
+					skippedFridays++
+				}
+			}
+		} else {
+			var errDate error
+			vDate, pg.skippedFriday, errDate = AdjustVoucherDate(lastInv.issueDate, input.DateOffset, skipFriday)
+			if errDate != nil {
+				return nil, errDate
+			}
+			if pg.skippedFriday {
+				skippedFridays++
+			}
+		}
+		pg.voucherDate = vDate
+
+		vNum := strings.TrimSpace(g.VoucherNumber)
+		if vNum == "" {
+			allHaveExplicitNumbers = false
+		}
+		pg.voucherNumber = vNum
+
+		invNums := make([]string, 0, len(pg.invoices))
+		for _, x := range pg.invoices {
+			invNums = append(invNums, x.invoiceNumber)
+		}
+		notes := strings.TrimSpace(g.Notes)
+		if notes == "" && strings.TrimSpace(input.Notes) != "" {
+			notes = strings.TrimSpace(input.Notes) + " — فواتير رقم " + strings.Join(invNums, "، ")
+		}
+		if notes == "" {
+			notes = BuildCashReceiptNotes(pg.clientName, invNums)
+		}
+		pg.notes = notes
+
+		prepared = append(prepared, pg)
+	}
+
+	if !allHaveExplicitNumbers {
+		slices.SortFunc(prepared, func(a, b preparedGroup) int {
+			if c := strings.Compare(a.voucherDate, b.voucherDate); c != 0 {
+				return c
+			}
+			if c := strings.Compare(a.lastIssueDate, b.lastIssueDate); c != 0 {
+				return c
+			}
+			if c := strings.Compare(a.lastIssueTime, b.lastIssueTime); c != 0 {
+				return c
+			}
+			if a.lastSeqNo != b.lastSeqNo {
+				if a.lastSeqNo < b.lastSeqNo {
+					return -1
+				}
+				return 1
+			}
+			return strings.Compare(a.lastInvNumber, b.lastInvNumber)
+		})
+
+		defaultStart := voucherNextNo
+		if strings.TrimSpace(input.StartNumber) == "" {
+			rows, e := tx.Query(`SELECT voucher_number FROM receipt_vouchers WHERE issuer_id=?`, issuerID)
+			if e != nil {
+				return nil, e
+			}
+			serialPrefix := cleanVPrefix + "-"
+			for rows.Next() {
+				var ex string
+				if rows.Scan(&ex) == nil && strings.HasPrefix(ex, serialPrefix) {
+					if n, parseErr := strconv.ParseInt(strings.TrimPrefix(ex, serialPrefix), 10, 64); parseErr == nil && n >= defaultStart {
+						defaultStart = n + 1
+					}
+				}
+			}
+			rows.Close()
+		}
+
+		prefix, currNo, pad := ParseVoucherSerialPattern(input.StartNumber, cleanVPrefix, defaultStart, 5)
+		rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+		for i := range prepared {
+			if i > 0 {
+				step := gapMin
+				if gapMax > gapMin {
+					step = gapMin + rng.Intn(gapMax-gapMin+1)
+				}
+				currNo += int64(step)
+			}
+			prepared[i].voucherNumber = crypto.FormatSerial(prefix, currNo, pad)
+		}
+	}
+
+	existingSet := map[string]bool{}
+	exRows, err := tx.Query(`SELECT voucher_number FROM receipt_vouchers WHERE issuer_id=?`, issuerID)
+	if err != nil {
+		return nil, err
+	}
+	for exRows.Next() {
+		var ex string
+		if exRows.Scan(&ex) == nil {
+			existingSet[ex] = true
+		}
+	}
+	exRows.Close()
+
+	batchNumSet := map[string]bool{}
+	for _, p := range prepared {
+		if p.voucherNumber == "" {
+			return nil, errors.New("رقم السند لأحد السندات فارغ")
+		}
+		if batchNumSet[p.voucherNumber] {
+			return nil, fmt.Errorf("رقم السند %s مكرر داخل نفس الدفعة", p.voucherNumber)
+		}
+		if existingSet[p.voucherNumber] {
+			return nil, fmt.Errorf("رقم السند %s مستخدم بالفعل لدى هذا المتجر؛ اختر رقم بداية آخر", p.voucherNumber)
+		}
+		batchNumSet[p.voucherNumber] = true
+	}
+
+	now := db.NowIso()
+	createdIDs := make([]string, 0, len(prepared))
+	clientSet := map[string]bool{}
+	var grandTotalMinor int64
+	var totalInvCount int
+	defaultSeriesPrefix := cleanVPrefix + "-"
+	var maxSeriesNo int64
+
+	for _, p := range prepared {
+		voucherID := crypto.UUID()
+		if _, err = tx.Exec(`
+			INSERT INTO receipt_vouchers (
+				id, voucher_number, issuer_id, client_id, voucher_date,
+				total_amount, allocated_total, payment_type, reference_no, notes,
+				status, created_by, created_at, updated_at
+			) VALUES (
+				?, ?, ?, ?, ?,
+				?, ?, ?, ?, ?,
+				'ACTIVE', ?, ?, ?
+			)
+		`,
+			voucherID, p.voucherNumber, issuerID, p.clientID, p.voucherDate,
+			p.totalAmount, p.totalAmount, paymentType, strings.TrimSpace(input.ReferenceNo), p.notes,
+			actor, now, now,
+		); err != nil {
+			return nil, fmt.Errorf("تعذر إنشاء السند %s: %w", p.voucherNumber, err)
+		}
+
+		for _, inv := range p.invoices {
+			if _, err = tx.Exec(`
+				INSERT INTO voucher_allocations (id, voucher_id, invoice_id, allocated_amount, created_at)
+				VALUES (?, ?, ?, ?, ?)
+			`, crypto.UUID(), voucherID, inv.id, inv.remainingAmount, now); err != nil {
+				return nil, err
+			}
+			newPaid := inv.paidAmount + inv.remainingAmount
+			newRem := inv.grandTotal - newPaid
+			if newRem < 0 {
+				newRem = 0
+			}
+			newStatus := "PARTIAL"
+			if newRem == 0 {
+				newStatus = "PAID"
+			}
+			if _, err = tx.Exec(`
+				UPDATE invoices SET paid_amount = ?, remaining_amount = ?, status = ?, updated_at = ?
+				WHERE id = ?
+			`, newPaid, newRem, newStatus, now, inv.id); err != nil {
+				return nil, err
+			}
+			totalInvCount++
+		}
+
+		createdIDs = append(createdIDs, voucherID)
+		clientSet[p.clientID] = true
+		grandTotalMinor += p.totalAmount
+		if strings.HasPrefix(p.voucherNumber, defaultSeriesPrefix) {
+			if n, parseErr := strconv.ParseInt(strings.TrimPrefix(p.voucherNumber, defaultSeriesPrefix), 10, 64); parseErr == nil && n > maxSeriesNo {
+				maxSeriesNo = n
+			}
+		}
+	}
+
+	if maxSeriesNo >= voucherNextNo {
+		if _, err = tx.Exec(`UPDATE issuers SET voucher_next_no=? WHERE id=?`, maxSeriesNo+1, issuerID); err != nil {
+			return nil, err
+		}
+	}
+
+	if err = db.AuditTx(tx, actor, "VOUCHER_BATCH_CREATE", "voucher", "", issuerID, map[string]any{
+		"count":           len(prepared),
+		"clients":         len(clientSet),
+		"invoices":        totalInvCount,
+		"total_amount":    models.ToMajor(grandTotalMinor),
+		"first_number":    prepared[0].voucherNumber,
+		"last_number":     prepared[len(prepared)-1].voucherNumber,
+		"skipped_fridays": skippedFridays,
+	}, ip); err != nil {
+		return nil, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	created := make([]VoucherView, 0, len(createdIDs))
+	for _, id := range createdIDs {
+		v, e := s.GetVoucher(id)
+		if e == nil && v != nil {
+			created = append(created, *v)
+		}
+	}
+
+	return &BatchCreateCashReceiptsResult{
+		Count:          len(prepared),
+		ClientCount:    len(clientSet),
+		InvoiceCount:   totalInvCount,
+		TotalAmount:    models.ToMajor(grandTotalMinor),
+		FirstNumber:    prepared[0].voucherNumber,
+		LastNumber:     prepared[len(prepared)-1].voucherNumber,
+		SkippedFridays: skippedFridays,
+		Items:          created,
+	}, nil
+}

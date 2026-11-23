@@ -365,9 +365,9 @@ func (s *Server) renderVoucherHTML(id, style string) (string, error) {
 	for _, a := range v.Allocations {
 		allocations = append(allocations, a.InvoiceNumber)
 	}
-	paidFor := v.Notes
-	if len(allocations) > 0 {
-		paidFor = "سداد فواتير رقم " + strings.Join(allocations, "، ")
+	paidFor := strings.TrimSpace(v.Notes)
+	if paidFor == "" && len(allocations) > 0 {
+		paidFor = services.BuildCashReceiptNotes(v.ClientName, allocations)
 	}
 	amount := formatVoucherAmount(v.TotalAmount)
 	replacements := map[string]string{
@@ -391,7 +391,7 @@ func (s *Server) renderVoucherHTML(id, style string) (string, error) {
 	for key, value := range cashReceiptLabels() {
 		replacements[key] = value
 	}
-	blocks := map[string]string{"receipt_value": `<span class="sar-amount" dir="rtl"><bdi dir="ltr">` + amount + `</bdi>{{sar_symbol}}</span>`, "receipt_items": "", "receipt_conversion": "", "receipt_weight_summary": ""}
+	blocks := map[string]string{"receipt_value": `<bdi dir="ltr">` + amount + `</bdi>`, "receipt_items": "", "receipt_conversion": "", "receipt_weight_summary": ""}
 	return s.fillReceiptTemplate(tpl, issuer, replacements, blocks), nil
 }
 
@@ -431,6 +431,65 @@ body > .receipt-card > *, body > .receipt-container > *, body > .receipt-page > 
 }
 
 func (s *Server) registerGoldReceipts(mux *http.ServeMux) {
+	mux.HandleFunc("GET /api/vouchers/batch/eligible-invoices", func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		res, err := s.vouchers.ListEligibleCashInvoices(services.EligibleGoldInvoicesFilter{
+			IssuerID: q.Get("issuer_id"),
+			ClientID: q.Get("client_id"),
+			FromDate: q.Get("from"),
+			ToDate:   q.Get("to"),
+			Search:   q.Get("q"),
+		})
+		if err != nil {
+			s.err(w, 400, err.Error())
+			return
+		}
+		s.json(w, 200, res)
+	})
+	mux.HandleFunc("POST /api/vouchers/batch", func(w http.ResponseWriter, r *http.Request) {
+		var input services.BatchCreateCashReceiptsInput
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			s.err(w, 400, "بيانات الدفعة غير صالحة")
+			return
+		}
+		actor := "system"
+		if u := s.getSessionUser(r); u != nil {
+			actor = u.Username
+		}
+		res, err := s.vouchers.CreateCashReceiptsBatch(input, actor, s.clientIP(r))
+		if err != nil {
+			s.err(w, 400, err.Error())
+			return
+		}
+		s.sync.Broadcast(services.SyncEvent{
+			Type:   "voucher:created",
+			Entity: "voucher",
+			Action: "batch_create",
+			Actor:  actor,
+			Data:   map[string]any{"count": res.Count, "total_amount": res.TotalAmount, "first_number": res.FirstNumber, "last_number": res.LastNumber},
+		})
+		s.json(w, 200, res)
+	})
+	mux.HandleFunc("POST /api/vouchers/batch-html", func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			IDs   []string `json:"ids"`
+			Style string   `json:"style"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.IDs) == 0 {
+			s.err(w, 400, "حدد سنداً واحداً على الأقل للطباعة")
+			return
+		}
+		if len(req.IDs) > 250 {
+			s.err(w, 400, "الحد الأقصى للطباعة المجمعة هو 250 سنداً في المرة الواحدة")
+			return
+		}
+		doc, err := s.renderCashReceiptsBatchHTML(req.IDs, req.Style)
+		if err != nil {
+			s.err(w, 400, err.Error())
+			return
+		}
+		s.json(w, 200, map[string]string{"html": doc})
+	})
 	mux.HandleFunc("GET /api/vouchers/gold", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		items, err := s.vouchers.ListGoldReceiptsFiltered(services.ListGoldReceiptsFilter{
@@ -663,10 +722,22 @@ func extractHTMLHeadAndBody(doc string) (head string, body string) {
 }
 
 func (s *Server) renderGoldReceiptsBatchHTML(ids []string, style string) (string, error) {
+	return stitchReceiptBatchHTML(ids, func(id string) (string, error) {
+		return s.renderGoldReceiptHTML(id, style)
+	})
+}
+
+func (s *Server) renderCashReceiptsBatchHTML(ids []string, style string) (string, error) {
+	return stitchReceiptBatchHTML(ids, func(id string) (string, error) {
+		return s.renderVoucherHTML(id, style)
+	})
+}
+
+func stitchReceiptBatchHTML(ids []string, render func(string) (string, error)) (string, error) {
 	var headHTML string
 	var pages strings.Builder
 	for i, id := range ids {
-		doc, err := s.renderGoldReceiptHTML(id, style)
+		doc, err := render(id)
 		if err != nil {
 			return "", err
 		}
@@ -781,7 +852,9 @@ func (s *Server) renderGoldReceiptHTML(id, style string) (string, error) {
 	replacements["bags_weight"] = "0.00"
 	replacements["total_pieces"] = fmt.Sprintf("%d", len(v.Lines))
 	replacements["gold_price"] = fmt.Sprintf("%.2f", v.GoldPrice)
-	replacements["amount_in_words"] = services.TafqeetArabic(v.InvoiceTotal)
+	if strings.Contains(tpl, "{{gold_amount_in_words}}") {
+		replacements["amount_in_words"] = services.TafqeetArabic(v.InvoiceTotal)
+	}
 	replacements["gold_amount_in_words"] = services.TafqeetGoldArabic(v.TotalWeight, "عيار 875")
 	replacements["seller_activity"] = "صناعة و بيع وشراء المعادن الثمينة والأحجار الكريمة"
 
@@ -812,7 +885,7 @@ func (s *Server) renderGoldReceiptHTML(id, style string) (string, error) {
 		conversion = fmt.Sprintf(`<div class="receipt-conversion">إجمالي الفاتورة شامل الضريبة: <b dir="ltr">%.2f</b> ريال سعودي ÷ سعر جرام عيار 24 بتاريخ %s: <b dir="ltr">%.2f</b> ريال سعودي = <b dir="ltr">%.3f</b> جرام ذهب عيار 24</div>`, v.InvoiceTotal, html.EscapeString(v.VoucherDate), v.GoldPrice, v.TotalWeight)
 	}
 	return s.fillReceiptTemplate(tpl, issuer, replacements, map[string]string{
-		"receipt_value":          fmt.Sprintf(`<bdi dir="ltr">%.3f</bdi>`, v.TotalWeight),
+		"receipt_value":          fmt.Sprintf(`<bdi dir="ltr">%.2f</bdi>`, v.TotalWeight),
 		"receipt_items":          items,
 		"receipt_conversion":     conversion,
 		"receipt_weight_summary": summary,

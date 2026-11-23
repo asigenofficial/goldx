@@ -1164,6 +1164,9 @@ export async function render(view, ctx) {
             <button class="btn" id="new-v-batch" type="button" style="border:1.5px solid var(--line-strong);font-weight:700" title="إنشاء سند قبض منفصل لكل فاتورة غير مسددة">
               سندات لكل فاتورة
             </button>
+            <button class="btn" id="new-v-suppliers-batch" type="button" style="background:rgba(16,185,129,0.12);color:#065f46;border:1px solid rgba(16,185,129,0.4);font-weight:700" title="إنشاء سندات قبض ريال دفعية لكل عملاء المورد مع تجميع الفواتير وتوحيد التسلسل">
+              سندات دفعة (كل العملاء)
+            </button>
           ` : '')}
           <button class="btn btn-primary" id="btn-pdf-vouchers" type="button">
             ${raw(icon.pdf({ size: 16, style: 'vertical-align:text-bottom;margin-left:4px' }))}
@@ -1336,6 +1339,14 @@ export async function render(view, ctx) {
         clientId: state.client_id,
         issuerId: state.issuer_id || store.activeIssuerId,
         mode: 'batch',
+        onDone: reload,
+      }));
+    }
+
+    const newSuppliersBatchBtn = $('#new-v-suppliers-batch', view);
+    if (newSuppliersBatchBtn) {
+      newSuppliersBatchBtn.addEventListener('click', () => cashReceiptBatchModal({
+        issuerId: state.issuer_id || store.activeIssuerId,
         onDone: reload,
       }));
     }
@@ -2557,5 +2568,524 @@ export async function renderGoldReceipts(view) {
   await load();
   await draw();
   return () => { unsubSync(); };
+}
+
+async function printCashReceiptsBatch(ids, style = '') {
+  if (!Array.isArray(ids) || !ids.length) return toastErr('حدد سنداً واحداً على الأقل للطباعة');
+  const chosenStyle = style || localStorage.getItem('zs.voucher_style') || '';
+  const { html: batchHtml } = await api.post('/api/vouchers/batch-html', { ids, style: chosenStyle });
+  printDoc(batchHtml, { flowing: true });
+}
+
+export async function cashReceiptBatchModal({ issuerId = '', onDone = () => {} } = {}) {
+  await loadClients();
+  const activeIssuers = store.issuers.filter((i) => i.is_active);
+  const initialIssuerId = issuerId || store.activeIssuerId || activeIssuers[0]?.id || '';
+
+  const m = modal({
+    title: 'إنشاء سندات قبض ريال دفعية — لكل عملاء المورد',
+    wide: true,
+    body: html`
+      <div class="alert alert-info tiny" style="margin-bottom:10px">
+        اختر <b>المورد (المتجر المصدر)</b> لإظهار جميع الفواتير غير المسددة لكل العملاء، ثم حدّد عدد الفواتير في كل سند (مثلاً 4 فواتير لكل عميل)
+        و<b>تأخير التاريخ بعد آخر فاتورة</b> مع تخطي يوم الجمعة وتوحيد التسلسل بفارق متغير لكسر النمطية.
+      </div>
+
+      <div class="form-grid-4" style="gap:10px">
+        <div class="field" style="margin:0">
+          <label class="req" for="cb-issuer">المورد (المتجر المصدر)</label>
+          <select id="cb-issuer">
+            <option value="">— اختر المورد —</option>
+            ${raw(activeIssuers.map((i) => `<option value="${esc(i.id)}" ${i.id === initialIssuerId ? 'selected' : ''}>${esc(i.name_ar)}</option>`).join(''))}
+          </select>
+        </div>
+        <div class="field" style="margin:0">
+          <label for="cb-client">العميل</label>
+          <select id="cb-client">
+            <option value="">كل العملاء (تسلسل موحد)</option>
+            ${raw(store.clients.map((c) => `<option value="${esc(c.id)}">${esc(c.name)} (${esc(c.client_code)})</option>`).join(''))}
+          </select>
+        </div>
+        <div class="field" style="margin:0">
+          <label for="cb-from">فواتير من تاريخ</label>
+          <input type="date" id="cb-from" />
+        </div>
+        <div class="field" style="margin:0">
+          <label for="cb-to">فواتير إلى تاريخ</label>
+          <input type="date" id="cb-to" />
+        </div>
+      </div>
+
+      <div class="card mt" style="padding:12px 14px;border:1.5px solid rgba(16,185,129,0.4);background:rgba(16,185,129,0.04)">
+        <div class="form-grid-4" style="gap:10px">
+          <div class="field" style="margin:0">
+            <label for="cb-per-voucher">عدد الفواتير في كل سند</label>
+            <input type="number" id="cb-per-voucher" value="4" min="1" max="100" />
+            <span class="hint tiny">مثلاً: كل 4 فواتير بسند واحد</span>
+          </div>
+          <div class="field" style="margin:0">
+            <label for="cb-offset">تاريخ السند (بعد كم يوم)</label>
+            <input type="number" id="cb-offset" value="4" min="0" max="365" />
+            <span class="hint tiny">بعد آخر فاتورة في المجموعة</span>
+          </div>
+          <div class="field" style="margin:0">
+            <label for="cb-start-no">بداية التسلسل (أول رقم)</label>
+            <input type="text" id="cb-start-no" class="mono ltr" placeholder="مثال: 100 أو RV-00100" />
+            <span id="cb-last-hint" class="hint tiny muted"></span>
+          </div>
+          <div class="field" style="margin:0">
+            <label for="cb-pay-type">طريقة السداد</label>
+            <select id="cb-pay-type">
+              <option value="TRANSFER" selected>تحويل بنكي</option>
+              <option value="CASH">نقدي</option>
+              <option value="CARD">بطاقة</option>
+              <option value="CHEQUE">شيك</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-3 mt" style="gap:10px;align-items:end">
+          <div class="field" style="margin:0">
+            <label for="cb-gap-min">الفارق بين السندات (من)</label>
+            <input type="number" id="cb-gap-min" value="1" min="1" max="1000" />
+          </div>
+          <div class="field" style="margin:0">
+            <label for="cb-gap-max">فارق إلى (عشوائي)</label>
+            <div style="display:flex;gap:4px;align-items:center">
+              <input type="number" id="cb-gap-max" placeholder="تلقائي ±1" min="1" max="1000" style="flex:1;min-width:0" />
+              <button type="button" id="cb-reroll" class="btn btn-sm" style="white-space:nowrap" title="إعادة توزيع الفوارق العشوائية">↻ توزيع</button>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label class="check" style="font-weight:700;font-size:12.5px;margin:0">
+              <input type="checkbox" id="cb-jitter" checked />
+              تنويع الفارق تلقائياً (±1 لكسر النمطية، مثل 19-21)
+            </label>
+            <label class="check" style="font-weight:700;font-size:12.5px;margin:0">
+              <input type="checkbox" id="cb-skip-friday" checked />
+              تخطي يوم الجمعة أبداً (ترحيل تلقائي للسبت)
+            </label>
+          </div>
+        </div>
+
+        <div class="form-grid-2 mt" style="gap:10px">
+          <input type="search" id="cb-q" placeholder="بحث سريع في الفواتير أو العملاء…" />
+          <input type="text" id="cb-notes" placeholder="ملاحظة إضافية (اختياري — الافتراضي: مقابل أجور وضريبة [المؤسسة] — فواتير رقم ...)" />
+        </div>
+      </div>
+
+      <div id="cb-summary" class="mt"></div>
+      <div id="cb-table-wrap" class="mt"></div>
+      <div id="cb-result" class="mt" style="display:none"></div>
+    `,
+    footer: `<button class="btn" data-close type="button">إلغاء</button>
+             <button class="btn btn-primary" data-create type="button" disabled>إنشاء سندات قبض الريال</button>`,
+  });
+
+  let eligibleData = null;
+  let selectedIds = new Set();
+  let randomGaps = [];
+  let plannedGroups = [];
+  let hasCollision = false;
+  let lastLoadedIssuer = '';
+
+  const issuerSel = $('#cb-issuer', m.body);
+  const clientSel = $('#cb-client', m.body);
+  const fromInp = $('#cb-from', m.body);
+  const toInp = $('#cb-to', m.body);
+  const qInp = $('#cb-q', m.body);
+  const perVoucherInp = $('#cb-per-voucher', m.body);
+  const offsetInp = $('#cb-offset', m.body);
+  const skipFriCb = $('#cb-skip-friday', m.body);
+  const jitterCb = $('#cb-jitter', m.body);
+  const startNoInp = $('#cb-start-no', m.body);
+  const lastHint = $('#cb-last-hint', m.body);
+  const payTypeSel = $('#cb-pay-type', m.body);
+  const gapMinInp = $('#cb-gap-min', m.body);
+  const gapMaxInp = $('#cb-gap-max', m.body);
+  const rerollBtn = $('#cb-reroll', m.body);
+  const notesInp = $('#cb-notes', m.body);
+  const summaryBox = $('#cb-summary', m.body);
+  const tableWrap = $('#cb-table-wrap', m.body);
+  const resultBox = $('#cb-result', m.body);
+  const createBtn = m.el.querySelector('[data-create]');
+
+  const getEffectiveGapRange = () => {
+    const rawMin = Math.max(1, parseInt(gapMinInp.value, 10) || 1);
+    const maxRaw = parseInt(gapMaxInp.value, 10);
+    if (Number.isFinite(maxRaw) && maxRaw >= rawMin) {
+      return { minG: rawMin, maxG: maxRaw };
+    }
+    if (jitterCb.checked && rawMin > 1) {
+      return { minG: Math.max(1, rawMin - 1), maxG: rawMin + 1 };
+    }
+    return { minG: rawMin, maxG: rawMin };
+  };
+
+  const regenerateRandomGaps = (count) => {
+    const { minG, maxG } = getEffectiveGapRange();
+    randomGaps = [];
+    for (let i = 0; i < Math.max(count, 200); i++) {
+      randomGaps.push(maxG > minG ? minG + Math.floor(Math.random() * (maxG - minG + 1)) : minG);
+    }
+  };
+
+  const addDaysAdjustFriday = (isoDate, offsetDays, skipFri) => {
+    if (!isoDate) return { date: '', skipped: false };
+    const [y, mo, d] = isoDate.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, mo - 1, d + offsetDays));
+    let skipped = false;
+    if (skipFri && dt.getUTCDay() === 5) {
+      dt.setUTCDate(dt.getUTCDate() + 1);
+      skipped = true;
+    }
+    return { date: dt.toISOString().slice(0, 10), skipped };
+  };
+
+  const parseSerial = (pattern, defPrefix, defStart) => {
+    const p = String(pattern || '').trim();
+    if (!p) return { prefix: defPrefix, startNo: defStart, pad: 5 };
+    const match = p.match(/^(.*?)(\d+)$/);
+    if (!match) return { prefix: p.replace(/-+$/, ''), startNo: defStart, pad: 5 };
+    return {
+      prefix: match[1].replace(/-+$/, ''),
+      startNo: Math.max(1, parseInt(match[2], 10) || defStart),
+      pad: Math.max(match[2].length, 1),
+    };
+  };
+
+  const formatSerial = (prefix, num, pad) => {
+    const s = String(num).padStart(pad, '0');
+    return prefix ? `${prefix}-${s}` : s;
+  };
+
+  const renderPreview = () => {
+    const items = eligibleData?.items || [];
+    const existingSet = new Set(eligibleData?.existing_numbers || []);
+    const perVoucher = Math.max(1, Math.min(100, parseInt(perVoucherInp.value, 10) || 4));
+    const offset = Math.max(0, parseInt(offsetInp.value, 10) || 0);
+    const skipFriday = skipFriCb.checked;
+    const { minG, maxG } = getEffectiveGapRange();
+    rerollBtn.style.display = maxG > minG ? 'inline-flex' : 'none';
+
+    if (!issuerSel.value) {
+      summaryBox.innerHTML = '';
+      tableWrap.innerHTML = '<div class="alert alert-warn tiny">اختر المورد أولاً لعرض فواتير جميع العملاء.</div>';
+      createBtn.disabled = true;
+      createBtn.textContent = 'إنشاء سندات قبض الريال';
+      plannedGroups = [];
+      return;
+    }
+
+    if (!items.length) {
+      summaryBox.innerHTML = '';
+      tableWrap.innerHTML = '<div class="alert alert-warn tiny">لا توجد فواتير غير مسددة لهذا المورد وفق الفلاتر المحددة.</div>';
+      createBtn.disabled = true;
+      createBtn.textContent = 'إنشاء سندات قبض الريال';
+      plannedGroups = [];
+      return;
+    }
+
+    const selectedItems = items.filter((it) => selectedIds.has(it.id));
+    // Group selected invoices by client_id in chronological order
+    const byClient = new Map();
+    for (const it of selectedItems) {
+      if (!byClient.has(it.client_id)) byClient.set(it.client_id, []);
+      byClient.get(it.client_id).push(it);
+    }
+
+    const groups = [];
+    for (const [cid, list] of byClient.entries()) {
+      list.sort((a, b) =>
+        (a.issue_date || '').localeCompare(b.issue_date || '') ||
+        (a.issue_time || '').localeCompare(b.issue_time || '') ||
+        (a.sequence_no - b.sequence_no) ||
+        (a.invoice_number || '').localeCompare(b.invoice_number || '')
+      );
+      for (let i = 0; i < list.length; i += perVoucher) {
+        const chunk = list.slice(i, i + perVoucher);
+        const lastInv = chunk[chunk.length - 1];
+        const adj = addDaysAdjustFriday(lastInv.issue_date, offset, skipFriday);
+        const totalAmount = chunk.reduce((s, x) => s + Number(x.remaining_amount || 0), 0);
+        const invNums = chunk.map((x) => x.invoice_number);
+        const customNote = notesInp.value.trim();
+        const notes = customNote
+          ? `${customNote} — فواتير رقم ${invNums.join('، ')}`
+          : `مقابل أجور وضريبة ${lastInv.client_name} — فواتير رقم ${invNums.join('، ')}`;
+        groups.push({
+          client_id: cid,
+          client_name: lastInv.client_name,
+          client_code: lastInv.client_code,
+          invoices: chunk,
+          invoice_ids: chunk.map((x) => x.id),
+          invoice_numbers: invNums,
+          last_issue_date: lastInv.issue_date,
+          last_issue_time: lastInv.issue_time || '',
+          last_sequence_no: lastInv.sequence_no || 0,
+          last_invoice_number: lastInv.invoice_number,
+          voucher_date: adj.date,
+          skipped_friday: adj.skipped,
+          total_amount: totalAmount,
+          notes,
+          voucher_number: '',
+          collision: false,
+        });
+      }
+    }
+
+    groups.sort((a, b) =>
+      (a.voucher_date || '').localeCompare(b.voucher_date || '') ||
+      (a.last_issue_date || '').localeCompare(b.last_issue_date || '') ||
+      (a.last_issue_time || '').localeCompare(b.last_issue_time || '') ||
+      (a.last_sequence_no - b.last_sequence_no) ||
+      (a.last_invoice_number || '').localeCompare(b.last_invoice_number || '')
+    );
+
+    const defPat = parseSerial(eligibleData?.suggested_start || '', eligibleData?.voucher_prefix || 'RV', 1);
+    const pat = parseSerial(startNoInp.value.trim(), defPat.prefix, defPat.startNo);
+    let currNo = pat.startNo;
+    hasCollision = false;
+    const seenBatch = new Set();
+
+    for (let i = 0; i < groups.length; i++) {
+      if (i > 0) {
+        const step = randomGaps[i - 1] ?? minG;
+        currNo += step;
+      }
+      const vNum = formatSerial(pat.prefix, currNo, pat.pad);
+      groups[i].voucher_number = vNum;
+      const isDup = existingSet.has(vNum) || seenBatch.has(vNum);
+      groups[i].collision = isDup;
+      if (isDup) hasCollision = true;
+      seenBatch.add(vNum);
+    }
+
+    plannedGroups = groups;
+    const totalAmt = groups.reduce((s, g) => s + g.total_amount, 0);
+    const clientsCount = new Set(groups.map((g) => g.client_id)).size;
+    const skippedCount = groups.filter((g) => g.skipped_friday).length;
+
+    summaryBox.innerHTML = `
+      <div class="card" style="padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;background:var(--bg-soft)">
+        <div class="tiny" style="display:flex;gap:14px;flex-wrap:wrap">
+          <span>الفواتير المحددة: <b>${selectedItems.length}</b> من ${items.length}</span>
+          <span>عدد السندات الناتجة: <b>${groups.length}</b></span>
+          <span>العملاء: <b>${clientsCount}</b></span>
+          <span>الإجمالي: <b class="mono ltr">${money(totalAmt)}</b></span>
+          ${groups.length ? `<span>التسلسل: <b class="mono ltr">${esc(groups[0].voucher_number)} ← ${esc(groups[groups.length - 1].voucher_number)}</b></span>` : ''}
+          ${skippedCount ? `<span class="badge amber">ترحيل ${skippedCount} جمعة للسبت</span>` : ''}
+        </div>
+        <div style="display:flex;gap:6px">
+          <button type="button" class="btn btn-sm" id="cb-sel-all">تحديد الكل</button>
+          <button type="button" class="btn btn-sm" id="cb-sel-none">إلغاء الكل</button>
+        </div>
+      </div>
+      ${hasCollision ? `<div class="alert alert-danger tiny mt">يوجد تعارض في أحد أرقام السندات مع سندات مسجلة مسبقاً — يرجى تغيير رقم بداية التسلسل.</div>` : ''}
+    `;
+
+    $('#cb-sel-all', summaryBox)?.addEventListener('click', () => {
+      items.forEach((it) => selectedIds.add(it.id));
+      renderPreview();
+    });
+    $('#cb-sel-none', summaryBox)?.addEventListener('click', () => {
+      selectedIds.clear();
+      renderPreview();
+    });
+
+    tableWrap.innerHTML = `
+      <div class="tiny muted" style="margin-bottom:4px;font-weight:700">معاينة السندات المجمّعة (${groups.length} سند):</div>
+      <div class="table-wrap" style="max-height:220px;overflow-y:auto;margin-bottom:10px">
+        <table class="tbl compact" style="font-size:12px">
+          <thead><tr><th>رقم السند</th><th>العميل</th><th>الفواتير (${perVoucher}/سند)</th><th>تاريخ السند</th><th class="text-end">المبلغ</th><th>البيان</th></tr></thead>
+          <tbody>
+            ${groups.length ? groups.map((g) => `
+              <tr class="${g.collision ? 'danger-row' : ''}">
+                <td class="mono ltr" style="font-weight:700;${g.collision ? 'color:var(--danger)' : ''}">${esc(g.voucher_number)}</td>
+                <td>${esc(g.client_name)}</td>
+                <td class="mono ltr" style="font-size:11px">${esc(g.invoice_numbers.join('، '))}</td>
+                <td class="mono ltr">${esc(g.voucher_date)}${g.skipped_friday ? ' <span class="badge amber" title="تم ترحيله من الجمعة للسبت">سبت</span>' : ''}</td>
+                <td class="text-end mono ltr" style="font-weight:700">${money(g.total_amount)}</td>
+                <td class="tiny">${esc(g.notes)}</td>
+              </tr>
+            `).join('') : `<tr><td colspan="6" class="text-center muted">حدّد فاتورة واحدة على الأقل من الجدول أدناه</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+      <div class="tiny muted" style="margin-bottom:4px;font-weight:700">الفواتير المؤهلة (${items.length}):</div>
+      <div class="table-wrap" style="max-height:170px;overflow-y:auto">
+        <table class="tbl compact" style="font-size:12px">
+          <thead><tr><th style="width:30px"></th><th>الفاتورة</th><th>التاريخ</th><th>العميل</th><th class="text-end">المتبقي</th></tr></thead>
+          <tbody>
+            ${items.map((it) => `
+              <tr>
+                <td><input type="checkbox" data-cb-inv="${esc(it.id)}" ${selectedIds.has(it.id) ? 'checked' : ''} /></td>
+                <td class="mono ltr">${esc(it.invoice_number)}</td>
+                <td class="mono ltr">${esc(it.issue_date)}</td>
+                <td>${esc(it.client_name)}</td>
+                <td class="text-end mono ltr">${money(it.remaining_amount)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    $$('[data-cb-inv]', tableWrap).forEach((cb) => {
+      cb.addEventListener('change', () => {
+        if (cb.checked) selectedIds.add(cb.dataset.cbInv);
+        else selectedIds.delete(cb.dataset.cbInv);
+        renderPreview();
+      });
+    });
+
+    createBtn.disabled = !groups.length || hasCollision;
+    createBtn.textContent = groups.length ? `إنشاء ${groups.length} سند قبض ريال` : 'إنشاء سندات قبض الريال';
+  };
+
+  const loadEligible = async (resetStart) => {
+    if (!issuerSel.value) {
+      eligibleData = null;
+      selectedIds.clear();
+      renderPreview();
+      return;
+    }
+    tableWrap.innerHTML = '<div class="muted tiny">جارٍ تحميل الفواتير المؤهلة…</div>';
+    try {
+      const qs = new URLSearchParams({
+        issuer_id: issuerSel.value,
+        client_id: clientSel.value,
+        from: fromInp.value,
+        to: toInp.value,
+        q: qInp.value.trim(),
+      });
+      eligibleData = await api.get(`/api/vouchers/batch/eligible-invoices?${qs.toString()}`);
+      selectedIds = new Set((eligibleData.items || []).map((x) => x.id));
+      if (resetStart || lastLoadedIssuer !== issuerSel.value) {
+        startNoInp.value = eligibleData.suggested_start || '';
+        lastLoadedIssuer = issuerSel.value;
+      }
+      lastHint.textContent = eligibleData.suggested_start ? `المقترح: ${eligibleData.suggested_start}` : '';
+      regenerateRandomGaps(eligibleData.items?.length || 100);
+      renderPreview();
+    } catch (err) {
+      toastErr(err.message || 'تعذر تحميل الفواتير');
+    }
+  };
+
+  issuerSel.addEventListener('change', () => loadEligible(true));
+  clientSel.addEventListener('change', () => loadEligible(false));
+  fromInp.addEventListener('change', () => loadEligible(false));
+  toInp.addEventListener('change', () => loadEligible(false));
+  qInp.addEventListener('input', debounce(() => loadEligible(false), 300));
+
+  perVoucherInp.addEventListener('input', renderPreview);
+  offsetInp.addEventListener('input', renderPreview);
+  skipFriCb.addEventListener('change', renderPreview);
+  notesInp.addEventListener('input', renderPreview);
+  startNoInp.addEventListener('input', renderPreview);
+  jitterCb.addEventListener('change', () => { regenerateRandomGaps(eligibleData?.items?.length || 100); renderPreview(); });
+  gapMinInp.addEventListener('input', () => { regenerateRandomGaps(eligibleData?.items?.length || 100); renderPreview(); });
+  gapMaxInp.addEventListener('input', () => { regenerateRandomGaps(eligibleData?.items?.length || 100); renderPreview(); });
+  rerollBtn.addEventListener('click', () => { regenerateRandomGaps(eligibleData?.items?.length || 100); renderPreview(); });
+
+  createBtn.addEventListener('click', async () => {
+    if (!issuerSel.value || !plannedGroups.length || hasCollision) return;
+    const perVoucher = Math.max(1, Math.min(100, parseInt(perVoucherInp.value, 10) || 4));
+    const offset = Math.max(0, parseInt(offsetInp.value, 10) || 0);
+    const { minG, maxG } = getEffectiveGapRange();
+    const skipFriday = skipFriCb.checked;
+    const totalAmt = plannedGroups.reduce((s, g) => s + g.total_amount, 0);
+    const clientsCount = new Set(plannedGroups.map((g) => g.client_id)).size;
+    const gapDesc = maxG > minG ? `عشوائي من ${minG} إلى ${maxG}` : `ثابت (+${minG})`;
+
+    const ok = await confirmDialog({
+      title: `تأكيد إنشاء ${plannedGroups.length} سند قبض ريال`,
+      message: `المورد: ${eligibleData?.issuer_name || ''} | السندات: ${plannedGroups.length} سند لـ ${clientsCount} عميل | الإجمالي: ${money(totalAmt)} | التسلسل: ${plannedGroups[0].voucher_number} ← ${plannedGroups[plannedGroups.length - 1].voucher_number} (الفارق: ${gapDesc}) | التاريخ: بعد ${offset} يوم من آخر فاتورة${skipFriday ? ' مع تخطي يوم الجمعة' : ''}. هل تريد المتابعة؟`,
+      okText: `نعم، إنشاء ${plannedGroups.length} سند`,
+    });
+    if (!ok) return;
+
+    createBtn.disabled = true;
+    createBtn.textContent = 'جارٍ إنشاء السندات…';
+    try {
+      const res = await api.post('/api/vouchers/batch', {
+        issuer_id: issuerSel.value,
+        payment_type: payTypeSel.value || 'TRANSFER',
+        date_offset: offset,
+        skip_friday: skipFriday,
+        start_number: startNoInp.value.trim(),
+        seq_gap_min: minG,
+        seq_gap_max: maxG,
+        invoices_per_voucher: perVoucher,
+        notes: notesInp.value.trim(),
+        groups: plannedGroups.map((g) => ({
+          client_id: g.client_id,
+          invoice_ids: g.invoice_ids,
+          voucher_number: g.voucher_number,
+          voucher_date: g.voucher_date,
+          notes: g.notes,
+        })),
+      });
+
+      toastOk(`تم إنشاء ${res.count} سند قبض ريال بنجاح (${res.first_number} ← ${res.last_number})`);
+      syncNotify('vouchers', 'create', res);
+
+      summaryBox.style.display = 'none';
+      tableWrap.style.display = 'none';
+      resultBox.style.display = 'block';
+      const createdItems = res.items || [];
+      resultBox.innerHTML = `
+        <div class="card" style="border:2px solid var(--success, #10b981);padding:14px;border-radius:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+            <div>
+              <div style="font-weight:800;font-size:15px;color:var(--success, #10b981)">
+                ✓ تم إنشاء ${res.count} سند قبض ريال بنجاح لـ ${res.client_count} عميل (${res.invoice_count} فاتورة)
+              </div>
+              <div class="tiny muted" style="margin-top:3px">
+                التسلسل: <b class="mono ltr">${esc(res.first_number)} ← ${esc(res.last_number)}</b> ·
+                الإجمالي: <b class="mono ltr">${money(res.total_amount)}</b>
+                ${res.skipped_fridays > 0 ? ` · تم ترحيل ${res.skipped_fridays} يوم جمعة تلقائياً` : ''}
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" id="cb-print-all">
+              ${icon.printer({ size: 15, style: 'vertical-align:text-bottom;margin-left:4px' })}طباعة كل السندات (${createdItems.length})
+            </button>
+          </div>
+          <div class="table-wrap" style="max-height:280px;overflow-y:auto">
+            <table class="tbl compact" style="font-size:12.5px">
+              <thead><tr><th>رقم السند</th><th>العميل</th><th>تاريخ السند</th><th class="text-end">المبلغ</th><th>البيان</th></tr></thead>
+              <tbody>
+                ${createdItems.map((v) => `<tr>
+                  <td class="mono ltr" style="font-weight:700">${esc(v.voucher_number)}</td>
+                  <td>${esc(v.client_name)}</td>
+                  <td class="mono ltr">${esc(v.voucher_date)}</td>
+                  <td class="text-end mono ltr" style="font-weight:700">${money(v.total_amount)}</td>
+                  <td class="tiny">${esc(v.notes || '')}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      $('#cb-print-all', resultBox)?.addEventListener('click', () => {
+        printCashReceiptsBatch(createdItems.map((x) => x.id));
+      });
+      createBtn.style.display = 'none';
+      const closeBtn = m.el.querySelector('[data-close]');
+      if (closeBtn) closeBtn.textContent = 'إغلاق';
+      onDone(res);
+    } catch (err) {
+      toastErr(err.message || 'تعذر إنشاء السندات');
+      createBtn.disabled = false;
+      createBtn.textContent = `إنشاء ${plannedGroups.length} سند قبض ريال`;
+    }
+  });
+
+  if (initialIssuerId) {
+    loadEligible(true);
+  } else {
+    renderPreview();
+  }
 }
 
