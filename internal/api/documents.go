@@ -847,8 +847,8 @@ func (s *Server) renderGoldReceiptHTML(id, style string) (string, error) {
 	replacements["grand_total"] = fmt.Sprintf("%.2f", v.InvoiceTotal)
 	replacements["amount"] = fmt.Sprintf("%.2f", v.InvoiceTotal)
 	replacements["total_amount"] = fmt.Sprintf("%.2f", v.InvoiceTotal)
-	replacements["total_weight"] = fmt.Sprintf("%.3f", v.TotalWeight)
-	replacements["gross_weight"] = fmt.Sprintf("%.3f", v.TotalWeight)
+	replacements["total_weight"] = fmt.Sprintf("%.2f", v.TotalWeight)
+	replacements["gross_weight"] = fmt.Sprintf("%.2f", v.TotalWeight)
 	replacements["bags_weight"] = "0.00"
 	replacements["total_pieces"] = fmt.Sprintf("%d", len(v.Lines))
 	replacements["gold_price"] = fmt.Sprintf("%.2f", v.GoldPrice)
@@ -866,23 +866,23 @@ func (s *Server) renderGoldReceiptHTML(id, style string) (string, error) {
 		if v.Kind == "METAL" {
 			stockName = "ذهب كسر عيار " + line.Karat
 		}
-		fmt.Fprintf(&rows, `<tr><td>%d</td><td>%s</td><td dir="ltr">%.3f</td><td dir="ltr">%sK</td></tr>`, i+1, html.EscapeString(stockName), line.Weight, html.EscapeString(line.Karat))
+		fmt.Fprintf(&rows, `<tr><td>%d</td><td>%s</td><td dir="ltr">%.2f</td><td dir="ltr">%sK</td></tr>`, i+1, html.EscapeString(stockName), line.Weight, html.EscapeString(line.Karat))
 	}
-	replacements["weight_18"] = fmt.Sprintf("%.3f", weights["18"])
-	replacements["weight_21"] = fmt.Sprintf("%.3f", weights["21"])
-	replacements["weight_22"] = fmt.Sprintf("%.3f", weights["22"])
-	replacements["weight_24"] = fmt.Sprintf("%.3f", weights["24"])
-	replacements["weight_other"] = fmt.Sprintf("%.3f", weights["22"]+weights["24"]+weights["other"])
+	replacements["weight_18"] = fmt.Sprintf("%.2f", weights["18"])
+	replacements["weight_21"] = fmt.Sprintf("%.2f", weights["21"])
+	replacements["weight_22"] = fmt.Sprintf("%.2f", weights["22"])
+	replacements["weight_24"] = fmt.Sprintf("%.2f", weights["24"])
+	replacements["weight_other"] = fmt.Sprintf("%.2f", weights["22"]+weights["24"]+weights["other"])
 
 	items := `<table class="receipt-items"><thead><tr><th>#</th><th>الصنف / Stock Name</th><th>الوزن بالجرام / Weight</th><th>العيار / Purity</th></tr></thead><tbody>` + rows.String() + `</tbody></table>`
 	summary := `<table class="receipt-weight-summary"><caption>ملخص القبض حسب العيار</caption><tr><th>18K</th><th>21K</th><th>22K</th><th>24K</th></tr><tr>`
 	for _, k := range []string{"18", "21", "22", "24"} {
-		summary += fmt.Sprintf(`<td dir="ltr">%.3f</td>`, weights[k])
+		summary += fmt.Sprintf(`<td dir="ltr">%.2f</td>`, weights[k])
 	}
 	summary += `</tr></table>`
 	conversion := ""
 	if v.Kind == "WAGES" {
-		conversion = fmt.Sprintf(`<div class="receipt-conversion">إجمالي الفاتورة شامل الضريبة: <b dir="ltr">%.2f</b> ريال سعودي ÷ سعر جرام عيار 24 بتاريخ %s: <b dir="ltr">%.2f</b> ريال سعودي = <b dir="ltr">%.3f</b> جرام ذهب عيار 24</div>`, v.InvoiceTotal, html.EscapeString(v.VoucherDate), v.GoldPrice, v.TotalWeight)
+		conversion = fmt.Sprintf(`<div class="receipt-conversion">إجمالي الفاتورة شامل الضريبة: <b dir="ltr">%.2f</b> ريال سعودي ÷ سعر جرام عيار 24 بتاريخ %s: <b dir="ltr">%.2f</b> ريال سعودي = <b dir="ltr">%.2f</b> جرام ذهب عيار 24</div>`, v.InvoiceTotal, html.EscapeString(v.VoucherDate), v.GoldPrice, v.TotalWeight)
 	}
 	return s.fillReceiptTemplate(tpl, issuer, replacements, map[string]string{
 		"receipt_value":          fmt.Sprintf(`<bdi dir="ltr">%.2f</bdi>`, v.TotalWeight),
