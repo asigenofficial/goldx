@@ -915,8 +915,7 @@ func (s *Server) fillReceiptTemplate(tpl string, issuer *models.Issuer, values m
 	for key, value := range blocks {
 		tpl = strings.ReplaceAll(tpl, "{{"+key+"}}", value)
 	}
-	symbol := s.templates.SARSymbolSVG()
-	tpl = strings.NewReplacer("{{sar_symbol}}", symbol, "{{currency_symbol}}", symbol).Replace(tpl)
+	tpl = strings.NewReplacer("{{sar_symbol}}", "", "{{currency_symbol}}", "").Replace(tpl)
 	logo := services.BuildIssuerLogoHTML(issuer.LogoData, 130, 80)
 	return injectVoucherPrintStyle(services.ReplaceLogoTags(tpl, logo))
 }
