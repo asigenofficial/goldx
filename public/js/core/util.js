@@ -900,15 +900,9 @@ img.doc-logo-img[src=""],
   border: 0 !important;
   background: none !important;
 }
-.reference-header:has(> .reference-logo):has(> .seller-en):not(:has(.reference-logo img, .reference-logo svg)) {
+.reference-header:has(> .reference-logo):has(> .seller-en):not(:has(.reference-logo img, .reference-logo svg)),
+.reference-header.medallion-head:has(> .crest > .reference-logo):has(> .seller-en):not(:has(.reference-logo img, .reference-logo svg)) {
   grid-template-columns: 1fr 1fr !important;
-}
-.reference-header.ledger-head:has(> .reference-logo):not(:has(.reference-logo img, .reference-logo svg)),
-.reference-header.medallion-head:has(> .crest > .reference-logo):not(:has(.reference-logo img, .reference-logo svg)) {
-  grid-template-columns: 1fr !important;
-}
-.reference-header.medallion-head:has(> .crest > .reference-logo):not(:has(.reference-logo img, .reference-logo svg)) .seller-en {
-  grid-column: 1 !important;
 }
 .ledger:has(> .logo):not(:has(.logo img, .logo svg)) {
   grid-template-columns: 1fr 1.5fr !important;
@@ -1547,7 +1541,7 @@ export function fillDynamicTemplateHtml(rawHtml, { issuer = {}, client = {}, vou
     if (extra[k] !== undefined) return String(extra[k]);
     const receiptLabels = {receipt_title:'سند قبض نقدي',receipt_subtitle:'Cash Receipt — SAR',receipt_payment_label:'طريقة السداد',receipt_reference_label:'مرجع السداد',receipt_currency_label:'العملة / Currency',receipt_currency:'ريال سعودي / SAR',receipt_total_label:'المبلغ المستلم',receipt_unit:'ريال سعودي',receipt_footer:'سند قبض بمبلغ مالي بالريال السعودي.'};
     if (k in receiptLabels) return receiptLabels[k];
-    if (k === 'receipt_value') return `<span class="sar-amount" dir="rtl"><bdi dir="ltr">${money(docTotal)}</bdi>${sarSvg({size:13})}</span>`;
+    if (k === 'receipt_value') return `<bdi dir="ltr">${money(docTotal)}</bdi>`;
     if (['receipt_items','receipt_conversion','receipt_weight_summary'].includes(k)) return '';
     if (k === 'gold_invoice_type') return invoice?.gold_invoice_type || 'PRICE_AND_WAGE';
     if (k === 'gold_type_label') return ({PRICE_ONLY:'سعر فقط (ذهب فقط)',WAGE_ONLY:'أجور فقط (مصنعية فقط)',PRICE_AND_WAGE:'سعر وأجور (ذهب ومصنعية)'})[invoice?.gold_invoice_type || 'PRICE_AND_WAGE'];
@@ -1855,12 +1849,18 @@ export function fillDynamicTemplateHtml(rawHtml, { issuer = {}, client = {}, vou
       return it === 'SIMPLIFIED' ? 'فاتورة ضريبية مبسطة' : 'فاتورة ضريبية';
     }
     if (k === 'notes' || k === 'paid_for' || k === 'description' || k === 'memo' || k === 'statement') {
-      return doc.notes || '';
+      if (doc.notes) return doc.notes;
+      if (voucher && Array.isArray(voucher.allocations) && voucher.allocations.length > 0) {
+        const nums = voucher.allocations.map((a) => a.invoice_number).filter(Boolean);
+        if (nums.length > 0) return `مقابل أجور وضريبة ${partyName || 'العميل'} — فواتير رقم ${nums.join('، ')}`;
+      }
+      return '';
     }
     if (k === 'reference_no' || k === 'cheque_no' || k === 'ref_no' || k === 'check_number') {
       return voucher?.reference_no || '';
     }
     if (k === 'currency_symbol' || k === 'sar_symbol') {
+      if (voucher && !invoice) return '';
       if (invoice && !shouldShowSarSymbol(invoice)) return '';
       return `<svg viewBox="0 0 1124.14 1256.39" width="0.72em" height="0.82em" class="sar-sym" style="vertical-align:-0.08em;display:inline-block;fill:currentColor;margin:0 2px;" aria-label="ريال سعودي" title="ريال سعودي"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"/><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"/></svg>`;
     }

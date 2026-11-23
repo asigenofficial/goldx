@@ -184,15 +184,9 @@ img.doc-logo-img[src=""],
   border: 0 !important;
   background: none !important;
 }
-.reference-header:has(> .reference-logo):has(> .seller-en):not(:has(.reference-logo img, .reference-logo svg)) {
+.reference-header:has(> .reference-logo):has(> .seller-en):not(:has(.reference-logo img, .reference-logo svg)),
+.reference-header.medallion-head:has(> .crest > .reference-logo):has(> .seller-en):not(:has(.reference-logo img, .reference-logo svg)) {
   grid-template-columns: 1fr 1fr !important;
-}
-.reference-header.ledger-head:has(> .reference-logo):not(:has(.reference-logo img, .reference-logo svg)),
-.reference-header.medallion-head:has(> .crest > .reference-logo):not(:has(.reference-logo img, .reference-logo svg)) {
-  grid-template-columns: 1fr !important;
-}
-.reference-header.medallion-head:has(> .crest > .reference-logo):not(:has(.reference-logo img, .reference-logo svg)) .seller-en {
-  grid-column: 1 !important;
 }
 .ledger:has(> .logo):not(:has(.logo img, .logo svg)) {
   grid-template-columns: 1fr 1.5fr !important;
