@@ -1530,19 +1530,37 @@ function formatGoldLinesBadges(lines) {
 
 async function printGoldReceiptsBatch(ids, style = '') {
   if (!Array.isArray(ids) || !ids.length) return toastErr('حدد سنداً واحداً على الأقل للطباعة');
-  const chosenStyle = style || localStorage.getItem('zs.gold_receipt_style') || '';
-  const { html: batchHtml } = await api.post('/api/vouchers/gold/batch-html', { ids, style: chosenStyle });
+  const { html: batchHtml } = await api.post('/api/vouchers/gold/batch-html', { ids, style: style || '' });
   printDoc(batchHtml, { flowing: true });
 }
 
 export async function showGoldReceipt(id, onChange = null) {
   try {
-    const templates = await loadTemplates('documents').catch(() => []);
-    let style = localStorage.getItem('zs.gold_receipt_style') || '';
-    if (!templates.some((t) => t.id === style)) style = '';
-    let { html: documentHTML } = await api.get(`/api/vouchers/gold/${encodeURIComponent(id)}/html?style=${encodeURIComponent(style)}`);
+    const [templates, initialRes] = await Promise.all([
+      loadTemplates('documents').catch(() => []),
+      api.get(`/api/vouchers/gold/${encodeURIComponent(id)}/html`),
+    ]);
+    let documentHTML = initialRes.html;
+    let style = initialRes.style || '';
+    if (!templates.some((t) => t.id === style)) style = templates[0]?.id || '';
+
+    let issuer = null;
+    let issuerPrintCfg = {};
+    if (initialRes.issuer_id) {
+      issuer = await api.get(`/api/issuers/${encodeURIComponent(initialRes.issuer_id)}`).catch(() => null);
+      if (issuer) {
+        try {
+          issuerPrintCfg = (typeof issuer.print_settings === 'string'
+            ? JSON.parse(issuer.print_settings || '{}')
+            : (issuer.print_settings || {})) || {};
+        } catch {
+          issuerPrintCfg = {};
+        }
+      }
+    }
+
     const m = modal({
-      title: 'سند قبض الذهب',
+      title: initialRes.voucher_number ? `سند قبض الذهب ${initialRes.voucher_number}` : 'سند قبض الذهب',
       wide: true,
       body: '',
       footer: `<button class="btn" data-close type="button">إغلاق</button>
@@ -1554,14 +1572,38 @@ export async function showGoldReceipt(id, onChange = null) {
     frame.style.cssText = 'width:100%;height:70vh;border:0;background:#fff;border-radius:8px';
     frame.srcdoc = documentHTML;
     m.body.append(frame);
-    const field = document.createElement('div');
-    field.className = 'field';
-    field.style.marginBottom = '10px';
-    field.innerHTML = html`<label>قالب السند</label><select><option value="">القالب الافتراضي</option>${raw(templates.map((t) => `<option value="${esc(t.id)}" ${t.id === style ? 'selected' : ''}>${esc(t.name_ar || t.name || t.id)}</option>`).join(''))}</select>`;
-    m.body.prepend(field);
+
+    const toolbar = document.createElement('div');
+    toolbar.style.cssText = 'background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px';
+    toolbar.innerHTML = html`
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1">
+        <label for="gr-style-select" style="font-weight:700;font-size:13px;color:var(--brand);margin:0">قالب السند:</label>
+        <select id="gr-style-select" style="min-width:240px;font-size:13px;padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--field-bg, var(--card));color:var(--text);font-weight:700">
+          ${raw(templates.map((t) => `<option value="${esc(t.id)}" ${t.id === style ? 'selected' : ''}>${esc(t.name_ar || t.name || t.id)}</option>`).join(''))}
+        </select>
+        ${raw(issuer ? `<button class="btn btn-sm" id="btn-adopt-gold-tpl" type="button" style="font-size:12px;padding:5px 12px;font-weight:700;border-radius:6px;white-space:nowrap"></button>` : '')}
+      </div>
+    `;
+    m.body.prepend(toolbar);
+
+    const adoptBtn = $('#btn-adopt-gold-tpl', toolbar);
+    const updateAdoptBtn = () => {
+      if (!adoptBtn) return;
+      const isDefault = Boolean(style && (issuerPrintCfg.gold_receipt_template_style === style));
+      adoptBtn.textContent = isDefault ? '✓ القالب المعتمد للمنشأة' : 'اعتماد كقالب افتراضي للمنشأة';
+      adoptBtn.title = isDefault
+        ? 'هذا القالب معتمد حالياً كافتراضي لجميع سندات قبض الذهب لهذه المنشأة'
+        : 'اعتماد هذا القالب كقالب افتراضي لجميع سندات قبض الذهب لهذه المنشأة';
+      adoptBtn.style.background = isDefault ? 'rgba(16,185,129,0.12)' : 'var(--brand-light)';
+      adoptBtn.style.border = isDefault ? '1px solid rgba(16,185,129,0.3)' : '1px solid var(--brand)';
+      adoptBtn.style.color = isDefault ? '#10b981' : 'var(--brand)';
+    };
+    updateAdoptBtn();
+
     const pdfLink = m.el.querySelector('a[href]');
     pdfLink.href = `/api/vouchers/gold/${encodeURIComponent(id)}/pdf?style=${encodeURIComponent(style)}`;
-    field.querySelector('select').addEventListener('change', async (e) => {
+
+    $('#gr-style-select', toolbar).addEventListener('change', async (e) => {
       const selected = e.target.value;
       try {
         const result = await api.get(`/api/vouchers/gold/${encodeURIComponent(id)}/html?style=${encodeURIComponent(selected)}`);
@@ -1569,12 +1611,38 @@ export async function showGoldReceipt(id, onChange = null) {
         documentHTML = result.html;
         frame.srcdoc = documentHTML;
         pdfLink.href = `/api/vouchers/gold/${encodeURIComponent(id)}/pdf?style=${encodeURIComponent(style)}`;
-        localStorage.setItem('zs.gold_receipt_style', style);
+        updateAdoptBtn();
       } catch (error) {
         e.target.value = style;
         toastErr(error.message || 'تعذر تحميل القالب');
       }
     });
+
+    if (adoptBtn && issuer) {
+      adoptBtn.addEventListener('click', async () => {
+        if (!style) return;
+        adoptBtn.disabled = true;
+        try {
+          issuerPrintCfg.gold_receipt_template_style = style;
+          await api.put(`/api/issuers/${encodeURIComponent(issuer.id)}`, {
+            ...issuer,
+            print_settings: issuerPrintCfg,
+          });
+          issuer.print_settings = issuerPrintCfg;
+          if (store.issuers) {
+            const stored = store.issuers.find((i) => i.id === issuer.id);
+            if (stored) stored.print_settings = issuerPrintCfg;
+          }
+          toastOk('تم اعتماد القالب كافتراضي لجميع سندات قبض الذهب لهذه المنشأة بنجاح');
+          updateAdoptBtn();
+        } catch (err) {
+          toastErr('فشل اعتماد القالب: ' + (err.message || 'خطأ غير متوقع'));
+        } finally {
+          adoptBtn.disabled = false;
+        }
+      });
+    }
+
     m.el.querySelector('[data-print]').addEventListener('click', () => printDoc(documentHTML));
     void onChange;
   } catch (error) {
@@ -2572,8 +2640,7 @@ export async function renderGoldReceipts(view) {
 
 async function printCashReceiptsBatch(ids, style = '') {
   if (!Array.isArray(ids) || !ids.length) return toastErr('حدد سنداً واحداً على الأقل للطباعة');
-  const chosenStyle = style || localStorage.getItem('zs.voucher_style') || '';
-  const { html: batchHtml } = await api.post('/api/vouchers/batch-html', { ids, style: chosenStyle });
+  const { html: batchHtml } = await api.post('/api/vouchers/batch-html', { ids, style: style || '' });
   printDoc(batchHtml, { flowing: true });
 }
 

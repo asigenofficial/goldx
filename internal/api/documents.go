@@ -357,7 +357,11 @@ func (s *Server) renderVoucherHTML(id, style string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	tpl, err := s.receiptTemplate(style)
+	tplStyle := strings.TrimSpace(style)
+	if tplStyle == "" || tplStyle == "default" || tplStyle == "standard" {
+		tplStyle = s.resolveIssuerDocumentStyle(issuer, "voucher_template_style")
+	}
+	tpl, err := s.receiptTemplate(tplStyle)
 	if err != nil {
 		return "", err
 	}
@@ -634,12 +638,19 @@ func (s *Server) registerGoldReceipts(mux *http.ServeMux) {
 		s.json(w, 200, map[string]bool{"ok": true})
 	})
 	mux.HandleFunc("GET /api/vouchers/gold/{id}/html", func(w http.ResponseWriter, r *http.Request) {
-		doc, err := s.renderGoldReceiptHTML(r.PathValue("id"), r.URL.Query().Get("style"))
+		id := r.PathValue("id")
+		reqStyle := strings.TrimSpace(r.URL.Query().Get("style"))
+		doc, v, resolvedStyle, err := s.renderGoldReceiptHTMLMeta(id, reqStyle)
 		if err != nil {
 			s.err(w, 404, err.Error())
 			return
 		}
-		s.json(w, 200, map[string]string{"html": doc})
+		s.json(w, 200, map[string]string{
+			"html":           doc,
+			"issuer_id":      v.IssuerID,
+			"voucher_number": v.VoucherNumber,
+			"style":          resolvedStyle,
+		})
 	})
 	mux.HandleFunc("GET /api/vouchers/gold/{id}/pdf", func(w http.ResponseWriter, r *http.Request) {
 		doc, err := s.renderGoldReceiptHTML(r.PathValue("id"), r.URL.Query().Get("style"))
@@ -767,22 +778,58 @@ html, body { height: auto !important; max-height: none !important; overflow: vis
 	return "<!doctype html><html lang=\"ar\" dir=\"rtl\"><head><meta charset=\"utf-8\">" + headHTML + batchStyle + "</head><body>" + pages.String() + "</body></html>", nil
 }
 
+func (s *Server) resolveIssuerDocumentStyle(issuer *models.Issuer, keys ...string) string {
+	if issuer != nil && strings.TrimSpace(issuer.PrintSettings) != "" {
+		var cfg map[string]any
+		if json.Unmarshal([]byte(issuer.PrintSettings), &cfg) == nil {
+			for _, key := range keys {
+				if val, ok := cfg[key].(string); ok {
+					val = strings.TrimSpace(val)
+					if val != "" && val != "default" && val != "standard" {
+						if s.templates == nil {
+							return val
+						}
+						if _, err := s.templates.GetFilePath(val); err == nil {
+							return val
+						}
+					}
+				}
+			}
+		}
+	}
+	if s.templates != nil {
+		if first, err := s.templates.FirstTemplateID("documents"); err == nil {
+			return first
+		}
+	}
+	return ""
+}
+
 func (s *Server) renderGoldReceiptHTML(id, style string) (string, error) {
+	doc, _, _, err := s.renderGoldReceiptHTMLMeta(id, style)
+	return doc, err
+}
+
+func (s *Server) renderGoldReceiptHTMLMeta(id, style string) (string, *services.GoldReceipt, string, error) {
 	v, err := s.vouchers.GetGoldReceipt(id)
 	if err != nil {
-		return "", err
+		return "", nil, "", err
 	}
 	issuer, err := s.issuers.GetIssuer(v.IssuerID)
 	if err != nil {
-		return "", err
+		return "", nil, "", err
 	}
 	client, err := s.clients.GetClient(v.ClientID)
 	if err != nil {
-		return "", err
+		return "", nil, "", err
 	}
-	tpl, err := s.receiptTemplate(style)
+	resolvedStyle := strings.TrimSpace(style)
+	if resolvedStyle == "" || resolvedStyle == "default" || resolvedStyle == "standard" {
+		resolvedStyle = s.resolveIssuerDocumentStyle(issuer, "gold_receipt_template_style", "voucher_template_style")
+	}
+	tpl, err := s.receiptTemplate(resolvedStyle)
 	if err != nil {
-		return "", err
+		return "", nil, "", err
 	}
 	title := "سند قبض معدن كسر"
 	if v.Kind == "WAGES" {
@@ -897,7 +944,7 @@ func (s *Server) renderGoldReceiptHTML(id, style string) (string, error) {
 		"receipt_conversion":     conversion,
 		"receipt_weight_summary": summary,
 		"items_rows":             rows.String(),
-	}), docTitle), nil
+	}), docTitle), v, resolvedStyle, nil
 }
 
 func buildReceiptPrintTitle(kindLabel, clientName, voucherNumber string) string {
