@@ -392,7 +392,8 @@ func (s *Server) renderVoucherHTML(id, style string) (string, error) {
 		replacements[key] = value
 	}
 	blocks := map[string]string{"receipt_value": `<bdi dir="ltr">` + amount + `</bdi>`, "receipt_items": "", "receipt_conversion": "", "receipt_weight_summary": ""}
-	return s.fillReceiptTemplate(tpl, issuer, replacements, blocks), nil
+	docTitle := buildReceiptPrintTitle("سند قبض ريال", v.ClientName, v.VoucherNumber)
+	return replaceHTMLTitle(s.fillReceiptTemplate(tpl, issuer, replacements, blocks), docTitle), nil
 }
 
 func injectVoucherPrintStyle(template string) string {
@@ -653,7 +654,12 @@ func (s *Server) registerGoldReceipts(mux *http.ServeMux) {
 		}
 		w.Header().Set("Content-Type", "application/pdf")
 		w.Header().Set("Cache-Control", "no-store")
-		w.Header().Set("Content-Disposition", `attachment; filename="gold-receipt.pdf"; filename*=UTF-8''`+url.PathEscape("سند_قبض_ذهب.pdf"))
+		pdfTitle := extractHTMLTitle(doc)
+		if pdfTitle == "" {
+			pdfTitle = "سند قبض ذهب"
+		}
+		pdfName := sanitizePDFFilename(pdfTitle) + ".pdf"
+		w.Header().Set("Content-Disposition", `attachment; filename="gold-receipt.pdf"; filename*=UTF-8''`+url.PathEscape(pdfName))
 		w.Write(pdf)
 	})
 }
@@ -884,13 +890,70 @@ func (s *Server) renderGoldReceiptHTML(id, style string) (string, error) {
 	if v.Kind == "WAGES" {
 		conversion = fmt.Sprintf(`<div class="receipt-conversion">إجمالي الفاتورة شامل الضريبة: <b dir="ltr">%.2f</b> ريال سعودي ÷ سعر جرام عيار 24 بتاريخ %s: <b dir="ltr">%.2f</b> ريال سعودي = <b dir="ltr">%.2f</b> جرام ذهب عيار 24</div>`, v.InvoiceTotal, html.EscapeString(v.VoucherDate), v.GoldPrice, v.TotalWeight)
 	}
-	return s.fillReceiptTemplate(tpl, issuer, replacements, map[string]string{
+	docTitle := buildReceiptPrintTitle("سند قبض ذهب", client.Name, v.VoucherNumber)
+	return replaceHTMLTitle(s.fillReceiptTemplate(tpl, issuer, replacements, map[string]string{
 		"receipt_value":          fmt.Sprintf(`<bdi dir="ltr">%.2f</bdi>`, v.TotalWeight),
 		"receipt_items":          items,
 		"receipt_conversion":     conversion,
 		"receipt_weight_summary": summary,
 		"items_rows":             rows.String(),
-	}), nil
+	}), docTitle), nil
+}
+
+func buildReceiptPrintTitle(kindLabel, clientName, voucherNumber string) string {
+	parts := []string{strings.TrimSpace(kindLabel)}
+	if c := strings.TrimSpace(clientName); c != "" {
+		parts = append(parts, c)
+	}
+	if n := strings.TrimSpace(voucherNumber); n != "" {
+		parts = append(parts, "رقم "+n)
+	}
+	return strings.Join(parts, " ")
+}
+
+func replaceHTMLTitle(doc, title string) string {
+	title = strings.TrimSpace(title)
+	if title == "" {
+		return doc
+	}
+	tag := "<title>" + html.EscapeString(title) + "</title>"
+	lower := strings.ToLower(doc)
+	if sIdx := strings.Index(lower, "<title"); sIdx >= 0 {
+		if eIdx := strings.Index(lower[sIdx:], "</title>"); eIdx >= 0 {
+			return doc[:sIdx] + tag + doc[sIdx+eIdx+len("</title>"):]
+		}
+	}
+	if hIdx := strings.Index(lower, "</head>"); hIdx >= 0 {
+		return doc[:hIdx] + tag + doc[hIdx:]
+	}
+	return doc
+}
+
+func extractHTMLTitle(doc string) string {
+	lower := strings.ToLower(doc)
+	sIdx := strings.Index(lower, "<title")
+	if sIdx < 0 {
+		return ""
+	}
+	gt := strings.Index(lower[sIdx:], ">")
+	if gt < 0 {
+		return ""
+	}
+	contentStart := sIdx + gt + 1
+	eIdx := strings.Index(lower[contentStart:], "</title>")
+	if eIdx < 0 {
+		return ""
+	}
+	return strings.TrimSpace(html.UnescapeString(doc[contentStart : contentStart+eIdx]))
+}
+
+func sanitizePDFFilename(name string) string {
+	replacer := strings.NewReplacer("/", "_", "\\", "_", "?", "_", "%", "_", "*", "_", ":", "_", "|", "_", "\"", "_", "<", "_", ">", "_")
+	cleaned := strings.TrimSpace(replacer.Replace(name))
+	if cleaned == "" {
+		return "document"
+	}
+	return cleaned
 }
 
 func cashReceiptLabels() map[string]string {

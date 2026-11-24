@@ -476,7 +476,7 @@ body > .receipt-card > *, body > .receipt-container > *, body > .receipt-page > 
   return /<\/head>/i.test(html) ? html.replace(/<\/head>/i, style + "\n</head>") : style + "\n" + html;
 }
 
-export function printDoc(docHtml, { flowing = false } = {}) {
+export function printDoc(docHtml, { flowing = false, title = '' } = {}) {
   const holder = document.getElementById('print-root') || document.body;
   const frame = document.createElement('iframe');
   frame.setAttribute('title', 'طباعة');
@@ -600,15 +600,32 @@ export function printDoc(docHtml, { flowing = false } = {}) {
   doc.open();
   doc.write(finalHtml);
   doc.close();
+  const resolvedTitle = String(title || doc.title || '').replace(/\s+/g, ' ').trim();
+  const prevTitle = document.title;
+  const restoreTitle = () => {
+    if (resolvedTitle && document.title === resolvedTitle) {
+      document.title = prevTitle;
+    }
+  };
   const go = async () => {
     try {
       if (frame.contentWindow.goldxInvoiceLayout) await frame.contentWindow.goldxInvoiceLayout.ready();
+      if (resolvedTitle) {
+        doc.title = resolvedTitle;
+        document.title = resolvedTitle;
+      }
+      window.addEventListener('afterprint', restoreTitle, { once: true });
+      frame.contentWindow.addEventListener('afterprint', restoreTitle, { once: true });
       frame.contentWindow.focus();
       frame.contentWindow.print();
     } catch (err) {
+      restoreTitle();
       toastErr('تعذر بدء الطباعة');
     }
-    setTimeout(() => frame.remove(), 60000);
+    setTimeout(() => {
+      restoreTitle();
+      frame.remove();
+    }, 60000);
   };
   if (doc.readyState === 'complete') setTimeout(go, 120);
   else frame.onload = () => setTimeout(go, 120);
@@ -2136,7 +2153,15 @@ body { width: 210mm !important; max-width: 210mm !important; box-sizing: border-
 </style>`;
     result = result.replace(/<\/head>/i, rowsStyle + '\n</head>');
   }
-  if (voucher) result = applyVoucherPageStyle(result);
+  if (voucher) {
+    const vTitle = ['سند قبض ريال', partyName, docNumber ? `رقم ${docNumber}` : ''].filter(Boolean).join(' ').trim();
+    if (vTitle) {
+      result = /<title\b[^>]*>[\s\S]*?<\/title>/i.test(result)
+        ? result.replace(/<title\b[^>]*>[\s\S]*?<\/title>/i, `<title>${esc(vTitle)}</title>`)
+        : result.replace(/<\/head>/i, `<title>${esc(vTitle)}</title></head>`);
+    }
+    result = applyVoucherPageStyle(result);
+  }
 
   return applyEmptyLogoHideStyle(result);
 }
